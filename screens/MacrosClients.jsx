@@ -3,7 +3,6 @@ import TopNavbar from "../components/TopNavbar";
 import Sidebar from "../components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import api from "../src/api";
-import { toast } from "react-toastify";
 import "../src/App.css";
 
 export default function MacrosClients() {
@@ -40,10 +39,6 @@ export default function MacrosClients() {
       .catch((err) => {
         console.error("Failed to fetch macros:", err);
         setError("Failed to fetch Client's Canned messages.");
-        toast.error("Failed to load macros. Please refresh the page.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
       })
       .finally(() => {
         setLoading(false);
@@ -62,28 +57,7 @@ export default function MacrosClients() {
   });
 
   const handleSaveMacro = () => {
-    if (!editText.trim()) {
-      toast.error("Message cannot be empty", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
     if (currentEditId !== null) {
-      // Check for duplicate when editing (excluding current macro)
-      const isDuplicate = replies.some(
-        (r) => r.id !== currentEditId && r.text.toLowerCase().trim() === editText.toLowerCase().trim()
-      );
-
-      if (isDuplicate) {
-        toast.error("This macro already exists", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
       const updated = replies.find((r) => r.id === currentEditId);
       if (!updated) return;
 
@@ -109,33 +83,9 @@ export default function MacrosClients() {
             prev.map((r) => (r.id === currentEditId ? updatedReply : r))
           );
           setIsModalOpen(false);
-          toast.success("Macro updated successfully", {
-            position: "top-right",
-            autoClose: 3000,
-          });
         })
-        .catch((err) => {
-          console.error("Failed to update macro:", err);
-          const errorMessage = err.response?.data?.error || "Failed to update macro";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+        .catch((err) => console.error("Failed to update macro:", err));
     } else {
-      // Check for duplicate when adding new macro
-      const isDuplicate = replies.some(
-        (r) => r.text.toLowerCase().trim() === editText.toLowerCase().trim()
-      );
-
-      if (isDuplicate) {
-        toast.error("This macro already exists", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
       const selectedDept = departments.find(
         (dept) => dept.dept_name === selectedDepartment
       );
@@ -161,19 +111,8 @@ export default function MacrosClients() {
           };
           setReplies((prev) => [...prev, newReply]);
           setIsModalOpen(false);
-          toast.success("Macro added successfully", {
-            position: "top-right",
-            autoClose: 3000,
-          });
         })
-        .catch((err) => {
-          console.error("Failed to add macro:", err);
-          const errorMessage = err.response?.data?.error || "Failed to add macro";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+        .catch((err) => console.error("Failed to add macro:", err));
     }
   };
 
@@ -190,22 +129,7 @@ export default function MacrosClients() {
 
       api
         .put(`/clients/${id}`, updated)
-        .then(() => {
-          toast.success(
-            `Macro ${updated.active ? "activated" : "deactivated"} successfully`,
-            {
-              position: "top-right",
-              autoClose: 2000,
-            }
-          );
-        })
-        .catch((err) => {
-          console.error("Failed to toggle active:", err);
-          toast.error("Failed to update macro status", {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+        .catch((err) => console.error("Failed to toggle active:", err));
 
       return prev.map((r, i) => (i === idx ? { ...updated } : r));
     });
@@ -224,19 +148,7 @@ export default function MacrosClients() {
 
       api
         .put(`/clients/${id}`, updated)
-        .then(() => {
-          toast.success("Department updated successfully", {
-            position: "top-right",
-            autoClose: 2000,
-          });
-        })
-        .catch((err) => {
-          console.error("Failed to update department:", err);
-          toast.error("Failed to update department", {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+        .catch((err) => console.error("Failed to update department:", err));
 
       return prev.map((r, i) => (i === idx ? { ...updated } : r));
     });

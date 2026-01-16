@@ -375,38 +375,7 @@ export default function Queues() {
 
     if (isMobile) setView("conversation");
 
-    // Load messages for preview (read-only until accepted)
-    await loadMessages(customer.id);
-  };
-
-  const handleAcceptChat = async () => {
-    if (!selectedCustomer) return;
-
-    try {
-      // Call API to accept/assign the chat to current agent
-      const response = await api.post(`/queues/${selectedCustomer.chat_group_id}/accept`);
-      
-      if (response.data.success) {
-        // Emit socket event to update all clients
-        socket.emit('acceptChat', { 
-          chatGroupId: selectedCustomer.chat_group_id,
-          agentId: response.data.agentId 
-        });
-
-        // Update local state - mark as accepted
-        setSelectedCustomer(prev => ({
-          ...prev,
-          isAccepted: true,
-          sys_user_id: response.data.agentId
-        }));
-
-        // Show success message
-        alert('Chat accepted! You can now communicate with the client.');
-      }
-    } catch (error) {
-      console.error('Error accepting chat:', error);
-      alert('Failed to accept chat. Please try again.');
-    }
+    await loadMessages(customer.id); // initial 10
   };
 
   const loadMessages = async (clientId, before = null, append = false) => {
@@ -787,26 +756,10 @@ export default function Queues() {
                           <h3 className="text-lg font-medium text-gray-800">
                             {selectedCustomer.name}
                           </h3>
-                          {!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id && (
-                            <span className="text-xs text-orange-500 font-medium">
-                              Waiting in Queue
-                            </span>
-                          )}
                         </div>
                       </div>
-                      <div className="relative ml-auto flex items-center gap-2">
-                        {/* Accept Chat Button - Only show if not accepted yet */}
-                        {!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id && !chatEnded && (
-                          <button
-                            onClick={handleAcceptChat}
-                            className="px-4 py-2 bg-[#6237A0] text-white rounded-lg hover:bg-[#4c2b7d] transition-colors text-sm font-medium"
-                          >
-                            Accept Chat
-                          </button>
-                        )}
-                        
-                        {/* Three-dot menu - Only show if chat is accepted */}
-                        {(selectedCustomer.isAccepted || selectedCustomer.sys_user_id) && !chatEnded && (
+                      <div className="relative ml-auto">
+                        {!chatEnded && (
                           <button
                             className="p-2 text-black hover:text-[#6237A0] transition rounded-full"
                             onClick={() => toggleDropdown("customerMenu")}
@@ -931,134 +884,100 @@ export default function Queues() {
                     <div className="border-t border-gray-200 pt-4 bg-white canned-dropdown">
                       <div className="flex items-center gap-2 px-4 pb-3">
                         <button
-                          className={`p-3 rounded-full ${
-                            !selectedCustomer.isAccepted && !selectedCustomer.sys_user_id
-                              ? "text-gray-400 cursor-not-allowed"
-                              : "text-[#5C2E90] hover:bg-gray-100"
-                          }`}
+                          className="p-3 text-[#5C2E90] hover:bg-gray-100 rounded-full"
                           onClick={() => setShowCannedMessages(false)}
-                          disabled={!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id}
                         >
                           <Menu size={20} />
                         </button>
                         <textarea
                           ref={textareaRef}
                           rows={1}
-                          placeholder={
-                            !selectedCustomer.isAccepted && !selectedCustomer.sys_user_id
-                              ? "Accept chat to send messages"
-                              : "Message"
-                          }
+                          placeholder="Message"
                           value={inputMessage}
                           onChange={handleInputChange}
                           onClick={() => setShowCannedMessages(false)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
-                              if (selectedCustomer.isAccepted || selectedCustomer.sys_user_id) {
-                                sendMessage();
-                              }
+                              sendMessage();
                             }
                           }}
-                          className={`flex-1 rounded-xl px-4 py-2 leading-tight focus:outline-none resize-none overflow-y-auto ${
-                            !selectedCustomer.isAccepted && !selectedCustomer.sys_user_id
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#F2F0F0] text-gray-800"
-                          }`}
+                          className="flex-1 bg-[#F2F0F0] rounded-xl px-4 py-2 leading-tight focus:outline-none text-gray-800 resize-none overflow-y-auto"
                           style={{ maxHeight: "100px" }}
-                          disabled={!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id}
                         />
                         <button
-                          className={`p-2 rounded-full ${
-                            !selectedCustomer.isAccepted && !selectedCustomer.sys_user_id
-                              ? "text-gray-400 cursor-not-allowed"
-                              : "text-[#5C2E90] hover:bg-gray-100"
-                          }`}
+                          className="p-2 text-[#5C2E90] hover:bg-gray-100 rounded-full"
                           onClick={sendMessage}
-                          disabled={!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id}
                         >
                           <Send size={20} className="transform rotate-45" />
                         </button>
                       </div>
 
                       {/* CANNED MESSAGES */}
-                      {(selectedCustomer.isAccepted || selectedCustomer.sys_user_id) && (
-                        <div className="px-4 pt-3">
-                          <div className="grid grid-cols-1 gap-2 pb-3 max-h-[200px] overflow-y-auto">
-                            {cannedMessages.map((msg, index) => (
-                              <button
-                                key={index}
-                                onClick={() => {
-                                  setInputMessage(msg);
-                                  setShowCannedMessages(false);
-                                }}
-                                className="text-sm text-left px-4 py-3 bg-[#F5F5F5] rounded-xl hover:bg-[#EFEAFE] transition text-gray-800"
-                              >
-                                {msg}
-                              </button>
-                            ))}
-                          </div>
+                      <div className="px-4 pt-3">
+                        <div className="grid grid-cols-1 gap-2 pb-3 max-h-[200px] overflow-y-auto">
+                          {cannedMessages.map((msg, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setInputMessage(msg);
+                                setShowCannedMessages(false);
+                              }}
+                              className="text-sm text-left px-4 py-3 bg-[#F5F5F5] rounded-xl hover:bg-[#EFEAFE] transition text-gray-800"
+                            >
+                              {msg}
+                            </button>
+                          ))}
                         </div>
-                      )}
+                      </div>
                     </div>
                   ) : (
                     <div className="mt-4 flex items-center gap-2 border-t border-gray-200 pt-4 px-4">
-                      {/* Show preview notice if not accepted */}
-                      {!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id && !chatEnded && (
-                        <div className="flex-1 mb-4 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg">
-                          <p className="text-sm text-orange-700 text-center">
-                            <span className="font-semibold">Preview Mode:</span> Accept this chat to start communicating with the client
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Regular input - only enabled if accepted */}
-                      {(selectedCustomer.isAccepted || selectedCustomer.sys_user_id || chatEnded) && (
-                        <>
-                          <button
-                            className={`p-2 mb-4 rounded-full ${
-                              chatEnded
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-[#5C2E90] hover:bg-gray-100"
-                            }`}
-                            onClick={() => setShowCannedMessages(true)}
-                            disabled={chatEnded}
-                          >
-                            <Menu size={20} />
-                          </button>
-                          <textarea
-                            ref={textareaRef}
-                            rows={1}
-                            placeholder="Message"
-                            value={inputMessage}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                sendMessage();
-                              }
-                            }}
-                            className={`flex-1 rounded-xl px-4 py-2 mb-4 leading-tight focus:outline-none resize-none overflow-y-auto ${
-                              chatEnded
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#F2F0F0] text-gray-800"
-                            }`}
-                            style={{ maxHeight: "100px" }}
-                            disabled={chatEnded}
-                          />
-                          <button
-                            className={`p-2 mb-4 rounded-full ${
-                              chatEnded
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-[#5C2E90] hover:bg-gray-100"
-                            }`}
-                            onClick={sendMessage}
-                            disabled={chatEnded}
-                          >
-                            <Send size={20} className="transform rotate-45" />
-                          </button>
-                        </>
-                      )}
+                      <button
+                        className={`p-2 mb-4 text-[#5C2E90] hover:bg-gray-100 rounded-full
+                           ${
+                             chatEnded
+                               ? "text-gray-400 cursor-not-allowed"
+                               : "text-[#5C2E90] hover:bg-gray-100"
+                           }`}
+                        onClick={() => setShowCannedMessages(true)}
+                        disabled={chatEnded}
+                      >
+                        <Menu size={20} />
+                      </button>
+                      <textarea
+                        ref={textareaRef}
+                        rows={1}
+                        placeholder="Message"
+                        value={inputMessage}
+                        onChange={handleInputChange}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                        className={`flex-1 bg-[#F2F0F0] rounded-xl px-4 py-2 mb-4 leading-tight focus:outline-none text-gray-800 resize-none overflow-y-auto
+                        ${
+                          chatEnded
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : "bg-[#F2F0F0] text-gray-800"
+                        }`}
+                        style={{ maxHeight: "100px" }}
+                        disabled={chatEnded}
+                      />
+                      <button
+                        className={`p-2 mb-4 text-[#5C2E90] hover:bg-gray-100 rounded-full
+                          ${
+                            chatEnded
+                              ? "text-gray-400 cursor-not-allowed"
+                              : "text-[#5C2E90] hover:bg-gray-100"
+                          }`}
+                        onClick={sendMessage}
+                        disabled={chatEnded}
+                      >
+                        <Send size={20} className="transform rotate-45" />
+                      </button>
                     </div>
                   )}
                 </>

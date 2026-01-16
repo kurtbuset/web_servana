@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Edit3, Search, X } from "react-feather";
 import TopNavbar from "../components/TopNavbar";
 import Sidebar from "../components/Sidebar";
-import { toast } from "react-toastify";
-import { useUser } from "../context/UserContext";
 import "../src/App.css";
 import api from "../src/api";
 
@@ -15,19 +13,6 @@ export default function ManageRoles() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEditIndex, setCurrentEditIndex] = useState(null);
   const [editForm, setEditForm] = useState({ name: "" });
-  const [loading, setLoading] = useState(false);
-  const { userData, hasPermission, loading: userLoading } = useUser();
-
-  // Check if user has permission to manage roles
-  const canManageRoles = hasPermission("priv_can_manage_role");
-
-  // Debug: Log userData
-  useEffect(() => {
-    if (userData) {
-      console.log("User data loaded:", userData);
-      console.log("User ID:", userData.sys_user_id);
-    }
-  }, [userData]);
 
   const permissions = [
     "Can view Chats",
@@ -61,36 +46,11 @@ const handleOpenEditModal = (index = null) => {
 
 
   const handleSaveRole = async () => {
-    if (!canManageRoles) {
-      toast.error("You don't have permission to manage roles", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    if (!editForm.name.trim()) {
-      toast.error("Role name cannot be empty", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    const userId = userData?.sys_user_id;
-    if (!userId) {
-      toast.error("User session invalid. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
     const payload = {
       name: editForm.name,
       permissions: editForm.permissions || [],
-      created_by: userId,
-      updated_by: userId,
+      created_by: 1,
+      updated_by: 1,
       active: true,
     };
 
@@ -101,16 +61,8 @@ const handleOpenEditModal = (index = null) => {
           ...payload,
           active: roles[currentEditIndex].active,
         });
-        toast.success("Role updated successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
       } else {
         await api.post("/roles", payload);
-        toast.success("Role added successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
       }
 
       setIsModalOpen(false);
@@ -118,138 +70,58 @@ const handleOpenEditModal = (index = null) => {
       setRoles(updated.data);
     } catch (err) {
       console.error("Error saving role:", err);
-      const errorMessage = err.response?.data?.error || "Failed to save role";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
     }
   };
 
   const handleToggleActive = async (index) => {
-    if (!canManageRoles) {
-      toast.error("You don't have permission to manage roles", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    const role = roles[index];
-    const userId = userData?.sys_user_id;
-    
-    if (!userId) {
-      toast.error("User session invalid. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
+    const updatedRole = {
+      ...roles[index],
+      active: !roles[index].active,
+      updated_by: 1,
+    };
 
     try {
-      await api.put(`/roles/${role.role_id}`, {
-        name: role.name,
-        active: !role.active,
-        permissions: role.permissions,
-        updated_by: userId,
-      });
-      
+      await api.put(`/roles/${roles[index].role_id}`, updatedRole);
       setRoles((prev) =>
-        prev.map((r, i) =>
-          i === index ? { ...r, active: !r.active } : r
+        prev.map((role, i) =>
+          i === index ? { ...role, active: !role.active } : role
         )
-      );
-      
-      toast.success(
-        `Role ${!role.active ? "activated" : "deactivated"} successfully`,
-        {
-          position: "top-right",
-          autoClose: 2000,
-        }
       );
     } catch (err) {
       console.error("Failed to update active status:", err);
-      const errorMessage = err.response?.data?.error || "Failed to update role status";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
     }
   };
 
   const handleTogglePermission = async (roleIndex, permission) => {
-    if (!canManageRoles) {
-      toast.error("You don't have permission to manage roles", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
     const role = roles[roleIndex];
     const updatedPermissions = role.permissions.includes(permission)
       ? role.permissions.filter((p) => p !== permission)
       : [...role.permissions, permission];
 
     try {
-      // Get user ID - try multiple possible field names
-      const userId = userData?.sys_user_id || userData?.user_id;
-      
-      if (!userId) {
-        toast.error("User session invalid. Please refresh the page.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      // Only send the fields we need, ensure no null values
-      const requestBody = {
-        name: role.name || '',
-        active: Boolean(role.active),
+      await api.put(`/roles/${role.role_id}`, {
+        ...role,
         permissions: updatedPermissions,
-        updated_by: Number(userId),
-      };
-
-      console.log("Request body:", requestBody);
-
-      await api.put(`/roles/${role.role_id}`, requestBody);
+        updated_by: 1,
+      });
 
       setRoles((prev) =>
         prev.map((r, i) =>
           i === roleIndex ? { ...r, permissions: updatedPermissions } : r
         )
       );
-
-      toast.success("Permission updated successfully", {
-        position: "top-right",
-        autoClose: 2000,
-      });
     } catch (err) {
       console.error("Failed to update permission:", err);
-      console.error("Error response:", err.response?.data);
-      const errorMessage = err.response?.data?.error || "Failed to update permission";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
     }
   };
 
   useEffect(() => {
     const fetchRoles = async () => {
-      setLoading(true);
       try {
         const res = await api.get("/roles");
         setRoles(res.data);
       } catch (err) {
         console.error("Failed to fetch roles:", err);
-        toast.error("Failed to load roles. Please refresh the page.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      } finally {
-        setLoading(false);
       }
     };
     fetchRoles();
@@ -280,12 +152,7 @@ const handleOpenEditModal = (index = null) => {
               />
               <button
                 onClick={() => handleOpenEditModal()}
-                disabled={!canManageRoles}
-                className={`px-4 py-2 rounded-lg text-sm transition-colors duration-300 ${
-                  canManageRoles
-                    ? "bg-[#6237A0] text-white hover:bg-purple-800"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+                className="bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800 transition-colors duration-300"
               >
                 Add Role
               </button>
@@ -311,59 +178,39 @@ const handleOpenEditModal = (index = null) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={permissions.length + 2} className="text-center py-8 text-gray-600">
-                        Loading roles...
+                  {filteredRoles.map((role, idx) => (
+                    <tr key={idx}>
+                      <td className="sticky left-0 bg-white py-3 px-3 z-10 w-[192px] min-w-[192px] max-w-[192px]">
+                        <div className="relative w-full">
+                          <span className="break-words whitespace-normal text-sm block">
+                            {role.name}
+                          </span>
+                          <Edit3
+                            size={18}
+                            strokeWidth={1}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-purple-700 cursor-pointer"
+                            onClick={() => handleOpenEditModal(idx)}
+                          />
+                        </div>
                       </td>
-                    </tr>
-                  ) : filteredRoles.length === 0 ? (
-                    <tr>
-                      <td colSpan={permissions.length + 2} className="text-center py-8 text-gray-600">
-                        No roles found
+                      <td className="sticky left-[192px] bg-white py-3 px-3 z-10 text-center w-[96px] min-w-[96px] max-w-[96px]">
+                        <ToggleSwitch
+                          checked={role.active}
+                          onChange={() => handleToggleActive(idx)}
+                        />
                       </td>
-                    </tr>
-                  ) : (
-                    filteredRoles.map((role, idx) => (
-                      <tr key={idx}>
-                        <td className="sticky left-0 bg-white py-3 px-3 z-10 w-[192px] min-w-[192px] max-w-[192px]">
-                          <div className="relative w-full">
-                            <span className="break-words whitespace-normal text-sm block">
-                              {role.name}
-                            </span>
-                            {canManageRoles && (
-                              <Edit3
-                                size={18}
-                                strokeWidth={1}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-purple-700 cursor-pointer"
-                                onClick={() => handleOpenEditModal(idx)}
-                              />
-                            )}
-                          </div>
-                        </td>
-                        <td className="sticky left-[192px] bg-white py-3 px-3 z-10 text-center w-[96px] min-w-[96px] max-w-[96px]">
-                          <ToggleSwitch
-                            checked={role.active}
-                            onChange={() => handleToggleActive(idx)}
-                            disabled={!canManageRoles}
+                      {permissions.map((perm, i) => (
+                        <td key={i} className="py-3 px-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={role.permissions.includes(perm)}
+                            onChange={() => handleTogglePermission(idx, perm)}
+                            className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                           />
                         </td>
-                        {permissions.map((perm, i) => (
-                          <td key={i} className="py-3 px-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={role.permissions.includes(perm)}
-                              onChange={() => handleTogglePermission(idx, perm)}
-                              disabled={!canManageRoles}
-                              className={`w-4 h-4 text-purple-600 rounded focus:ring-purple-500 ${
-                                canManageRoles ? "cursor-pointer" : "cursor-not-allowed opacity-50"
-                              }`}
-                            />
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  )}
+                      ))}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -411,23 +258,16 @@ function SearchInput({ value, onChange, placeholder }) {
   );
 }
 
-function ToggleSwitch({ checked, onChange, disabled = false }) {
+function ToggleSwitch({ checked, onChange }) {
   return (
-    <label className={`inline-flex relative items-center ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
+    <label className="inline-flex relative items-center cursor-pointer">
       <input
         type="checkbox"
         className="sr-only peer"
         checked={checked}
         onChange={onChange}
-        disabled={disabled}
       />
-      <div className={`w-7 h-4 rounded-full transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform ${
-        disabled 
-          ? "bg-gray-300 cursor-not-allowed" 
-          : checked 
-            ? "bg-[#6237A0] peer-checked:after:translate-x-3" 
-            : "bg-gray-200 peer-checked:after:translate-x-3"
-      }`} />
+      <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3" />
     </label>
   );
 }
