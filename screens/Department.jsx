@@ -3,8 +3,6 @@ import TopNavbar from "../components/TopNavbar";
 import Sidebar from "../components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import api from "../src/api";
-import { useUser } from "../context/UserContext";
-import { toast } from "react-toastify";
 import "../src/App.css";
 
 export default function Departments() {
@@ -17,9 +15,9 @@ export default function Departments() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { userData } = useUser();
 
-  const CURRENT_USER_ID = userData?.user_id;
+  // TODO: Replace this with your actual logged-in user ID from context/auth
+  const CURRENT_USER_ID = 1;
 
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
@@ -41,35 +39,13 @@ export default function Departments() {
     } catch (error) {
       console.error("Failed to fetch departments:", error);
       setError("Failed to fetch departments.");
-      toast.error("Failed to load departments. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
     } finally {
       setLoading(false);
     }
   };
   const handleSave = async () => {
     if (!editText.trim()) {
-      toast.error("Department name cannot be empty", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    // Check for duplicate department name
-    const isDuplicate = departments.some(
-      (dept) => 
-        dept.dept_id !== currentEditId && 
-        dept.dept_name.toLowerCase().trim() === editText.toLowerCase().trim()
-    );
-
-    if (isDuplicate) {
-      toast.error("This department already exists", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      alert("Department name cannot be empty");
       return;
     }
 
@@ -80,19 +56,11 @@ export default function Departments() {
           dept_name: editText.trim(),
           dept_updated_by: CURRENT_USER_ID,
         });
-        toast.success("Department updated successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
       } else {
         // Add new department - send dept_created_by
         await api.post("departments", {
           dept_name: editText.trim(),
           dept_created_by: CURRENT_USER_ID,
-        });
-        toast.success("Department added successfully", {
-          position: "top-right",
-          autoClose: 3000,
         });
       }
 
@@ -102,11 +70,7 @@ export default function Departments() {
       fetchDepartments();
     } catch (error) {
       console.error("Failed to save department:", error);
-      const errorMessage = error.response?.data?.error || "Failed to save department";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      alert("Failed to save department");
     }
   };
 
@@ -125,20 +89,9 @@ export default function Departments() {
             : dept
         )
       );
-
-      toast.success(
-        `Department ${!currentStatus ? "activated" : "deactivated"} successfully`,
-        {
-          position: "top-right",
-          autoClose: 2000,
-        }
-      );
     } catch (error) {
       console.error("Failed to toggle status:", error);
-      toast.error("Failed to toggle active status", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      alert("Failed to toggle active status");
     }
   };
 

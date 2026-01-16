@@ -3,8 +3,8 @@ import TopNavbar from "../components/TopNavbar";
 import Sidebar from "../components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import api from "../src/api";
-import { toast } from "react-toastify";
 import "../src/App.css";
+
 export default function MacrosAgents() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -18,8 +18,6 @@ export default function MacrosAgents() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [currentUserId] = useState(1); // authenticated user ID
-
-  
 
   useEffect(() => {
     setLoading(true);
@@ -42,10 +40,6 @@ export default function MacrosAgents() {
       .catch((err) => {
         console.error("Failed to fetch macros:", err);
         setError("Failed to fetch Agent's canned messages.");
-        toast.error("Failed to load macros. Please refresh the page.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
       })
       .finally(() => {
         setLoading(false);
@@ -61,28 +55,7 @@ export default function MacrosAgents() {
   });
 
   const handleSaveMacro = () => {
-    if (!editText.trim()) {
-      toast.error("Message cannot be empty", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
     if (currentEditId !== null) {
-      // Check for duplicate when editing (excluding current macro)
-      const isDuplicate = replies.some(
-        (r) => r.id !== currentEditId && r.text.toLowerCase().trim() === editText.toLowerCase().trim()
-      );
-
-      if (isDuplicate) {
-        toast.error("This macro already exists", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
       const updated = replies.find((r) => r.id === currentEditId);
       if (!updated) return;
 
@@ -100,33 +73,9 @@ export default function MacrosAgents() {
             prev.map((r) => (r.id === currentEditId ? res.data : r))
           );
           setIsModalOpen(false);
-          toast.success("Macro updated successfully", {
-            position: "top-right",
-            autoClose: 3000,
-          });
         })
-        .catch((err) => {
-          console.error("Failed to update macro:", err);
-          const errorMessage = err.response?.data?.error || "Failed to update macro";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+        .catch((err) => console.error("Failed to update macro:", err));
     } else {
-      // Check for duplicate when adding new macro
-      const isDuplicate = replies.some(
-        (r) => r.text.toLowerCase().trim() === editText.toLowerCase().trim()
-      );
-
-      if (isDuplicate) {
-        toast.error("This macro already exists", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
       const newMacro = {
         text: editText,
         active: true,
@@ -139,19 +88,8 @@ export default function MacrosAgents() {
         .then((res) => {
           setReplies((prev) => [...prev, res.data]);
           setIsModalOpen(false);
-          toast.success("Macro added successfully", {
-            position: "top-right",
-            autoClose: 3000,
-          });
         })
-        .catch((err) => {
-          console.error("Failed to add macro:", err);
-          const errorMessage = err.response?.data?.error || "Failed to add macro";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+        .catch((err) => console.error("Failed to add macro:", err));
     }
   };
 
@@ -171,21 +109,8 @@ export default function MacrosAgents() {
         setReplies((prev) =>
           prev.map((r) => (r.id === id ? res.data : r))
         );
-        toast.success(
-          `Macro ${updated.active ? "activated" : "deactivated"} successfully`,
-          {
-            position: "top-right",
-            autoClose: 2000,
-          }
-        );
       })
-      .catch((err) => {
-        console.error("Failed to toggle active:", err);
-        toast.error("Failed to update macro status", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      });
+      .catch((err) => console.error("Failed to toggle active:", err));
   };
 
   const handleChangeDepartment = (id, dept_id) => {
@@ -204,18 +129,8 @@ export default function MacrosAgents() {
         setReplies((prev) =>
           prev.map((r) => (r.id === id ? res.data : r))
         );
-        toast.success("Department updated successfully", {
-          position: "top-right",
-          autoClose: 2000,
-        });
       })
-      .catch((err) => {
-        console.error("Failed to update department:", err);
-        toast.error("Failed to update department", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      });
+      .catch((err) => console.error("Failed to update department:", err));
   };
 
   const toggleDropdown = (name) => {
