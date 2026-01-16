@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../src/components/Sidebar";
 import { FiLogOut } from "react-icons/fi";
 import { Upload } from "react-feather";
 import { useNavigate } from "react-router-dom";

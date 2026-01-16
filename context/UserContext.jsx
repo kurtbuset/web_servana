@@ -15,7 +15,7 @@ export const UserProvider = ({ children }) => {
       const data = await ProfileService.getProfile();
       
       // Validate role data
-      if (!data?.role?.role_name) {
+      if (!data?.role_name) {
         console.warn("User role information is missing or invalid");
       }
       
@@ -71,24 +71,24 @@ export const UserProvider = ({ children }) => {
 
   // Helper function for role checking
   const hasRole = (roleName) => {
-    if (!userData?.role?.role_name) return false;
-    return userData.role.role_name.toLowerCase() === roleName.toLowerCase();
+    if (!userData?.role_name) return false;
+    return userData.role_name.toLowerCase() === roleName.toLowerCase();
   };
 
   // Helper functions for role-based access
   const isAdmin = () => {
-    if (!userData?.role?.role_name) return false;
-    return userData.role.role_name.toLowerCase() === "admin";
+    if (!userData?.role_name) return false;
+    return userData.role_name.toLowerCase() === "admin";
   };
 
   const isAgent = () => {
-    if (!userData?.role?.role_name) return false;
-    return userData.role.role_name.toLowerCase() === "agent";
+    if (!userData?.role_name) return false;
+    return userData.role_name.toLowerCase() === "agent";
   };
 
   const isClient = () => {
-    if (!userData?.role?.role_name) return false;
-    return userData.role.role_name.toLowerCase() === "client";
+    if (!userData?.role_name) return false;
+    return userData.role_name.toLowerCase() === "client";
   };
   
   const hasPermission = (permission) => {
@@ -97,13 +97,13 @@ export const UserProvider = ({ children }) => {
       return true;
     }
     
-    if (!userData?.role?.privilege) return false;
-    return userData.role.privilege[permission] === true;
+    if (!userData?.privilege) return false;
+    return userData.privilege[permission] === true;
   };
 
   const getRoleName = () => {
-    if (!userData?.role) return "Unknown";
-    return userData.role.role_name || "Unknown";
+    if (!userData) return "Unknown";
+    return userData.role_name || "Unknown";
   };
 
   // Get user ID

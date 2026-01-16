@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Edit3, Search, X } from "react-feather";
 import TopNavbar from "../../../components/TopNavbar";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../src/components/Sidebar";
 import { useUser } from "../../../context/UserContext";
 import { useRoles } from "../../hooks/useRoles";
 import "../../App.css";

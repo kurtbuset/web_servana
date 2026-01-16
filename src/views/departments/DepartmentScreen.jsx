@@ -1,6 +1,6 @@
 import { useState } from "react";
 import TopNavbar from "../../../components/TopNavbar";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../src/components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import { useDepartments } from "../../hooks/useDepartments";
 import "../../../src/App.css";

@@ -165,23 +165,23 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
 
   // Fetch initial chat counts and set up WebSocket listeners
   useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        // TODO: Replace with actual API endpoint
-        const res = await api.get("/chat/counts");
-        setCounts({
-          pendingChats: res.data.pendingChats || 0,
-          activeChats: res.data.activeChats || 0
-        });
-      } catch (error) {
-        console.error("Failed to fetch chat counts:", error);
-        // Fallback to simulated data for development
-        setCounts({
-          pendingChats: 8,
-          activeChats: 23
-        });
-      }
-    };
+    // const fetchCounts = async () => {
+    //   try {
+    //     // TODO: Replace with actual API endpoint
+    //     const res = await api.get("/chat/counts");
+    //     setCounts({
+    //       pendingChats: res.data.pendingChats || 0,
+    //       activeChats: res.data.activeChats || 0
+    //     });
+    //   } catch (error) {
+    //     console.error("Failed to fetch chat counts:", error);
+    //     // Fallback to simulated data for development
+    //     setCounts({
+    //       pendingChats: 8,
+    //       activeChats: 23
+    //     });
+    //   }
+    // };
 
     if (userData) {
       // Connect socket if not already connected
@@ -190,7 +190,7 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
       }
 
       // Fetch initial counts
-      fetchCounts();
+      // fetchCounts();
 
       // Listen for real-time count updates
       socket.on("chatCountsUpdate", (data) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../src/api";
 import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../src/components/Sidebar";
 import { Edit3, Search, X, Eye, EyeOff } from "react-feather";
 import "../src/App.css";
 

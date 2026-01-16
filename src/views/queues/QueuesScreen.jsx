@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Filter, Send, Menu, MoreVertical } from "react-feather";
 import Select from "react-select";
 import TopNavbar from "../../../components/TopNavbar";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../src/components/Sidebar";
 import { useQueues } from "../../hooks/useQueues";
 import "../../App.css";
 

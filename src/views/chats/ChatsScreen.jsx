@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Filter, Send, Menu, MoreVertical } from "react-feather";
 import TopNavbar from "../../../components/TopNavbar";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../src/components/Sidebar";
 import { useChat } from "../../hooks/useChat";
 
 /**

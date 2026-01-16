@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import TopNavbar from "../../../components/TopNavbar";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../src/components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
 import { useUser } from "../../../context/UserContext";
