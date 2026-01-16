@@ -1,160 +1,69 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Filter, Send, Menu, MoreVertical } from "react-feather";
-import Select from "react-select";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
-import api from "../src/api";
-import socket from "../src/socket";
+import TopNavbar from "../../../components/TopNavbar";
+import Sidebar from "../../../components/Sidebar";
+import { useChat } from "../../hooks/useChat";
 
-export default function Chats() {
+/**
+ * ChatsScreen - Refactored chat interface
+ * 
+ * Uses the new useChat hook for business logic and Socket.IO integration
+ * while maintaining the exact same UI/UX as the original Chats screen.
+ * 
+ * Features:
+ * - Real-time messaging via Socket.IO
+ * - Department filtering
+ * - Canned messages
+ * - Message pagination (load more)
+ * - End chat functionality
+ * - Transfer department (UI only)
+ * - Mobile responsive with chat list/conversation views
+ */
+export default function ChatsScreen() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [view, setView] = useState("chatList");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
-  const [chatEnded, setChatEnded] = useState(false);
-  const dropdownRef = useRef(null);
-  const bottomRef = useRef(null);
-  const textareaRef = useRef(null);
-  const [showCannedMessages, setShowCannedMessages] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [endedChats, setEndedChats] = useState([]);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState("All");
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [transferDepartment, setTransferDepartment] = useState(null);
-  const [departments, setDepartments] = useState([]);
-  const [departmentCustomers, setDepartmentCustomers] = useState({});
-  const [messageOffset, setMessageOffset] = useState(0);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  const [earliestMessageTime, setEarliestMessageTime] = useState(null);
-  
 
-  useEffect(() => {
-    socket.connect();
-    console.log("Socket connected");
+  // Get chat state and actions from hook
+  const {
+    departments,
+    selectedDepartment,
+    setSelectedDepartment,
+    filteredCustomers,
+    selectedCustomer,
+    messages,
+    inputMessage,
+    setInputMessage,
+    cannedMessages,
+    showCannedMessages,
+    setShowCannedMessages,
+    earliestMessageTime,
+    hasMoreMessages,
+    loadMessages,
+    chatEnded,
+    endedChats,
+    selectCustomer,
+    sendMessage,
+    endChat,
+    bottomRef,
+    textareaRef,
+  } = useChat();
 
-    return () => {
-      socket.disconnect();
-      console.log("Socket disconnected");
-    };
-  }, []);
+  const toggleSidebar = () => {
+    setMobileSidebarOpen((prev) => !prev);
+  };
 
-  useEffect(() => {
-    const fetchChatGroups = async () => {
-      try {
-        const response = await api.get("/chat/chatgroups");
-        const chatGroups = Array.isArray(response.data) ? response.data : [];
-        const deptMap = {};
-
-        chatGroups.forEach((group) => {
-          const dept = group.department;
-          if (!deptMap[dept]) deptMap[dept] = [];
-          const customerWithDept = { ...group.customer, department: dept }; // ✅ attach department
-          deptMap[dept].push(customerWithDept);
-        });
-
-        setDepartmentCustomers(deptMap);
-        const departmentList = ["All", ...Object.keys(deptMap)];
-        setDepartments(departmentList);
-        setSelectedDepartment((prev) => prev || "All");
-      } catch (err) {
-        console.error("Failed to load chat groups:", err);
-      }
-    };
-
-    fetchChatGroups(); // Initial load
-
-    socket.on("updateChatGroups", () => {
-      console.log(" Received updateChatGroups from server");
-      fetchChatGroups();
-    });
-
-    return () => {
-      socket.off("updateChatGroups", fetchChatGroups);
-    };
-  }, []);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = async () => {
-      if (container.scrollTop === 0 && hasMoreMessages && selectedCustomer) {
-        const prevHeight = container.scrollHeight;
-
-        await loadMessages(selectedCustomer.id, earliestMessageTime, true);
-
-        // Maintain scroll position
-        setTimeout(() => {
-          container.scrollTop = container.scrollHeight - prevHeight;
-        }, 50);
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer]);
-
-  useEffect(() => {
-    if (!selectedCustomer) return;
-
-    socket.emit("joinChatGroup", selectedCustomer.chat_group_id);
-
-    const handleReceiveMessage = (msg) => {
-      setMessages((prev) => {
-        const exists = prev.some((m) => m.id === msg.chat_id); // ✅ Deduplicate
-        if (exists) return prev;
-
-        return [
-          ...prev,
-          {
-            id: msg.chat_id,
-            sender: msg.sys_user_id ? "user" : "system",
-            content: msg.chat_body,
-            timestamp: msg.chat_created_at,
-            displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ];
-      });
-    };
-
-    socket.on("receiveMessage", handleReceiveMessage);
-
-    return () => {
-      socket.off("receiveMessage", handleReceiveMessage); // ✅ Clean up correctly
-    };
-  }, [selectedCustomer]);
-
-  const departmentOptions = departments.map((dept) => ({
-    value: dept,
-    label: dept,
-  }));
-
-  const [cannedMessages, setCannedMessages] = useState([]);
-
-  useEffect(() => {
-    const fetchCannedMessages = async () => {
-      try {
-        const res = await api.get("/chat/canned-messages");
-        if (Array.isArray(res.data)) {
-          setCannedMessages(res.data.map((msg) => msg.canned_message));
-        }
-      } catch (err) {
-        console.error("Failed to load canned messages:", err);
-      }
-    };
-
-    fetchCannedMessages();
-  }, []);
-
+  const toggleDropdown = (name) => {
+    setOpenDropdown((prev) => (prev === name ? null : name));
+  };
 
   const handleTransferClick = () => {
     setOpenDropdown(null);
@@ -184,10 +93,6 @@ export default function Chats() {
     setShowTransferConfirmModal(false);
   };
 
-  const toggleDropdown = (name) => {
-    setOpenDropdown((prev) => (prev === name ? null : name));
-  };
-
   const handleEndChat = () => {
     setOpenDropdown(null);
     setShowEndChatModal(true);
@@ -195,38 +100,10 @@ export default function Chats() {
 
   const confirmEndChat = () => {
     setShowEndChatModal(false);
-    setChatEnded(true);
-
-    const now = new Date();
-    const endMessage = {
-      id: messages.length + 1,
-      sender: "system",
-      content: "Thank you for your patience. Your chat has ended.",
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((prev) => [...prev, endMessage]);
-
-    if (selectedCustomer) {
-      setEndedChats((prev) => [
-        ...prev,
-        {
-          ...selectedCustomer,
-          messages: [...messages, endMessage],
-          endedAt: now.toISOString(),
-        },
-      ]);
-
-      setSelectedCustomer(null);
-      setMessages([]);
-
-      // navigate back to chat list in mobile view
-      if (isMobile) setView("chatList");
-    }
+    endChat();
+    
+    // Navigate back to chat list in mobile view
+    if (isMobile) setView("chatList");
   };
 
   const cancelEndChat = () => {
@@ -257,42 +134,14 @@ export default function Chats() {
 
   const handleInputChange = (e) => {
     setInputMessage(e.target.value);
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-  };
-
-  const sendMessage = () => {
-    const trimmedMessage = inputMessage.replace(/\n+$/, "");
-    if (trimmedMessage.trim() === "") return;
-
-    const now = new Date();
-    const newMessage = {
-      sender: "user",
-      content: trimmedMessage,
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-    setInputMessage("");
-
-    // Emit via socket
-    if (selectedCustomer) {
-      console.log("Sending to group:", selectedCustomer.chat_group_id);
-      socket.emit("sendMessage", {
-        chat_body: trimmedMessage,
-        chat_group_id: selectedCustomer.chat_group_id,
-        sys_user_id: 1,
-        client_id: null,
-      });
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   };
 
-  const toggleSidebar = () => {
-    setMobileSidebarOpen((prev) => !prev);
+  const handleSendMessage = () => {
+    sendMessage();
   };
 
   useEffect(() => {
@@ -315,18 +164,7 @@ export default function Chats() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [messages]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [inputMessage]);
+  }, [setShowCannedMessages]);
 
   const groupMessagesByDate = () => {
     const groupedMessages = [];
@@ -366,75 +204,40 @@ export default function Chats() {
   }, []);
 
   const handleChatClick = async (customer) => {
-    setSelectedCustomer(customer);
-    setChatEnded(endedChats.some((chat) => chat.id === customer.id));
-    setMessages([]);
-    setEarliestMessageTime(null);
-    setHasMoreMessages(true);
-
+    await selectCustomer(customer);
     if (isMobile) setView("conversation");
-
-    await loadMessages(customer.id); // initial 10
-  };
-
-  const loadMessages = async (clientId, before = null, append = false) => {
-    try {
-      const response = await api.get(`chat/${clientId}`, {
-        params: {
-          before,
-          limit: 10,
-        },
-      });
-
-      const newMessages = response.data.messages.map((msg, index) => ({
-        id: msg.chat_id || index,
-        sender: msg.sys_user_id ? "user" : "system",
-        content: msg.chat_body,
-        timestamp: msg.chat_created_at,
-        displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      }));
-
-      setMessages((prev) => {
-        const combined = append ? [...newMessages, ...prev] : [...newMessages];
-
-        // ✅ Deduplicate based on message ID
-        const uniqueMessages = [];
-        const seenIds = new Set();
-
-        for (const m of combined) {
-          if (!seenIds.has(m.id)) {
-            seenIds.add(m.id);
-            uniqueMessages.push(m);
-          }
-        }
-
-        return uniqueMessages;
-      });
-
-      if (newMessages.length > 0) {
-        setEarliestMessageTime(newMessages[0].timestamp);
-      }
-      if (newMessages.length < 10) {
-        setHasMoreMessages(false); // no more to load
-      }
-    } catch (err) {
-      console.error("Error loading messages:", err);
-    }
   };
 
   const handleBackClick = () => {
     setView("chatList");
-    setSelectedCustomer(null);
   };
 
-  const allCustomers = Object.values(departmentCustomers).flat();
-  const filteredCustomers =
-    selectedDepartment === "All"
-      ? allCustomers
-      : departmentCustomers[selectedDepartment] || [];
+  // Handle scroll for pagination
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = async () => {
+      if (container.scrollTop === 0 && hasMoreMessages && selectedCustomer) {
+        const prevHeight = container.scrollHeight;
+
+        await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+
+        // Maintain scroll position
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight - prevHeight;
+        }, 50);
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages]);
+
+  const departmentOptions = departments.map((dept) => ({
+    value: dept,
+    label: dept,
+  }));
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -468,6 +271,7 @@ export default function Chats() {
         </div>
       )}
 
+      {/* Transfer Modal */}
       {showTransferModal && (
         <div className="fixed inset-0 bg-gray-400/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-200">
@@ -481,41 +285,18 @@ export default function Chats() {
               >
                 Select Department
               </label>
-              <Select
-                options={departmentOptions}
-                onChange={(selected) => {
-                  setTransferDepartment(selected?.value || null);
-                  console.log("Selected Department:", selected?.value);
-                }}
-                value={
-                  departmentOptions.find(
-                    (option) => option.value === transferDepartment
-                  ) || null
-                }
-                classNamePrefix="select"
-                placeholder="Select a department"
-                styles={{
-                  option: (provided, state) => ({
-                    ...provided,
-                    backgroundColor: state.isSelected
-                      ? "#6237A0"
-                      : state.isFocused
-                        ? "#E6DCF7"
-                        : "white",
-                    color: state.isSelected ? "white" : "#000000",
-                  }),
-                  control: (provided) => ({
-                    ...provided,
-                    borderColor: "#D1D5DB",
-                    minHeight: "42px",
-                    boxShadow: "none",
-                  }),
-                  singleValue: (provided) => ({
-                    ...provided,
-                    color: "#000000",
-                  }),
-                }}
-              />
+              <select
+                value={transferDepartment || ''}
+                onChange={(e) => setTransferDepartment(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6237A0]"
+              >
+                <option value="">Select a department</option>
+                {departmentOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex justify-center gap-20">
               <button
@@ -528,25 +309,17 @@ export default function Chats() {
                 Cancel
               </button>
               <button
-                onClick={(e) => {
-                  if (
-                    !transferDepartment ||
-                    transferDepartment === selectedDepartment
-                  ) {
-                    e.preventDefault();
-                    return;
-                  }
-                  handleDepartmentSelect();
-                }}
+                onClick={handleDepartmentSelect}
                 disabled={
                   !transferDepartment ||
                   transferDepartment === selectedDepartment
                 }
-                className={`px-5 py-2 text-white rounded-lg transition-colors ${transferDepartment &&
+                className={`px-5 py-2 text-white rounded-lg transition-colors ${
+                  transferDepartment &&
                   transferDepartment !== selectedDepartment
-                  ? "bg-[#6237A0] hover:bg-[#4c2b7d]"
-                  : "bg-[#6237A0]/50 cursor-not-allowed"
-                  }`}
+                    ? "bg-[#6237A0] hover:bg-[#4c2b7d]"
+                    : "bg-[#6237A0]/50 cursor-not-allowed"
+                }`}
               >
                 Select
               </button>
@@ -555,6 +328,7 @@ export default function Chats() {
         </div>
       )}
 
+      {/* Transfer Confirm Modal */}
       {showTransferConfirmModal && (
         <div className="fixed inset-0 bg-gray-400/50 bg-opacity-10 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-200">
@@ -600,10 +374,11 @@ export default function Chats() {
 
         <main className="flex-1 bg-white">
           <div className="flex flex-col md:flex-row h-full">
-            {/* Queues list */}
+            {/* Chat list */}
             <div
-              className={`${view === "chatList" ? "block" : "hidden md:block"
-                } w-full md:w-[320px] bg-[#F5F5F5] overflow-y-auto`}
+              className={`${
+                view === "chatList" ? "block" : "hidden md:block"
+              } w-full md:w-[320px] bg-[#F5F5F5] overflow-y-auto`}
             >
               <div className="relative p-4 flex text-center justify-between rounded-xl py-2 px-4 items-center m-4 shadow-sm bg-[#E6DCF7]">
                 <button
@@ -623,14 +398,14 @@ export default function Chats() {
                     {departments.map((dept) => (
                       <div
                         key={dept}
-                        className={`px-4 py-2 cursor-pointer hover:bg-[#E6DCF7] ${dept === selectedDepartment
-                          ? "font-bold text-[#6237A0]"
-                          : ""
-                          }`}
+                        className={`px-4 py-2 cursor-pointer hover:bg-[#E6DCF7] ${
+                          dept === selectedDepartment
+                            ? "font-bold text-[#6237A0]"
+                            : ""
+                        }`}
                         onClick={() => {
                           setSelectedDepartment(dept);
                           setShowDeptDropdown(false);
-                          setSelectedCustomer(null);
                         }}
                       >
                         {dept}
@@ -640,18 +415,19 @@ export default function Chats() {
                 )}
               </div>
 
-              {/* Chat list */}
+              {/* Customer list */}
               <div className="chat-list overflow-auto">
                 {filteredCustomers.map((customer) => (
                   <div
                     key={customer.id}
                     onClick={() => handleChatClick(customer)}
-                    className={`flex items-center justify-between px-4 py-3 border-2 ${selectedCustomer?.id === customer.id
-                      ? "bg-[#E6DCF7]"
-                      : endedChats.some((chat) => chat.id === customer.id)
+                    className={`flex items-center justify-between px-4 py-3 border-2 ${
+                      selectedCustomer?.id === customer.id
+                        ? "bg-[#E6DCF7]"
+                        : endedChats.some((chat) => chat.id === customer.id)
                         ? "bg-gray-100 opacity-70"
                         : "bg-[#f5f5f5]"
-                      } border-[#E6DCF7] rounded-xl hover:bg-[#E6DCF7] cursor-pointer transition m-2 min-h-[100px]`}
+                    } border-[#E6DCF7] rounded-xl hover:bg-[#E6DCF7] cursor-pointer transition m-2 min-h-[100px]`}
                   >
                     <div className="flex items-center gap-2 flex-1">
                       <img
@@ -670,27 +446,29 @@ export default function Chats() {
                           </span>
                         </div>
                         <p
-                          className={`text-sm font-medium truncate ${selectedCustomer?.id === customer.id
-                            ? "text-[#6237A0]"
-                            : endedChats.some(
-                              (chat) => chat.id === customer.id
-                            )
+                          className={`text-sm font-medium truncate ${
+                            selectedCustomer?.id === customer.id
+                              ? "text-[#6237A0]"
+                              : endedChats.some(
+                                  (chat) => chat.id === customer.id
+                                )
                               ? "text-gray-500"
                               : "text-gray-800"
-                            }`}
+                          }`}
                         >
                           {customer.name}
                         </p>
                         <div className="flex justify-between items-center">
                           <p
-                            className={`text-xs truncate ${selectedCustomer?.id === customer.id
-                              ? "text-[#6237A0]"
-                              : endedChats.some(
-                                (chat) => chat.id === customer.id
-                              )
+                            className={`text-xs truncate ${
+                              selectedCustomer?.id === customer.id
+                                ? "text-[#6237A0]"
+                                : endedChats.some(
+                                    (chat) => chat.id === customer.id
+                                  )
                                 ? "text-gray-400"
                                 : "text-gray-500"
-                              }`}
+                            }`}
                           >
                             {customer.number}
                           </p>
@@ -707,8 +485,9 @@ export default function Chats() {
 
             {/* Chat area */}
             <div
-              className={`${view === "conversation" ? "block" : "hidden md:flex"
-                } flex-1 flex flex-col`}
+              className={`${
+                view === "conversation" ? "block" : "hidden md:flex"
+              } flex-1 flex flex-col`}
             >
               {selectedCustomer ? (
                 <>
@@ -793,9 +572,6 @@ export default function Chats() {
                     }}
                   >
                     <div className="flex flex-col justify-end min-h-full gap-4 pt-4">
-                      <></>
-
-                      {/* Existing messages */}
                       {groupedMessages.map((item, index) => {
                         if (item.type === "date") {
                           return (
@@ -812,17 +588,18 @@ export default function Chats() {
                           return (
                             <div
                               key={`msg-${index}`}
-                              className={`flex items-end gap-2 ${item.sender === "user"
-                                ? "justify-end"
-                                : "justify-start"
-                                }`}
+                              className={`flex items-end gap-2 ${
+                                item.sender === "user"
+                                  ? "justify-end"
+                                  : "justify-start"
+                              }`}
                             >
                               {item.sender !== "user" && (
                                 <img
                                   src={
                                     item.sender === "system"
                                       ? selectedCustomer.profile ||
-                                      "profile_picture/DefaultProfile.jpg"
+                                        "profile_picture/DefaultProfile.jpg"
                                       : "profile_picture/DefaultProfile.jpg"
                                   }
                                   alt={
@@ -834,19 +611,21 @@ export default function Chats() {
                                 />
                               )}
                               <div
-                                className={`${item.sender === "user"
-                                  ? "bg-[#f5f5f5] text-gray-800"
-                                  : item.sender === "system"
+                                className={`${
+                                  item.sender === "user"
+                                    ? "bg-[#f5f5f5] text-gray-800"
+                                    : item.sender === "system"
                                     ? "bg-[#6237A0] text-white"
                                     : "bg-[#f5f5f5] text-gray-800"
-                                  } px-4 py-2 rounded-xl max-w-[320px] text-sm break-words whitespace-pre-wrap`}
+                                } px-4 py-2 rounded-xl max-w-[320px] text-sm break-words whitespace-pre-wrap`}
                               >
                                 {item.content}
                                 <div
-                                  className={`text-[10px] text-right mt-1 ${item.sender === "system"
-                                    ? "text-gray-300"
-                                    : "text-gray-400"
-                                    }`}
+                                  className={`text-[10px] text-right mt-1 ${
+                                    item.sender === "system"
+                                      ? "text-gray-300"
+                                      : "text-gray-400"
+                                  }`}
                                 >
                                   {item.displayTime}
                                 </div>
@@ -888,7 +667,7 @@ export default function Chats() {
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
-                              sendMessage();
+                              handleSendMessage();
                             }
                           }}
                           className="flex-1 bg-[#F2F0F0] rounded-xl px-4 py-2 leading-tight focus:outline-none text-gray-800 resize-none overflow-y-auto"
@@ -896,7 +675,7 @@ export default function Chats() {
                         />
                         <button
                           className="p-2 text-[#5C2E90] hover:bg-gray-100 rounded-full"
-                          onClick={sendMessage}
+                          onClick={handleSendMessage}
                         >
                           <Send size={20} className="transform rotate-45" />
                         </button>
@@ -924,10 +703,11 @@ export default function Chats() {
                     <div className="mt-4 flex items-center gap-2 border-t border-gray-200 pt-4 px-4">
                       <button
                         className={`p-2 mb-4 text-[#5C2E90] hover:bg-gray-100 rounded-full
-                           ${chatEnded
-                            ? "text-gray-400 cursor-not-allowed"
-                            : "text-[#5C2E90] hover:bg-gray-100"
-                          }`}
+                           ${
+                             chatEnded
+                               ? "text-gray-400 cursor-not-allowed"
+                               : "text-[#5C2E90] hover:bg-gray-100"
+                           }`}
                         onClick={() => setShowCannedMessages(true)}
                         disabled={chatEnded}
                       >
@@ -942,24 +722,26 @@ export default function Chats() {
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            sendMessage();
+                            handleSendMessage();
                           }
                         }}
                         className={`flex-1 bg-[#F2F0F0] rounded-xl px-4 py-2 mb-4 leading-tight focus:outline-none text-gray-800 resize-none overflow-y-auto
-                        ${chatEnded
+                        ${
+                          chatEnded
                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                             : "bg-[#F2F0F0] text-gray-800"
-                          }`}
+                        }`}
                         style={{ maxHeight: "100px" }}
                         disabled={chatEnded}
                       />
                       <button
                         className={`p-2 mb-4 text-[#5C2E90] hover:bg-gray-100 rounded-full
-                          ${chatEnded
-                            ? "text-gray-400 cursor-not-allowed"
-                            : "text-[#5C2E90] hover:bg-gray-100"
+                          ${
+                            chatEnded
+                              ? "text-gray-400 cursor-not-allowed"
+                              : "text-[#5C2E90] hover:bg-gray-100"
                           }`}
-                        onClick={sendMessage}
+                        onClick={handleSendMessage}
                         disabled={chatEnded}
                       >
                         <Send size={20} className="transform rotate-45" />

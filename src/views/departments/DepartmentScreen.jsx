@@ -1,25 +1,42 @@
-import React, { useEffect, useState } from "react";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
+import { useState } from "react";
+import TopNavbar from "../../../components/TopNavbar";
+import Sidebar from "../../../components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
-import api from "../src/api";
-import { useUser } from "../context/UserContext";
-import { toast } from "react-toastify";
-import "../src/App.css";
+import { useDepartments } from "../../hooks/useDepartments";
+import "../../../src/App.css";
 
-export default function Departments() {
+/**
+ * DepartmentScreen - Refactored department management interface
+ * 
+ * Uses the new useDepartments hook for business logic while maintaining
+ * the exact same UI/UX as the original Department screen.
+ * 
+ * Features:
+ * - View all departments
+ * - Search departments
+ * - Add new department
+ * - Edit department name
+ * - Toggle department active status
+ * - Duplicate detection
+ * - Responsive design
+ */
+export default function DepartmentScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEditId, setCurrentEditId] = useState(null);
   const [editText, setEditText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const { userData } = useUser();
 
-  const CURRENT_USER_ID = userData?.user_id;
+  // Get department state and actions from hook
+  const {
+    departments,
+    loading,
+    error,
+    createDepartment,
+    updateDepartment,
+    toggleDepartment,
+  } = useDepartments();
 
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
@@ -27,118 +44,29 @@ export default function Departments() {
     dept.dept_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Fetch departments on mount
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await api.get("/departments");
-      setDepartments(res.data);
-    } catch (error) {
-      console.error("Failed to fetch departments:", error);
-      setError("Failed to fetch departments.");
-      toast.error("Failed to load departments. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
   const handleSave = async () => {
-    if (!editText.trim()) {
-      toast.error("Department name cannot be empty", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    // Check for duplicate department name
-    const isDuplicate = departments.some(
-      (dept) => 
-        dept.dept_id !== currentEditId && 
-        dept.dept_name.toLowerCase().trim() === editText.toLowerCase().trim()
-    );
-
-    if (isDuplicate) {
-      toast.error("This department already exists", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
     try {
       if (currentEditId) {
-        // Update existing department - send dept_updated_by
-        await api.put(`departments/${currentEditId}`, {
-          dept_name: editText.trim(),
-          dept_updated_by: CURRENT_USER_ID,
-        });
-        toast.success("Department updated successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        await updateDepartment(currentEditId, editText);
       } else {
-        // Add new department - send dept_created_by
-        await api.post("departments", {
-          dept_name: editText.trim(),
-          dept_created_by: CURRENT_USER_ID,
-        });
-        toast.success("Department added successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        await createDepartment(editText);
       }
 
       setIsModalOpen(false);
       setEditText("");
       setCurrentEditId(null);
-      fetchDepartments();
     } catch (error) {
+      // Error already handled by hook with toast
       console.error("Failed to save department:", error);
-      const errorMessage = error.response?.data?.error || "Failed to save department";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
     }
   };
 
-  const toggleActive = async (dept_id, currentStatus) => {
+  const handleToggle = async (deptId, currentStatus) => {
     try {
-      await api.put(`departments/${dept_id}/toggle`, {
-        dept_is_active: !currentStatus,
-        dept_updated_by: CURRENT_USER_ID,
-      });
-
-      // Optimistically update the local state
-      setDepartments((prevDepartments) =>
-        prevDepartments.map((dept) =>
-          dept.dept_id === dept_id
-            ? { ...dept, dept_is_active: !currentStatus }
-            : dept
-        )
-      );
-
-      toast.success(
-        `Department ${!currentStatus ? "activated" : "deactivated"} successfully`,
-        {
-          position: "top-right",
-          autoClose: 2000,
-        }
-      );
+      await toggleDepartment(deptId, currentStatus);
     } catch (error) {
+      // Error already handled by hook with toast
       console.error("Failed to toggle status:", error);
-      toast.error("Failed to toggle active status", {
-        position: "top-right",
-        autoClose: 3000,
-      });
     }
   };
 
@@ -235,7 +163,7 @@ export default function Departments() {
                             className="sr-only peer"
                             checked={dept.dept_is_active}
                             onChange={() =>
-                              toggleActive(dept.dept_id, dept.dept_is_active)
+                              handleToggle(dept.dept_id, dept.dept_is_active)
                             }
                           />
                           <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3" />
@@ -257,7 +185,6 @@ export default function Departments() {
                   {error}
                 </p>
               )}
-              
             </div>
           </div>
 

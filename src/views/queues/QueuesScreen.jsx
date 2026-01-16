@@ -1,161 +1,57 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Filter, Send, Menu, MoreVertical } from "react-feather";
 import Select from "react-select";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
-import api from "../src/api";
-import socket from "../src/socket";
+import TopNavbar from "../../../components/TopNavbar";
+import Sidebar from "../../../components/Sidebar";
+import { useQueues } from "../../hooks/useQueues";
+import "../../App.css";
 
-export default function Queues() {
+export default function QueuesScreen() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [view, setView] = useState("chatList");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
-  const [chatEnded, setChatEnded] = useState(false);
+  const [showCannedMessages, setShowCannedMessages] = useState(false);
+  const [inputMessage, setInputMessage] = useState("");
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
+  const [transferDepartment, setTransferDepartment] = useState(null);
+
   const dropdownRef = useRef(null);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
-  const [showCannedMessages, setShowCannedMessages] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [endedChats, setEndedChats] = useState([]);
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [showTransferConfirmModal, setShowTransferConfirmModal] =
-    useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState("All");
-  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
-  const [transferDepartment, setTransferDepartment] = useState(null);
-  const [departments, setDepartments] = useState([]);
-  const [departmentCustomers, setDepartmentCustomers] = useState({});
-  const [messageOffset, setMessageOffset] = useState(0);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const scrollContainerRef = useRef(null);
-  const [earliestMessageTime, setEarliestMessageTime] = useState(null);
 
-  useEffect(() => {
-    socket.connect();
-    console.log("Socket connected");
-
-    return () => {
-      socket.disconnect();
-      console.log("Socket disconnected");
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchChatGroups = async () => {
-      try {
-        const response = await api.get("/queues/chatgroups");
-        // console.log('response: ', response)
-        const chatGroups = response.data;
-        // console.log('chatGroups: ', response)
-        const deptMap = {};
-
-        chatGroups.forEach((group) => {
-          const dept = group.department;
-          if (!deptMap[dept]) deptMap[dept] = [];
-          const customerWithDept = { ...group.customer, department: dept }; // ✅ attach department
-          deptMap[dept].push(customerWithDept);
-        });
-
-        setDepartmentCustomers(deptMap);
-        const departmentList = ["All", ...Object.keys(deptMap)];
-        setDepartments(departmentList);
-        setSelectedDepartment((prev) => prev || "All");
-      } catch (err) {
-        console.error("Failed to load chat groups:", err);
-      }
-    };
-
-    fetchChatGroups(); // Initial load
-
-    socket.on("updateChatGroups", () => {
-      console.log(" Received updateChatGroups from server");
-      fetchChatGroups();
-    });
-
-    return () => {
-      socket.off("updateChatGroups", fetchChatGroups);
-    };
-  }, []);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = async () => {
-      if (container.scrollTop === 0 && hasMoreMessages && selectedCustomer) {
-        const prevHeight = container.scrollHeight;
-
-        await loadMessages(selectedCustomer.id, earliestMessageTime, true);
-
-        // Maintain scroll position
-        setTimeout(() => {
-          container.scrollTop = container.scrollHeight - prevHeight;
-        }, 50);
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer]);
-
-  useEffect(() => {
-    if (!selectedCustomer) return;
-
-    socket.emit("joinChatGroup", selectedCustomer.chat_group_id);
-
-    const handleReceiveMessage = (msg) => {
-      setMessages((prev) => {
-        const exists = prev.some((m) => m.id === msg.chat_id); // ✅ Deduplicate
-        if (exists) return prev;
-
-        return [
-          ...prev,
-          {
-            id: msg.chat_id,
-            sender: msg.sys_user_id ? "user" : "system",
-            content: msg.chat_body,
-            timestamp: msg.chat_created_at,
-            displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ];
-      });
-    };
-
-    socket.on("receiveMessage", handleReceiveMessage);
-
-    return () => {
-      socket.off("receiveMessage", handleReceiveMessage); // ✅ Clean up correctly
-    };
-  }, [selectedCustomer]);
+  const {
+    departments,
+    selectedDepartment,
+    setSelectedDepartment,
+    selectedCustomer,
+    messages,
+    cannedMessages,
+    earliestMessageTime,
+    hasMoreMessages,
+    chatEnded,
+    filteredCustomers,
+    selectCustomer,
+    acceptChat,
+    sendMessage: sendMessageAction,
+    endChat,
+    loadMessages,
+  } = useQueues();
 
   const departmentOptions = departments.map((dept) => ({
     value: dept,
     label: dept,
   }));
 
-  const [cannedMessages, setCannedMessages] = useState([]);
+  const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
-  useEffect(() => {
-    const fetchCannedMessages = async () => {
-      try {
-        const res = await api.get("/chat/canned-messages");
-        if (Array.isArray(res.data)) {
-          setCannedMessages(res.data.map((msg) => msg.canned_message));
-        }
-      } catch (err) {
-        console.error("Failed to load canned messages:", err);
-      }
-    };
-
-    fetchCannedMessages();
-  }, []);
+  const toggleDropdown = (name) => {
+    setOpenDropdown((prev) => (prev === name ? null : name));
+  };
 
   const handleTransferClick = () => {
     setOpenDropdown(null);
@@ -185,10 +81,6 @@ export default function Queues() {
     setShowTransferConfirmModal(false);
   };
 
-  const toggleDropdown = (name) => {
-    setOpenDropdown((prev) => (prev === name ? null : name));
-  };
-
   const handleEndChat = () => {
     setOpenDropdown(null);
     setShowEndChatModal(true);
@@ -196,43 +88,108 @@ export default function Queues() {
 
   const confirmEndChat = () => {
     setShowEndChatModal(false);
-    setChatEnded(true);
-
-    const now = new Date();
-    const endMessage = {
-      id: messages.length + 1,
-      sender: "system",
-      content: "Thank you for your patience. Your chat has ended.",
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((prev) => [...prev, endMessage]);
-
-    if (selectedCustomer) {
-      setEndedChats((prev) => [
-        ...prev,
-        {
-          ...selectedCustomer,
-          messages: [...messages, endMessage],
-          endedAt: now.toISOString(),
-        },
-      ]);
-
-      setSelectedCustomer(null);
-      setMessages([]);
-
-      // navigate back to chat list in mobile view
-      if (isMobile) setView("chatList");
-    }
+    endChat();
+    if (isMobile) setView("chatList");
   };
 
   const cancelEndChat = () => {
     setShowEndChatModal(false);
   };
+
+  const handleInputChange = (e) => {
+    setInputMessage(e.target.value);
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+  };
+
+  const sendMessage = () => {
+    const trimmedMessage = inputMessage.replace(/\n+$/, "");
+    if (trimmedMessage.trim() === "") return;
+
+    sendMessageAction(trimmedMessage);
+    setInputMessage("");
+  };
+
+  const handleChatClick = async (customer) => {
+    await selectCustomer(customer);
+    if (isMobile) setView("conversation");
+  };
+
+  const handleAcceptChat = async () => {
+    const success = await acceptChat();
+    if (success) {
+      alert("Chat accepted! You can now communicate with the client.");
+    } else {
+      alert("Failed to accept chat. Please try again.");
+    }
+  };
+
+  const handleBackClick = () => {
+    setView("chatList");
+  };
+
+  // Handle scroll for loading more messages
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = async () => {
+      if (container.scrollTop === 0 && hasMoreMessages && selectedCustomer) {
+        const prevHeight = container.scrollHeight;
+        await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight - prevHeight;
+        }, 50);
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle click outside canned messages
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!e.target.closest(".canned-dropdown")) {
+        setShowCannedMessages(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [messages]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [inputMessage]);
 
   const formatMessageDate = (timestamp) => {
     const messageDate = new Date(timestamp);
@@ -255,79 +212,6 @@ export default function Queues() {
       });
     }
   };
-
-  const handleInputChange = (e) => {
-    setInputMessage(e.target.value);
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-  };
-
-  const sendMessage = () => {
-    const trimmedMessage = inputMessage.replace(/\n+$/, "");
-    if (trimmedMessage.trim() === "") return;
-
-    const now = new Date();
-    const newMessage = {
-      sender: "user",
-      content: trimmedMessage,
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-    setInputMessage("");
-
-    // Emit via socket
-    if (selectedCustomer) {
-      console.log("Sending to group:", selectedCustomer.chat_group_id);
-      socket.emit("sendMessage", {
-        chat_body: trimmedMessage,
-        chat_group_id: selectedCustomer.chat_group_id,
-        sys_user_id: 1,
-        client_id: null,
-      });
-    }
-  };
-
-  const toggleSidebar = () => {
-    setMobileSidebarOpen((prev) => !prev);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (!e.target.closest(".canned-dropdown")) {
-        setShowCannedMessages(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [messages]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [inputMessage]);
 
   const groupMessagesByDate = () => {
     const groupedMessages = [];
@@ -354,119 +238,6 @@ export default function Queues() {
   };
 
   const groupedMessages = groupMessagesByDate();
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  const handleChatClick = async (customer) => {
-    setSelectedCustomer(customer);
-    setChatEnded(endedChats.some((chat) => chat.id === customer.id));
-    setMessages([]);
-    setEarliestMessageTime(null);
-    setHasMoreMessages(true);
-
-    if (isMobile) setView("conversation");
-
-    // Load messages for preview (read-only until accepted)
-    await loadMessages(customer.id);
-  };
-
-  const handleAcceptChat = async () => {
-    if (!selectedCustomer) return;
-
-    try {
-      // Call API to accept/assign the chat to current agent
-      const response = await api.post(`/queues/${selectedCustomer.chat_group_id}/accept`);
-      
-      if (response.data.success) {
-        // Emit socket event to update all clients
-        socket.emit('acceptChat', { 
-          chatGroupId: selectedCustomer.chat_group_id,
-          agentId: response.data.agentId 
-        });
-
-        // Update local state - mark as accepted
-        setSelectedCustomer(prev => ({
-          ...prev,
-          isAccepted: true,
-          sys_user_id: response.data.agentId
-        }));
-
-        // Show success message
-        alert('Chat accepted! You can now communicate with the client.');
-      }
-    } catch (error) {
-      console.error('Error accepting chat:', error);
-      alert('Failed to accept chat. Please try again.');
-    }
-  };
-
-  const loadMessages = async (clientId, before = null, append = false) => {
-    try {
-      const response = await api.get(`queues/${clientId}`, {
-        params: {
-          before,
-          limit: 10,
-        },
-      });
-
-      const newMessages = response.data.messages.map((msg, index) => ({
-        id: msg.chat_id || index,
-        sender: msg.sys_user_id ? "user" : "system",
-        content: msg.chat_body,
-        timestamp: msg.chat_created_at,
-        displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      }));
-
-      setMessages((prev) => {
-        const combined = append ? [...newMessages, ...prev] : [...newMessages];
-
-        // ✅ Deduplicate based on message ID
-        const uniqueMessages = [];
-        const seenIds = new Set();
-
-        for (const m of combined) {
-          if (!seenIds.has(m.id)) {
-            seenIds.add(m.id);
-            uniqueMessages.push(m);
-          }
-        }
-
-        return uniqueMessages;
-      });
-
-      if (newMessages.length > 0) {
-        setEarliestMessageTime(newMessages[0].timestamp);
-      }
-      if (newMessages.length < 10) {
-        setHasMoreMessages(false); // no more to load
-      }
-    } catch (err) {
-      console.error("Error loading messages:", err);
-    }
-  };
-
-  const handleBackClick = () => {
-    setView("chatList");
-    setSelectedCustomer(null);
-  };
-
-  const allCustomers = Object.values(departmentCustomers).flat();
-  const filteredCustomers =
-    selectedDepartment === "All"
-      ? allCustomers
-      : departmentCustomers[selectedDepartment] || [];
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -500,6 +271,7 @@ export default function Queues() {
         </div>
       )}
 
+      {/* Transfer Modal */}
       {showTransferModal && (
         <div className="fixed inset-0 bg-gray-400/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-200">
@@ -517,7 +289,6 @@ export default function Queues() {
                 options={departmentOptions}
                 onChange={(selected) => {
                   setTransferDepartment(selected?.value || null);
-                  console.log("Selected Department:", selected?.value);
                 }}
                 value={
                   departmentOptions.find(
@@ -588,6 +359,7 @@ export default function Queues() {
         </div>
       )}
 
+      {/* Transfer Confirm Modal */}
       {showTransferConfirmModal && (
         <div className="fixed inset-0 bg-gray-400/50 bg-opacity-10 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-200">
@@ -665,7 +437,6 @@ export default function Queues() {
                         onClick={() => {
                           setSelectedDepartment(dept);
                           setShowDeptDropdown(false);
-                          setSelectedCustomer(null);
                         }}
                       >
                         {dept}
@@ -684,8 +455,6 @@ export default function Queues() {
                     className={`flex items-center justify-between px-4 py-3 border-2 ${
                       selectedCustomer?.id === customer.id
                         ? "bg-[#E6DCF7]"
-                        : endedChats.some((chat) => chat.id === customer.id)
-                        ? "bg-gray-100 opacity-70"
                         : "bg-[#f5f5f5]"
                     } border-[#E6DCF7] rounded-xl hover:bg-[#E6DCF7] cursor-pointer transition m-2 min-h-[100px]`}
                   >
@@ -709,10 +478,6 @@ export default function Queues() {
                           className={`text-sm font-medium truncate ${
                             selectedCustomer?.id === customer.id
                               ? "text-[#6237A0]"
-                              : endedChats.some(
-                                  (chat) => chat.id === customer.id
-                                )
-                              ? "text-gray-500"
                               : "text-gray-800"
                           }`}
                         >
@@ -723,10 +488,6 @@ export default function Queues() {
                             className={`text-xs truncate ${
                               selectedCustomer?.id === customer.id
                                 ? "text-[#6237A0]"
-                                : endedChats.some(
-                                    (chat) => chat.id === customer.id
-                                  )
-                                ? "text-gray-400"
                                 : "text-gray-500"
                             }`}
                           >
@@ -795,7 +556,7 @@ export default function Queues() {
                         </div>
                       </div>
                       <div className="relative ml-auto flex items-center gap-2">
-                        {/* Accept Chat Button - Only show if not accepted yet */}
+                        {/* Accept Chat Button */}
                         {!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id && !chatEnded && (
                           <button
                             onClick={handleAcceptChat}
@@ -805,7 +566,7 @@ export default function Queues() {
                           </button>
                         )}
                         
-                        {/* Three-dot menu - Only show if chat is accepted */}
+                        {/* Three-dot menu */}
                         {(selectedCustomer.isAccepted || selectedCustomer.sys_user_id) && !chatEnded && (
                           <button
                             className="p-2 text-black hover:text-[#6237A0] transition rounded-full"
@@ -848,9 +609,6 @@ export default function Queues() {
                     }}
                   >
                     <div className="flex flex-col justify-end min-h-full gap-4 pt-4">
-                      <></>
-
-                      {/* Existing messages */}
                       {groupedMessages.map((item, index) => {
                         if (item.type === "date") {
                           return (
@@ -914,7 +672,6 @@ export default function Queues() {
                         }
                       })}
 
-                      {/* Chat ended system message */}
                       {chatEnded && (
                         <div className="text-[10px] text-gray-400 text-center flex items-center gap-2 my-2">
                           <div className="flex-grow h-px bg-gray-200" />
@@ -981,7 +738,6 @@ export default function Queues() {
                         </button>
                       </div>
 
-                      {/* CANNED MESSAGES */}
                       {(selectedCustomer.isAccepted || selectedCustomer.sys_user_id) && (
                         <div className="px-4 pt-3">
                           <div className="grid grid-cols-1 gap-2 pb-3 max-h-[200px] overflow-y-auto">
@@ -1003,7 +759,6 @@ export default function Queues() {
                     </div>
                   ) : (
                     <div className="mt-4 flex items-center gap-2 border-t border-gray-200 pt-4 px-4">
-                      {/* Show preview notice if not accepted */}
                       {!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id && !chatEnded && (
                         <div className="flex-1 mb-4 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg">
                           <p className="text-sm text-orange-700 text-center">
@@ -1012,7 +767,6 @@ export default function Queues() {
                         </div>
                       )}
                       
-                      {/* Regular input - only enabled if accepted */}
                       {(selectedCustomer.isAccepted || selectedCustomer.sys_user_id || chatEnded) && (
                         <>
                           <button
@@ -1065,9 +819,7 @@ export default function Queues() {
               ) : (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-gray-400">
-                    {endedChats.length > 0
-                      ? "Select a customer to start a new chat"
-                      : "Select a customer to view chat"}
+                    Select a customer to view chat
                   </div>
                 </div>
               )}

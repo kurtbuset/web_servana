@@ -1,11 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Edit3, Search, X, Eye, EyeOff, Filter } from "react-feather";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
-import "../src/App.css";
-import api from "../src/api";
+import TopNavbar from "../../../components/TopNavbar";
+import Sidebar from "../../../components/Sidebar";
+import { useAgents } from "../../hooks/useAgents";
+import "../../../src/App.css";
 
-export default function ManageAgents() {
+/**
+ * ManageAgentsScreen - Refactored agent management interface
+ * 
+ * Uses the new useAgents hook for business logic while maintaining
+ * the exact same UI/UX as the original ManageAgents screen.
+ * 
+ * Features:
+ * - View all agents
+ * - Search agents by email
+ * - Filter by departments
+ * - Add new agent
+ * - Edit agent email/password
+ * - Toggle agent active status
+ * - Assign/unassign departments
+ * - Duplicate email detection
+ * - Email validation
+ * - Responsive table with sticky columns
+ */
+export default function ManageAgentsScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,38 +32,21 @@ export default function ManageAgents() {
   const [currentEditIndex, setCurrentEditIndex] = useState(null);
   const [editForm, setEditForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [agents, setAgents] = useState([]);
-  const [allDepartments, setAllDepartments] = useState([]);
   const [modalError, setModalError] = useState(null);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
-  const [selectedDepartmentsFilter, setSelectedDepartmentsFilter] = useState(
-    []
-  );
-  const [loading, setLoading] = useState(false);
+  const [selectedDepartmentsFilter, setSelectedDepartmentsFilter] = useState([]);
   const filterRef = useRef(null);
 
-  // Define default role ID for new agents
-  const DEFAULT_ROLE_ID = 2;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [agentsRes, departmentsRes] = await Promise.all([
-          api.get(`/manage-agents/agents`),
-          api.get(`/manage-agents/departments`),
-        ]);
-
-        setAgents(agentsRes.data);
-        setAllDepartments(departmentsRes.data);
-      } catch (error) {
-        console.error("Error fetching agents or departments:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Get agent state and actions from hook
+  const {
+    agents,
+    allDepartments,
+    loading,
+    createAgent,
+    updateAgent,
+    toggleActive,
+    toggleDepartment,
+  } = useAgents();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -91,33 +92,6 @@ export default function ManageAgents() {
   };
 
   const handleSaveAgent = async () => {
-    const editEmail = editForm.email.trim();
-    const editPassword = editForm.password.trim();
-
-    if (!editEmail || !editPassword) {
-      setModalError("Email and password are required.");
-      return;
-    }
-
-    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!isValidEmail(editEmail)) {
-      setModalError("Please enter a valid email address.");
-      return;
-    }
-
-    const emailAlreadyExists = (email, currentId) => {
-      return agents.some(
-        (agent) =>
-          agent.email.toLowerCase() === email.toLowerCase() &&
-          agent.id !== currentId
-      );
-    };
-
-    if (emailAlreadyExists(editEmail, agents[currentEditIndex]?.id)) {
-      setModalError("Email is already taken.");
-      return;
-    }
-
     setIsModalOpen(false);
     setIsConfirmModalOpen(true);
   };
@@ -125,36 +99,16 @@ export default function ManageAgents() {
   const confirmSaveAgent = async () => {
     try {
       const isEdit = currentEditIndex !== null;
-      const endpoint = isEdit
-        ? `/manage-agents/agents/${agents[currentEditIndex].id}`
-        : `/manage-agents/agents`;
-      const method = isEdit ? "put" : "post";
-
-      const payload = {
-        email: editForm.email,
-        password: editForm.password,
-        active: true,
-        departments: agents[currentEditIndex]?.departments || [], 
-        roleId: DEFAULT_ROLE_ID,
-      };
-
-      const res = await api[method](endpoint, payload);
 
       if (isEdit) {
-        setAgents((prev) =>
-          prev.map((a, i) =>
-            i === currentEditIndex ? { ...a, email: editForm.email } : a
-          )
+        await updateAgent(
+          agents[currentEditIndex].id,
+          editForm.email,
+          editForm.password,
+          currentEditIndex
         );
       } else {
-        const newAgent = {
-          id: res.data.id,
-          email: res.data.email || editForm.email,
-          password: editForm.password,
-          departments: [],
-          active: true,
-        };
-        setAgents((prev) => [...prev, newAgent]);
+        await createAgent(editForm.email, editForm.password);
       }
 
       setIsModalOpen(false);
@@ -162,52 +116,27 @@ export default function ManageAgents() {
       setEditForm({ email: "", password: "" });
       setModalError(null);
     } catch (error) {
-      console.error("Error saving agent:", error);
-
-      const errMsg =
-        error.response?.data?.error || "Failed to save agent (server error)";
-      setModalError(errMsg);
+      // Error already handled by hook with toast
+      setModalError(error.message);
       setIsModalOpen(true);
       setIsConfirmModalOpen(false);
     }
   };
 
   const handleToggleActive = async (index) => {
-    const agent = agents[index];
-    const updatedAgent = { ...agent, active: !agent.active };
-
     try {
-      await api.put(`/manage-agents/agents/${agent.id}`, {
-        email: agent.email,
-        active: updatedAgent.active,
-        departments: agent.departments,
-      });
-
-      setAgents((prev) => prev.map((a, i) => (i === index ? updatedAgent : a)));
+      await toggleActive(index);
     } catch (error) {
+      // Error already handled by hook with toast
       console.error("Error updating active status:", error);
     }
   };
 
   const handleToggleDepartment = async (agentIndex, dept) => {
-    const agent = agents[agentIndex];
-    const updatedDepartments = (agent.departments || []).includes(dept)
-      ? agent.departments.filter((d) => d !== dept)
-      : [...(agent.departments || []), dept];
-
     try {
-      await api.put(`/manage-agents/agents/${agent.id}`, {
-        email: agent.email,
-        active: agent.active,
-        departments: updatedDepartments,
-      });
-
-      setAgents((prev) =>
-        prev.map((a, i) =>
-          i === agentIndex ? { ...a, departments: updatedDepartments } : a
-        )
-      );
+      await toggleDepartment(agentIndex, dept);
     } catch (error) {
+      // Error already handled by hook with toast
       console.error("Error updating departments:", error);
     }
   };
@@ -346,6 +275,10 @@ export default function ManageAgents() {
                     ))}
                   </tbody>
                 </table>
+
+                {loading && (
+                  <p className="text-center text-gray-600 py-4">Loading...</p>
+                )}
               </div>
             </div>
           </div>
@@ -371,7 +304,7 @@ export default function ManageAgents() {
                 value={editForm.email}
                 onChange={(e) => {
                   setEditForm({ ...editForm, email: e.target.value });
-                  if (modalError) setModalError(null); // Clear error on typing
+                  if (modalError) setModalError(null);
                 }}
                 className="w-full mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
@@ -385,7 +318,7 @@ export default function ManageAgents() {
                   value={editForm.password}
                   onChange={(e) => {
                     setEditForm({ ...editForm, password: e.target.value });
-                    if (modalError) setModalError(null); // Clear error on typing
+                    if (modalError) setModalError(null);
                   }}
                   className="w-full mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
                 />
@@ -408,7 +341,7 @@ export default function ManageAgents() {
                 <button
                   onClick={() => {
                     setIsModalOpen(false);
-                    setModalError(null); // Clear error on cancel
+                    setModalError(null);
                   }}
                   className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
                 >
@@ -473,6 +406,7 @@ function ToggleSwitch({ checked, onChange }) {
   );
 }
 
+// SearchInput component
 function SearchInput({
   value,
   onChange,

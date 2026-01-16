@@ -1,38 +1,40 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Eye, EyeOff } from "react-feather";
-import api from "../src/api";
-import { useUser } from "../context/UserContext";
+import { useAuth } from "../../hooks/useAuth";
+import { useUser } from "../../../context/UserContext";
 
-export default function Login() {
-  const navigate = useNavigate();
+/**
+ * LoginScreen - Refactored authentication screen
+ * 
+ * Uses the new useAuth hook for business logic while maintaining
+ * the exact same UI/UX as the original Login screen.
+ * 
+ * Features:
+ * - Email/password authentication
+ * - Password visibility toggle
+ * - Loading states with spinner
+ * - Error message display
+ * - Responsive design
+ */
+export default function LoginScreen() {
+  const { login, loading, error } = useAuth();
   const { fetchUser } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [loading, setLoading] = useState(false); // <-- Loading state
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const handleLogin = async () => {
-    setLoading(true); // Start loading
-    setErrorMessage(""); // Clear previous errors
-
     try {
-      await api.post(
-        "/auth/login",
-        { email, password },
-        { withCredentials: true }
-      );
+      await login(email, password);
+      // Fetch user data after successful login
       await fetchUser();
       // Set flag for showing toast after navigation
       localStorage.setItem("showLoginToast", "true");
-      navigate("/Dashboard");
-    } catch {
-      setErrorMessage("Invalid credentials");
-    } finally {
-      setLoading(false); // Stop loading
+    } catch (err) {
+      // Error is already handled by useAuth hook (toast notification)
+      console.error("Login failed:", err);
     }
   };
 
@@ -69,6 +71,7 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0] focus:border-transparent"
+                  disabled={loading}
                 />
               </div>
 
@@ -85,6 +88,12 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0] focus:border-transparent"
+                    disabled={loading}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !loading) {
+                        handleLogin();
+                      }
+                    }}
                   />
                   {password.length > 0 &&
                     (showPassword ? (
@@ -106,8 +115,8 @@ export default function Login() {
               </div>
 
               {/* Error */}
-              {errorMessage && (
-                <p className="text-sm text-red-500">{errorMessage}</p>
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
               )}
 
               {/* Button */}
@@ -160,5 +169,4 @@ export default function Login() {
       </div>
     </div>
   );
-
 }

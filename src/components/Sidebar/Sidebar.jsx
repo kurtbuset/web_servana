@@ -1,6 +1,5 @@
 import {
   Layers,
-  User,
   MessageSquare,
   Grid,
   Users,
@@ -14,19 +13,20 @@ import {
 } from "react-feather";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../../../context/UserContext";
 import { useState, useEffect } from "react";
-import api from "../src/api";
-import socket from "../src/socket";
+import api from "../../api";
+import socket from "../../socket";
+import { ROUTES } from "../../constants/routes";
 
 const navItems = [
-  { to: "/dashboard", icon: Activity, label: "Dashboard", roles: ["Admin", "Agent"] },
-  { to: "/queues", icon: Layers, label: "Queues", roles: ["Admin", "Agent"], showBadge: true, badgeKey: "pendingChats" },
-  { to: "/chats", icon: MessageSquare, label: "Chats", roles: ["Admin", "Agent"], showBadge: true, badgeKey: "activeChats" },
-  { to: "/department", icon: Grid, label: "Department", roles: ["Admin"], permission: "priv_can_manage_dept" },
-  { to: "/auto-replies", icon: Repeat, label: "Auto-Replies", roles: ["Admin"], permission: "priv_can_manage_auto_reply" },
-  { to: "/manage-admin", icon: UserCheck, label: "Manage Admin", roles: ["Admin"], permission: "priv_can_create_account" },
-  { to: "/roles", icon: Command, label: "Roles", roles: ["Admin"], permission: "priv_can_manage_role" },
+  { to: ROUTES.DASHBOARD, icon: Activity, label: "Dashboard", roles: ["Admin", "Agent"] },
+  { to: ROUTES.QUEUES, icon: Layers, label: "Queues", roles: ["Admin", "Agent"], showBadge: true, badgeKey: "pendingChats" },
+  { to: ROUTES.CHATS, icon: MessageSquare, label: "Chats", roles: ["Admin", "Agent"], showBadge: true, badgeKey: "activeChats" },
+  { to: ROUTES.DEPARTMENTS, icon: Grid, label: "Department", roles: ["Admin"], permission: "priv_can_manage_dept" },
+  { to: ROUTES.AUTO_REPLIES, icon: Repeat, label: "Auto-Replies", roles: ["Admin"], permission: "priv_can_manage_auto_reply" },
+  { to: ROUTES.MANAGE_ADMIN, icon: UserCheck, label: "Manage Admin", roles: ["Admin"], permission: "priv_can_create_account" },
+  { to: ROUTES.ROLES, icon: Command, label: "Roles", roles: ["Admin"], permission: "priv_can_manage_role" },
 ];
 
 const dropdownItems = [
@@ -35,8 +35,8 @@ const dropdownItems = [
     icon: Users,
     roles: ["Admin"],
     items: [
-      { to: "/manage-agents", label: "Manage Agents", permission: "priv_can_create_account" },
-      { to: "/change-role", label: "Change Roles", permission: "priv_can_assign_role" },
+      { to: ROUTES.MANAGE_AGENTS, label: "Manage Agents", permission: "priv_can_create_account" },
+      { to: ROUTES.CHANGE_ROLE, label: "Change Roles", permission: "priv_can_assign_role" },
     ],
   },
   {
@@ -44,8 +44,8 @@ const dropdownItems = [
     icon: List,
     roles: ["Admin", "Agent"],
     items: [
-      { to: "/macros-agents", label: "Macros Agents", roles: ["Admin", "Agent"] },
-      { to: "/macros-clients", label: "Macros Clients", roles: ["Admin"] },
+      { to: ROUTES.MACROS_AGENTS, label: "Macros Agents", roles: ["Admin", "Agent"] },
+      { to: ROUTES.MACROS_CLIENTS, label: "Macros Clients", roles: ["Admin"] },
     ],
   },
 ];

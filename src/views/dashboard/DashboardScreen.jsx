@@ -1,26 +1,29 @@
-import React, { useState, useEffect } from "react";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
+import { useState } from "react";
+import TopNavbar from "../../../components/TopNavbar";
+import Sidebar from "../../../components/Sidebar";
 import { MessageSquare, Users, Clock, CheckCircle, TrendingUp, Activity, UserCheck } from "react-feather";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../../../context/UserContext";
 import { useNavigate } from "react-router-dom";
+import { useDashboard } from "../../hooks/useDashboard";
 
-export default function Dashboard() {
+/**
+ * DashboardScreen - Refactored dashboard view
+ * 
+ * Uses the new useDashboard hook for business logic while maintaining
+ * the exact same UI/UX as the original Dashboard screen.
+ * 
+ * Features:
+ * - Role-based statistics display (Admin vs Agent)
+ * - Real-time activity feed
+ * - Quick action buttons
+ * - Responsive design with mobile sidebar
+ */
+export default function DashboardScreen() {
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState(null);
     const { userData, isAdmin, isAgent, getRoleName } = useUser();
     const navigate = useNavigate();
-    
-    const [stats, setStats] = useState({
-        totalChats: 0,
-        activeChats: 0,
-        pendingChats: 0,
-        resolvedToday: 0,
-        activeAgents: 0,
-        avgResponseTime: "0m",
-        myActiveChats: 0,
-        myResolvedToday: 0
-    });
+    const { stats, activity, loading } = useDashboard();
 
     const toggleSidebar = () => {
         setMobileSidebarOpen((prev) => !prev);
@@ -29,21 +32,6 @@ export default function Dashboard() {
     const toggleDropdown = (name) => {
         setOpenDropdown((prev) => (prev === name ? null : name));
     };
-
-    // TODO: Fetch real data from API
-    useEffect(() => {
-        // Simulated data - replace with actual API call
-        setStats({
-            totalChats: 156,
-            activeChats: 23,
-            pendingChats: 8,
-            resolvedToday: 45,
-            activeAgents: 12,
-            avgResponseTime: "2.5m",
-            myActiveChats: 5,
-            myResolvedToday: 12
-        });
-    }, []);
 
     const StatCard = ({ icon: Icon, label, value, trend, color, onClick }) => (
         <div 
@@ -75,28 +63,23 @@ export default function Dashboard() {
                 <Activity size={20} className="text-gray-400" />
             </div>
             <div className="space-y-4">
-                {[
-                    { agent: "John Doe", action: "resolved a chat", time: "2 min ago", status: "resolved" },
-                    { agent: "Sarah Smith", action: "started a new chat", time: "5 min ago", status: "active" },
-                    { agent: "Mike Johnson", action: "transferred a chat", time: "12 min ago", status: "transferred" },
-                    { agent: "Emma Wilson", action: "resolved a chat", time: "18 min ago", status: "resolved" },
-                ].map((activity, idx) => (
+                {activity.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6237A0] to-[#7A4ED9] flex items-center justify-center text-white font-semibold text-sm">
-                            {activity.agent.split(' ').map(n => n[0]).join('')}
+                            {item.agent.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className="flex-1">
                             <p className="text-sm text-gray-900">
-                                <span className="font-medium">{activity.agent}</span> {activity.action}
+                                <span className="font-medium">{item.agent}</span> {item.action}
                             </p>
-                            <p className="text-xs text-gray-500">{activity.time}</p>
+                            <p className="text-xs text-gray-500">{item.time}</p>
                         </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            activity.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                            activity.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                            item.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                            item.status === 'active' ? 'bg-blue-100 text-blue-700' :
                             'bg-purple-100 text-purple-700'
                         }`}>
-                            {activity.status}
+                            {item.status}
                         </span>
                     </div>
                 ))}
@@ -219,6 +202,17 @@ export default function Dashboard() {
         }
         return null;
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-[#F7F5FB]">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6237A0] mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

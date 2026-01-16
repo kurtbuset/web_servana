@@ -1,221 +1,82 @@
-import React, { useEffect, useState } from "react";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../components/Sidebar";
-import { Edit3, Search, X } from "react-feather";
-import api from "../src/api";
-import { toast } from "react-toastify";
-import "../src/App.css";
-export default function MacrosAgents() {
+import { useState } from 'react';
+import TopNavbar from '../../../components/TopNavbar';
+import Sidebar from '../../../components/Sidebar';
+import { Edit3, Search, X } from 'react-feather';
+import useMacros from '../../hooks/useMacros';
+import '../../App.css';
+
+export default function MacrosAgentsScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEditId, setCurrentEditId] = useState(null);
-  const [editText, setEditText] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [replies, setReplies] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState("All");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [editText, setEditText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
   const [currentUserId] = useState(1); // authenticated user ID
 
-  
+  // Use the macros hook with roleId = 3 (Agent)
+  const {
+    macros,
+    departments,
+    loading,
+    error,
+    createMacro,
+    updateMacro,
+    toggleActive,
+    changeDepartment,
+  } = useMacros(3);
 
-  useEffect(() => {
-    setLoading(true);
-    setError("");
-
-    api
-      .get("/agents")
-      .then((res) => {
-        setReplies(
-          res.data.macros.map((macro) => ({
-            id: macro.canned_id,
-            text: macro.canned_message,
-            active: macro.canned_is_active,
-            dept_id: macro.dept_id,
-            department: macro.department?.dept_name || "All",
-          }))
-        );
-        setDepartments(res.data.departments);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch macros:", err);
-        setError("Failed to fetch Agent's canned messages.");
-        toast.error("Failed to load macros. Please refresh the page.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  const filteredReplies = replies.filter((reply) => {
-    const matchesSearch = reply.text.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDepartment = 
-      selectedDepartment === "All" || 
-      reply.dept_id === (departments.find((d) => d.dept_name === selectedDepartment)?.dept_id);
+  // Filter macros based on search and department
+  const filteredReplies = macros.filter((reply) => {
+    const matchesSearch = reply.text
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesDepartment =
+      selectedDepartment === 'All' ||
+      reply.dept_id ===
+        departments.find((d) => d.dept_name === selectedDepartment)?.dept_id;
     return matchesSearch && matchesDepartment;
   });
 
-  const handleSaveMacro = () => {
-    if (!editText.trim()) {
-      toast.error("Message cannot be empty", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
+  const handleSaveMacro = async () => {
     if (currentEditId !== null) {
-      // Check for duplicate when editing (excluding current macro)
-      const isDuplicate = replies.some(
-        (r) => r.id !== currentEditId && r.text.toLowerCase().trim() === editText.toLowerCase().trim()
+      // Update existing macro
+      const macro = macros.find((m) => m.id === currentEditId);
+      if (!macro) return;
+
+      const success = await updateMacro(
+        currentEditId,
+        editText,
+        macro.active,
+        macro.dept_id,
+        currentUserId
       );
 
-      if (isDuplicate) {
-        toast.error("This macro already exists", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
+      if (success) {
+        setIsModalOpen(false);
       }
-
-      const updated = replies.find((r) => r.id === currentEditId);
-      if (!updated) return;
-
-      const updatedMacro = {
-        text: editText,
-        active: updated.active,
-        dept_id: updated.dept_id,
-        updated_by: currentUserId,
-      };
-
-      api
-        .put(`/agents/${currentEditId}`, updatedMacro)
-        .then((res) => {
-          setReplies((prev) =>
-            prev.map((r) => (r.id === currentEditId ? res.data : r))
-          );
-          setIsModalOpen(false);
-          toast.success("Macro updated successfully", {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        })
-        .catch((err) => {
-          console.error("Failed to update macro:", err);
-          const errorMessage = err.response?.data?.error || "Failed to update macro";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
     } else {
-      // Check for duplicate when adding new macro
-      const isDuplicate = replies.some(
-        (r) => r.text.toLowerCase().trim() === editText.toLowerCase().trim()
+      // Create new macro
+      const selectedDept = departments.find(
+        (dept) => dept.dept_name === selectedDepartment
       );
+      const dept_id = selectedDepartment === 'All' ? null : selectedDept?.dept_id;
 
-      if (isDuplicate) {
-        toast.error("This macro already exists", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
+      const success = await createMacro(editText, dept_id, currentUserId);
+
+      if (success) {
+        setIsModalOpen(false);
       }
-
-      const newMacro = {
-        text: editText,
-        active: true,
-        dept_id: departments.find((d) => d.dept_name === selectedDepartment)?.dept_id || null,
-        created_by: currentUserId,
-      };
-
-      api
-        .post("/agents", newMacro)
-        .then((res) => {
-          setReplies((prev) => [...prev, res.data]);
-          setIsModalOpen(false);
-          toast.success("Macro added successfully", {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        })
-        .catch((err) => {
-          console.error("Failed to add macro:", err);
-          const errorMessage = err.response?.data?.error || "Failed to add macro";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
     }
   };
 
   const handleToggleActive = (id) => {
-    const reply = replies.find((r) => r.id === id);
-    if (!reply) return;
-
-    const updated = {
-      ...reply,
-      active: !reply.active,
-      updated_by: currentUserId,
-    };
-
-    api
-      .put(`/agents/${id}`, updated)
-      .then((res) => {
-        setReplies((prev) =>
-          prev.map((r) => (r.id === id ? res.data : r))
-        );
-        toast.success(
-          `Macro ${updated.active ? "activated" : "deactivated"} successfully`,
-          {
-            position: "top-right",
-            autoClose: 2000,
-          }
-        );
-      })
-      .catch((err) => {
-        console.error("Failed to toggle active:", err);
-        toast.error("Failed to update macro status", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      });
+    toggleActive(id, currentUserId);
   };
 
   const handleChangeDepartment = (id, dept_id) => {
-    const reply = replies.find((r) => r.id === id);
-    if (!reply) return;
-
-    const updated = {
-      ...reply,
-      dept_id: dept_id,
-      updated_by: currentUserId,
-    };
-
-    api
-      .put(`/agents/${id}`, updated)
-      .then((res) => {
-        setReplies((prev) =>
-          prev.map((r) => (r.id === id ? res.data : r))
-        );
-        toast.success("Department updated successfully", {
-          position: "top-right",
-          autoClose: 2000,
-        });
-      })
-      .catch((err) => {
-        console.error("Failed to update department:", err);
-        toast.error("Failed to update department", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      });
+    changeDepartment(id, dept_id, currentUserId);
   };
 
   const toggleDropdown = (name) => {
@@ -260,15 +121,15 @@ export default function MacrosAgents() {
                   <X
                     size={16}
                     className="text-gray-500 cursor-pointer absolute right-3"
-                    onClick={() => setSearchQuery("")}
+                    onClick={() => setSearchQuery('')}
                   />
                 )}
               </div>
 
               <button
                 onClick={() => {
-                  setEditText("");
-                  setSelectedDepartment("All");
+                  setEditText('');
+                  setSelectedDepartment('All');
                   setCurrentEditId(null);
                   setIsModalOpen(true);
                 }}
@@ -321,7 +182,7 @@ export default function MacrosAgents() {
                       <td className="py-2 px-3 text-center">
                         <select
                           className="rounded-md px-2 py-1 text-sm text-gray-800 border-none text-center"
-                          value={reply.dept_id ?? ""}
+                          value={reply.dept_id ?? ''}
                           onChange={(e) =>
                             handleChangeDepartment(
                               reply.id,
@@ -334,11 +195,16 @@ export default function MacrosAgents() {
                             <option
                               key={dept.dept_id}
                               value={dept.dept_id}
-                              disabled={!dept.dept_is_active && dept.dept_id !== reply.dept_id}
-                              className={!dept.dept_is_active ? "text-red-400" : ""}
+                              disabled={
+                                !dept.dept_is_active &&
+                                dept.dept_id !== reply.dept_id
+                              }
+                              className={
+                                !dept.dept_is_active ? 'text-red-400' : ''
+                              }
                             >
                               {dept.dept_name}
-                              {!dept.dept_is_active && " (Inactive)"}
+                              {!dept.dept_is_active && ' (Inactive)'}
                             </option>
                           ))}
                         </select>
@@ -349,11 +215,15 @@ export default function MacrosAgents() {
               </table>
 
               {loading && (
-                <p className="pt-15 text-center text-gray-600 py-4">Loading...</p>
+                <p className="pt-15 text-center text-gray-600 py-4">
+                  Loading...
+                </p>
               )}
 
               {error && (
-                <p className="pt-15 text-center text-red-600 mb-4 font-semibold">{error}</p>
+                <p className="pt-15 text-center text-red-600 mb-4 font-semibold">
+                  {error}
+                </p>
               )}
             </div>
           </div>
@@ -362,10 +232,12 @@ export default function MacrosAgents() {
             <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-center z-50">
               <div className="bg-white rounded-lg shadow-xl p-6 w-96">
                 <h2 className="text-md font-semibold mb-2">
-                  {currentEditId ? "Edit Macro" : "Add Macro"}
+                  {currentEditId ? 'Edit Macro' : 'Add Macro'}
                 </h2>
 
-                <label className="text-sm text-gray-700 mb-1 block">Message</label>
+                <label className="text-sm text-gray-700 mb-1 block">
+                  Message
+                </label>
                 <textarea
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
@@ -374,7 +246,9 @@ export default function MacrosAgents() {
 
                 {!currentEditId && (
                   <div className="mb-4">
-                    <label className="text-sm text-gray-700 mb-1 block">Department</label>
+                    <label className="text-sm text-gray-700 mb-1 block">
+                      Department
+                    </label>
                     <select
                       className="w-full border rounded-md p-2 text-sm"
                       value={selectedDepartment}
@@ -386,10 +260,10 @@ export default function MacrosAgents() {
                           key={dept.dept_id}
                           value={dept.dept_name}
                           disabled={!dept.dept_is_active}
-                          className={!dept.dept_is_active ? "text-red-400" : ""}
+                          className={!dept.dept_is_active ? 'text-red-400' : ''}
                         >
                           {dept.dept_name}
-                          {!dept.dept_is_active && " (Inactive)"}
+                          {!dept.dept_is_active && ' (Inactive)'}
                         </option>
                       ))}
                     </select>
