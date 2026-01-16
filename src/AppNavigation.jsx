@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import api from "../src/api";
 
@@ -22,6 +23,9 @@ import Roles from "../screens/Roles.jsx";
 import MacrosAgents from "../screens/MacrosAgents.jsx";
 import MacrosClients from "../screens/MacrosClients.jsx";
 import Dashboard from "../screens/Dashboard.jsx";
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer, toast } from "react-toastify";
+
 
 /**
  * ProtectedRoute: Redirect to login if not authenticated
@@ -70,7 +74,7 @@ function ProtectedRoute({ children }) {
 }
 
 /**
- * PublicRoute: Redirect authenticated users away from Login to /Queues
+ * PublicRoute: Redirect authenticated users away from Login to /Dashboard
  */
 function PublicRoute({ children }) {
   const [state, setState] = React.useState({ loading: true, authed: false });
@@ -82,7 +86,9 @@ function PublicRoute({ children }) {
       api
         .get("/auth/me")
         .then(() => {
-          if (isMounted) setState({ loading: false, authed: true });
+          if (isMounted) {
+            setState({ loading: false, authed: true });
+          }
         })
         .catch(() => {
           if (isMounted) setState({ loading: false, authed: false });
@@ -116,9 +122,29 @@ function PublicRoute({ children }) {
 }
 
 
+function ToastHandler() {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    // Check if we should show login toast
+    const showLoginToast = localStorage.getItem("showLoginToast");
+    if (showLoginToast === "true") {
+      localStorage.removeItem("showLoginToast");
+      toast.success("Welcome back! You've successfully logged in.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    }
+  }, [location]);
+
+  return null;
+}
+
 function AppNavigation() {
   return (
     <Router>
+      <ToastContainer />
+      <ToastHandler />
       <Routes>
         {/* Public: Login, redirect if authed */}
         <Route
@@ -136,7 +162,9 @@ function AppNavigation() {
           path="/Dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Dashboard 
+              
+              />
             </ProtectedRoute>
           }
         />

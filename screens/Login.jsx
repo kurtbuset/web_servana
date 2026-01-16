@@ -26,7 +26,9 @@ export default function Login() {
         { withCredentials: true }
       );
       await fetchUser();
-      navigate("/queues");
+      // Set flag for showing toast after navigation
+      localStorage.setItem("showLoginToast", "true");
+      navigate("/Dashboard");
     } catch {
       setErrorMessage("Invalid credentials");
     } finally {

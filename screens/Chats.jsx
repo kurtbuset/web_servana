@@ -32,6 +32,7 @@ export default function Chats() {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const scrollContainerRef = useRef(null);
   const [earliestMessageTime, setEarliestMessageTime] = useState(null);
+  
 
   useEffect(() => {
     socket.connect();
