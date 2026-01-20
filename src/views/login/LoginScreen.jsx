@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "react-feather";
 import { useAuth } from "../../hooks/useAuth";
-import { useUser } from "../../../context/UserContext";
+import { useUser } from "../../../src/context/UserContext";
 
 /**
  * LoginScreen - Refactored authentication screen

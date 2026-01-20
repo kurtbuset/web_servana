@@ -1,7 +1,7 @@
 // src/context/UserContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
-import { AuthService } from "../src/services/auth.service";
-import { ProfileService } from "../src/services/profile.service";
+import { AuthService } from "../services/auth.service";
+import { ProfileService } from "../services/profile.service";
 
 const UserContext = createContext();
 

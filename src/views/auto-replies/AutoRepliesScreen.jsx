@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import TopNavbar from "../../../components/TopNavbar";
+import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
-import { useUser } from "../../../context/UserContext";
+import { useUser } from "../../../src/context/UserContext";
 import "../../App.css";
 
 export default function AutoRepliesScreen() {

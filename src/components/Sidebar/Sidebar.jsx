@@ -13,7 +13,7 @@ import {
 } from "react-feather";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUser } from "../../../context/UserContext";
+import { useUser } from "../../../src/context/UserContext";
 import { useState, useEffect } from "react";
 import api from "../../api";
 import socket from "../../socket";

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DepartmentService } from '../services/department.service';
 import { toast } from 'react-toastify';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../src/context/UserContext';
 
 /**
  * useDepartments hook manages department CRUD operations

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../src/components/Sidebar";
+import TopNavbar from "../../../src/components/TopNavbar";
+import Sidebar from "../../../src/components/Sidebar/index";
 import { FiLogOut } from "react-icons/fi";
 import { Upload } from "react-feather";
 import { useNavigate } from "react-router-dom";
-import api from "../src/api";
-import { useUser } from "../context/UserContext";
+import api from "../../api";
+import { useUser } from "../../../src/context/UserContext";
 
 
 /**
@@ -40,6 +40,7 @@ export default function Profile() {
   const fetchProfile = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log('profile')
       const res = await api.get("/profile", { withCredentials: true });
       const { sys_user_email, profile, image } = res.data;
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import api from "../src/api";
-import TopNavbar from "../components/TopNavbar";
-import Sidebar from "../src/components/Sidebar";
+import api from "../../api";
+import TopNavbar from "../../../src/components/TopNavbar";
+import Sidebar from "../../../src/components/Sidebar/index";
 import { Edit3, Search, X, Eye, EyeOff } from "react-feather";
-import "../src/App.css";
+import "../../../src/App.css";
 
 /*
   Refactor notes (July 17, 2025 @ Asia/Manila):

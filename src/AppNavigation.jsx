@@ -20,10 +20,10 @@ import QueuesScreen from "./views/queues/QueuesScreen.jsx";
 import AutoRepliesScreen from "./views/auto-replies/AutoRepliesScreen.jsx";
 import MacrosAgentsScreen from "./views/macros/MacrosAgentsScreen.jsx";
 import MacrosClientsScreen from "./views/macros/MacrosClientsScreen.jsx";
+import Profile from "./views/profile/Profile.jsx";
+import ManageAdmin from "./views/manage-admin/ManageAdmin.jsx"
 
 // Legacy screens (not yet migrated)
-import Profile from "../screens/Profile.jsx";
-import ManageAdmin from "../screens/ManageAdmin.jsx";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast } from "react-toastify";
 

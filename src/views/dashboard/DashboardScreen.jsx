@@ -1,8 +1,8 @@
 import { useState } from "react";
-import TopNavbar from "../../../components/TopNavbar";
+import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { MessageSquare, Users, Clock, CheckCircle, TrendingUp, Activity, UserCheck } from "react-feather";
-import { useUser } from "../../../context/UserContext";
+import { useUser } from "../../../src/context/UserContext";
 import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../../hooks/useDashboard";
 

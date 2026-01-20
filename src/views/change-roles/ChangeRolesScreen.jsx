@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import TopNavbar from "../../../components/TopNavbar";
+import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { Search, X } from "react-feather";
 import { useUserRoles } from "../../hooks/useRoles";

@@ -133,7 +133,7 @@ export const useQueues = () => {
    */
   const acceptChat = useCallback(async () => {
     if (!selectedCustomer) return false;
-
+    console.log('selectedCustomer: ', selectedCustomer)
     try {
       const response = await QueueService.acceptChat(
         selectedCustomer.chat_group_id

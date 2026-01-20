@@ -10,7 +10,7 @@ class QueueService {
    * @returns {Promise<Array>} Array of chat groups waiting in queue
    */
   static async getQueuedChats() {
-    const response = await api.get("/queues/chatgroups");
+    const response = await api.get("/queues/chatgroups", { withCredentials: true });
     return response.data;
   }
 

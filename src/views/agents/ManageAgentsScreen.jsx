@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Edit3, Search, X, Eye, EyeOff, Filter } from "react-feather";
-import TopNavbar from "../../../components/TopNavbar";
+import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { useAgents } from "../../hooks/useAgents";
 import "../../../src/App.css";
