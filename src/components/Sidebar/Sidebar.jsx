@@ -15,25 +15,23 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../../../src/context/UserContext";
 import { useState, useEffect } from "react";
-import api from "../../api";
 import socket from "../../socket";
 import { ROUTES } from "../../constants/routes";
 
 const navItems = [
-  { to: ROUTES.DASHBOARD, icon: Activity, label: "Dashboard", roles: ["Admin", "Agent"] },
-  { to: ROUTES.QUEUES, icon: Layers, label: "Queues", roles: ["Admin", "Agent"], showBadge: true, badgeKey: "pendingChats" },
-  { to: ROUTES.CHATS, icon: MessageSquare, label: "Chats", roles: ["Admin", "Agent"], showBadge: true, badgeKey: "activeChats" },
-  { to: ROUTES.DEPARTMENTS, icon: Grid, label: "Department", roles: ["Admin"], permission: "priv_can_manage_dept" },
-  { to: ROUTES.AUTO_REPLIES, icon: Repeat, label: "Auto-Replies", roles: ["Admin"], permission: "priv_can_manage_auto_reply" },
-  { to: ROUTES.MANAGE_ADMIN, icon: UserCheck, label: "Manage Admin", roles: ["Admin"], permission: "priv_can_create_account" },
-  { to: ROUTES.ROLES, icon: Command, label: "Roles", roles: ["Admin"], permission: "priv_can_manage_role" },
+  { to: ROUTES.DASHBOARD, icon: Activity, label: "Dashboard" }, // Always accessible - landing page
+  { to: ROUTES.QUEUES, icon: Layers, label: "Queues", permission: "priv_can_view_message", showBadge: true, badgeKey: "pendingChats" },
+  { to: ROUTES.CHATS, icon: MessageSquare, label: "Chats", permission: "priv_can_view_message", showBadge: true, badgeKey: "activeChats" },
+  { to: ROUTES.DEPARTMENTS, icon: Grid, label: "Department", permission: "priv_can_manage_dept" },
+  { to: ROUTES.AUTO_REPLIES, icon: Repeat, label: "Auto-Replies", permission: "priv_can_manage_auto_reply" },
+  { to: ROUTES.MANAGE_ADMIN, icon: UserCheck, label: "Manage Admin", permission: "priv_can_create_account" },
+  { to: ROUTES.ROLES, icon: Command, label: "Roles", permission: "priv_can_manage_role" },
 ];
 
 const dropdownItems = [
   {
     id: "users",
     icon: Users,
-    roles: ["Admin"],
     items: [
       { to: ROUTES.MANAGE_AGENTS, label: "Manage Agents", permission: "priv_can_create_account" },
       { to: ROUTES.CHANGE_ROLE, label: "Change Roles", permission: "priv_can_assign_role" },
@@ -42,10 +40,9 @@ const dropdownItems = [
   {
     id: "macros",
     icon: List,
-    roles: ["Admin", "Agent"],
     items: [
-      { to: ROUTES.MACROS_AGENTS, label: "Macros Agents", roles: ["Admin", "Agent"] },
-      { to: ROUTES.MACROS_CLIENTS, label: "Macros Clients", roles: ["Admin"] },
+      { to: ROUTES.MACROS_AGENTS, label: "Macros Agents", permission: "priv_can_use_canned_mess" },
+      { to: ROUTES.MACROS_CLIENTS, label: "Macros Clients", permission: "priv_can_use_canned_mess" },
     ],
   },
 ];
@@ -80,16 +77,15 @@ const NavItem = ({ to, Icon, label, isActive, badgeCount }) => (
   </div>
 );
 
-const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasRole, hasPermission }) => {
+const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasPermission }) => {
   const location = useLocation();
   
-  // Filter items based on role and permissions
+  // Filter items based on permissions only
   const visibleItems = items.filter(item => {
-    // Check role access
-    if (item.roles && !item.roles.some(role => hasRole(role))) return false;
-    // Check permission if specified
-    if (item.permission && !hasPermission(item.permission)) return false;
-    return true;
+    // If no permission specified, item is always visible
+    if (!item.permission) return true;
+    // Check permission
+    return hasPermission(item.permission);
   });
 
   // Don't render if no visible items
@@ -153,7 +149,7 @@ const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasRole, 
 
 const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
   const location = useLocation();
-  const { userData, hasRole, hasPermission } = useUser();
+  const { userData, hasPermission } = useUser();
   const [counts, setCounts] = useState({
     pendingChats: 0,
     activeChats: 0
@@ -230,7 +226,7 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
         // This assumes the backend sends which chat was viewed
         if (data.chatGroupId) {
           // Optionally refresh counts or handle specific chat
-          fetchCounts();
+          // fetchCounts();
         }
       });
 
@@ -247,25 +243,27 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
 
   if (isMobile && !isOpen) return null;
 
-  // Filter navigation items based on role and permissions
+  // Filter navigation items based on permissions only
   const visibleNavItems = navItems.filter(item => {
-    // Check role access
-    if (item.roles && !item.roles.some(role => hasRole(role))) {
-      return false;
+    // If no permission specified, item is always visible (like Dashboard)
+    if (!item.permission) {
+      return true;
     }
     
-    // Check permission if specified
-    if (item.permission && !hasPermission(item.permission)) {
-      return false;
-    }
-    
-    return true;
+    // Check permission
+    return hasPermission(item.permission);
   });
 
-  // Filter dropdown items based on role
+  // Filter dropdown items based on permissions
   const visibleDropdownItems = dropdownItems.filter(item => {
-    if (item.roles && !item.roles.some(role => hasRole(role))) return false;
-    return true;
+    // Check if dropdown has any visible items
+    const visibleItems = item.items.filter(subItem => {
+      if (!subItem.permission) return true;
+      return hasPermission(subItem.permission);
+    });
+    
+    // Only show dropdown if it has visible items
+    return visibleItems.length > 0;
   });
 
   return (
@@ -296,7 +294,6 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
             items={item.items}
             isOpen={openDropdown === item.id}
             toggleDropdown={toggleDropdown}
-            hasRole={hasRole}
             hasPermission={hasPermission}
           />
         ))}

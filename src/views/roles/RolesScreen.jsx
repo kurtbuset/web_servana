@@ -1,9 +1,11 @@
-import React, { useState } from "react";
-import { Plus, Search, X, Settings, Users, Shield, MessageSquare, Edit3 } from "react-feather";
+import { useState } from "react";
+import { Plus, Search, X, Settings, Users, Shield, MessageSquare, ChevronDown, ChevronRight } from "react-feather";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../components/Sidebar";
 import { useUser } from "../../../src/context/UserContext";
 import { useRoles } from "../../hooks/useRoles";
+import RoleService from "../../services/role.service";
+import { toast } from "react-toastify";
 import "../../App.css";
 
 const PERMISSION_CATEGORIES = {
@@ -44,8 +46,14 @@ export default function RolesScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({ name: "" });
 
+  // Member management states
+  const [expandedRoles, setExpandedRoles] = useState(new Set());
+  const [roleMembers, setRoleMembers] = useState({});
+  const [membersLoading, setMembersLoading] = useState({});
+  const [membersError, setMembersError] = useState({});
+
   const { userData, hasPermission } = useUser();
-  const { roles, loading, createRole, updateRole, toggleRoleActive, togglePermission } = useRoles();
+  const { roles, loading, createRole, toggleRoleActive, togglePermission } = useRoles();
 
   const canManageRoles = hasPermission("priv_can_manage_role");
 
@@ -60,6 +68,11 @@ export default function RolesScreen() {
   };
 
   const handleCreateRole = () => {
+    if (!canManageRoles) {
+      console.warn("User does not have permission to manage roles");
+      toast.error("You don't have permission to create roles");
+      return;
+    }
     setEditForm({ name: "" });
     setIsModalOpen(true);
   };
@@ -86,7 +99,11 @@ export default function RolesScreen() {
   };
 
   const handleToggleActive = async (role) => {
-    if (!canManageRoles) return;
+    if (!canManageRoles) {
+      console.warn("User does not have permission to manage roles");
+      toast.error("You don't have permission to modify roles");
+      return;
+    }
 
     const userId = userData?.sys_user_id;
     if (!userId) return;
@@ -106,7 +123,13 @@ export default function RolesScreen() {
   };
 
   const handleTogglePermission = async (permission) => {
-    if (!canManageRoles || !selectedRole) return;
+    if (!canManageRoles) {
+      console.warn("User does not have permission to manage roles");
+      toast.error("You don't have permission to modify role permissions");
+      return;
+    }
+    
+    if (!selectedRole) return;
 
     const userId = userData?.sys_user_id;
     if (!userId) return;
@@ -127,6 +150,78 @@ export default function RolesScreen() {
       : [...selectedRole.permissions, permission];
 
     setSelectedRole({ ...selectedRole, permissions: updatedPermissions });
+  };
+
+  // Member management functions
+  const toggleRoleExpansion = async (roleId) => {
+    const newExpandedRoles = new Set(expandedRoles);
+    
+    if (expandedRoles.has(roleId)) {
+      newExpandedRoles.delete(roleId);
+    } else {
+      newExpandedRoles.add(roleId);
+      // Fetch members when expanding
+      await fetchRoleMembers(roleId);
+    }
+    
+    setExpandedRoles(newExpandedRoles);
+  };
+
+  const fetchRoleMembers = async (roleId) => {
+    if (roleMembers[roleId]) {
+      return; // Already have data
+    }
+
+    setMembersLoading(prev => ({ ...prev, [roleId]: true }));
+    setMembersError(prev => ({ ...prev, [roleId]: null }));
+
+    try {
+      console.log(`Fetching members for role ${roleId}...`);
+      const response = await RoleService.getRoleMembers(roleId);
+      console.log(`Role ${roleId} members response:`, response);
+      setRoleMembers(prev => ({ ...prev, [roleId]: response.members }));
+    } catch (error) {
+      console.error("Error fetching role members:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to load members. Please try again.";
+      setMembersError(prev => ({ 
+        ...prev, 
+        [roleId]: errorMessage
+      }));
+      toast.error("Failed to load role members", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setMembersLoading(prev => ({ ...prev, [roleId]: false }));
+    }
+  };
+
+  const updateMemberPermission = async (roleId, userId, permission, value) => {
+    try {
+      await RoleService.updateMemberPermission(roleId, userId, permission, value);
+      
+      // Update local state
+      setRoleMembers(prev => ({
+        ...prev,
+        [roleId]: prev[roleId]?.map(member => 
+          member.sys_user_id === userId 
+            ? { ...member, [permission]: value }
+            : member
+        ) || []
+      }));
+
+      toast.success("Member permission updated successfully", {
+        position: "top-right",
+        autoClose: 2000,
+      });
+    } catch (error) {
+      console.error("Error updating member permission:", error);
+      toast.error("Failed to update member permission", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      throw error;
+    }
   };
 
   return (
@@ -186,6 +281,11 @@ export default function RolesScreen() {
                         onClick={() => handleRoleSelect(role)}
                         onToggleActive={() => handleToggleActive(role)}
                         canManage={canManageRoles}
+                        isExpanded={expandedRoles.has(role.role_id)}
+                        members={roleMembers[role.role_id]}
+                        membersLoading={membersLoading[role.role_id]}
+                        membersError={membersError[role.role_id]}
+                        onToggleExpansion={toggleRoleExpansion}
                       />
                     ))}
                   </div>
@@ -283,47 +383,178 @@ function SearchInput({ value, onChange, placeholder }) {
   );
 }
 
-function RoleItem({ role, isSelected, onClick, onToggleActive, canManage }) {
+function RoleItem({ 
+  role, 
+  isSelected, 
+  onClick, 
+  onToggleActive, 
+  canManage,
+  isExpanded,
+  members,
+  membersLoading,
+  membersError,
+  onToggleExpansion
+}) {
+  const handleExpansionClick = (e) => {
+    e.stopPropagation();
+    onToggleExpansion(role.role_id);
+  };
+
   return (
-    <div
-      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 mb-1 ${
-        isSelected
-          ? "bg-[#6237A0] text-white"
-          : "hover:bg-gray-50 text-gray-700"
-      }`}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm truncate">{role.name}</h4>
-          <p className={`text-xs mt-1 ${isSelected ? "text-purple-100" : "text-gray-500"}`}>
-            {role.permissions.length} permissions
-          </p>
-        </div>
-        <div className="flex items-center gap-2 ml-3">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              role.active ? "bg-green-400" : "bg-gray-400"
-            }`}
-            title={role.active ? "Active" : "Inactive"}
-          />
-          {canManage && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleActive();
-              }}
-              className={`p-1 rounded transition-colors ${
-                isSelected
-                  ? "hover:bg-purple-600 text-purple-100"
-                  : "hover:bg-gray-200 text-gray-500"
+    <div className="mb-1">
+      <div
+        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+          isSelected
+            ? "bg-[#6237A0] text-white"
+            : "hover:bg-gray-50 text-gray-700"
+        }`}
+        onClick={onClick}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExpansionClick}
+                className={`p-1 rounded transition-colors ${
+                  isSelected
+                    ? "hover:bg-purple-600 text-purple-100"
+                    : "hover:bg-gray-200 text-gray-500"
+                }`}
+                title={isExpanded ? "Collapse members" : "Expand members"}
+              >
+                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm truncate">{role.name}</h4>
+                <p className={`text-xs mt-1 ${isSelected ? "text-purple-100" : "text-gray-500"}`}>
+                  {role.permissions.length} permissions
+                  {members && ` • ${members.length} members`}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 ml-3">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                role.active ? "bg-green-400" : "bg-gray-400"
               }`}
-              title="Toggle Active Status"
-            >
-              <Settings size={14} />
-            </button>
+              title={role.active ? "Active" : "Inactive"}
+            />
+            {canManage && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleActive();
+                }}
+                className={`p-1 rounded transition-colors ${
+                  isSelected
+                    ? "hover:bg-purple-600 text-purple-100"
+                    : "hover:bg-gray-200 text-gray-500"
+                }`}
+                title="Toggle Active Status"
+              >
+                <Settings size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Member List */}
+      {isExpanded && (
+        <div className="ml-4 mt-2 bg-gray-50 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Users size={16} className="text-gray-600" />
+            <h5 className="font-medium text-sm text-gray-900">Role Members</h5>
+          </div>
+          
+          {membersLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6237A0]"></div>
+              <span className="ml-2 text-sm text-gray-600">Loading members...</span>
+            </div>
+          ) : membersError ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-red-600 mb-2">{membersError}</p>
+              <button
+                onClick={handleExpansionClick}
+                className="text-xs text-[#6237A0] hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : !members || members.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">No members in this role</p>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member) => (
+                <MemberListItem
+                  key={member.sys_user_id}
+                  member={member}
+                />
+              ))}
+            </div>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+function MemberListItem({ member }) {
+  // Generate initials from name or email for profile picture placeholder
+  const getInitials = (member) => {
+    if (member.profile?.prof_firstname && member.profile?.prof_lastname) {
+      return `${member.profile.prof_firstname.charAt(0)}${member.profile.prof_lastname.charAt(0)}`.toUpperCase();
+    }
+    // Fallback to email initials
+    const name = member.sys_user_email.split('@')[0];
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Get display name
+  const getDisplayName = (member) => {
+    if (member.profile?.full_name && member.profile.full_name.trim()) {
+      return member.profile.full_name;
+    }
+    // Fallback to email
+    return member.sys_user_email;
+  };
+
+  // Check if profile image exists
+  const hasProfileImage = member.profile?.profile_image;
+
+  return (
+    <div className="flex items-center p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
+      {/* Profile Picture */}
+      <div className="w-10 h-10 rounded-full mr-3 flex-shrink-0 overflow-hidden">
+        {hasProfileImage ? (
+          <img
+            src={member.profile.profile_image}
+            alt={getDisplayName(member)}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div 
+          className={`w-full h-full bg-[#6237A0] rounded-full flex items-center justify-center text-white font-medium text-sm ${hasProfileImage ? 'hidden' : 'flex'}`}
+        >
+          {getInitials(member)}
+        </div>
+      </div>
+      
+      {/* User Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">
+          {getDisplayName(member)}
+        </p>
+        <p className="text-xs text-gray-500 truncate">
+          {member.profile?.full_name ? member.sys_user_email : (member.sys_user_is_active ? "Active" : "Inactive")}
+        </p>
       </div>
     </div>
   );
@@ -405,7 +636,20 @@ function PermissionToggle({ state, onChange, disabled }) {
   );
 }
 
-function ToggleSwitch({ checked, onChange, disabled = false }) {
+function ToggleSwitch({ checked, onChange, disabled = false, size = "md" }) {
+  const sizeClasses = {
+    sm: {
+      container: "w-8 h-4",
+      toggle: "after:h-3 after:w-3 after:top-0.5 after:left-0.5 peer-checked:after:translate-x-4"
+    },
+    md: {
+      container: "w-11 h-6",
+      toggle: "after:h-5 after:w-5 after:top-0.5 after:left-0.5 peer-checked:after:translate-x-5"
+    }
+  };
+
+  const currentSize = sizeClasses[size] || sizeClasses.md;
+
   return (
     <label
       className={`inline-flex relative items-center ${
@@ -420,12 +664,12 @@ function ToggleSwitch({ checked, onChange, disabled = false }) {
         disabled={disabled}
       />
       <div
-        className={`w-11 h-6 rounded-full transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform ${
+        className={`${currentSize.container} rounded-full transition-colors duration-300 relative after:content-[''] after:absolute after:bg-white after:rounded-full after:transition-transform ${currentSize.toggle} ${
           disabled
             ? "bg-gray-300 cursor-not-allowed"
             : checked
-            ? "bg-[#6237A0] peer-checked:after:translate-x-5"
-            : "bg-gray-300 peer-checked:after:translate-x-5"
+            ? "bg-[#6237A0]"
+            : "bg-gray-300"
         }`}
       />
     </label>

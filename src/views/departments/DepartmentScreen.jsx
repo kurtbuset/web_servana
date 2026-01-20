@@ -3,6 +3,7 @@ import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import { useDepartments } from "../../hooks/useDepartments";
+import { useUser } from "../../context/UserContext";
 import "../../../src/App.css";
 
 /**
@@ -28,6 +29,10 @@ export default function DepartmentScreen() {
   const [editText, setEditText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get user permissions
+  const { hasPermission } = useUser();
+  const canEditDepartment = hasPermission("priv_can_manage_dept");
+
   // Get department state and actions from hook
   const {
     departments,
@@ -45,6 +50,11 @@ export default function DepartmentScreen() {
   );
 
   const handleSave = async () => {
+    if (!canEditDepartment) {
+      console.warn("User does not have permission to edit departments");
+      return;
+    }
+
     try {
       if (currentEditId) {
         await updateDepartment(currentEditId, editText);
@@ -62,6 +72,11 @@ export default function DepartmentScreen() {
   };
 
   const handleToggle = async (deptId, currentStatus) => {
+    if (!canEditDepartment) {
+      console.warn("User does not have permission to edit departments");
+      return;
+    }
+
     try {
       await toggleDepartment(deptId, currentStatus);
     } catch (error) {
@@ -114,11 +129,21 @@ export default function DepartmentScreen() {
 
               <button
                 onClick={() => {
+                  if (!canEditDepartment) {
+                    console.warn("User does not have permission to edit departments");
+                    return;
+                  }
                   setEditText("");
                   setCurrentEditId(null);
                   setIsModalOpen(true);
                 }}
-                className="bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800 transition-colors duration-300"
+                disabled={!canEditDepartment}
+                className={`px-4 py-2 rounded-lg text-sm transition-colors duration-300 ${
+                  canEditDepartment
+                    ? "bg-[#6237A0] text-white hover:bg-purple-800"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
               >
                 Add Department
               </button>
@@ -146,18 +171,29 @@ export default function DepartmentScreen() {
                           <Edit3
                             size={18}
                             strokeWidth={1}
-                            className="text-gray-500 cursor-pointer flex-shrink-0 transition-colors duration-200 hover:text-purple-700"
+                            className={`flex-shrink-0 transition-colors duration-200 ${
+                              canEditDepartment
+                                ? "text-gray-500 cursor-pointer hover:text-purple-700"
+                                : "text-gray-300 cursor-not-allowed"
+                            }`}
                             onClick={() => {
+                              if (!canEditDepartment) {
+                                console.warn("User does not have permission to edit departments");
+                                return;
+                              }
                               setCurrentEditId(dept.dept_id);
                               setEditText(dept.dept_name);
                               setIsModalOpen(true);
                             }}
+                            title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
                           />
                         </div>
                       </td>
 
                       <td className="py-2 px-3 text-center">
-                        <label className="inline-flex relative items-center cursor-pointer">
+                        <label className={`inline-flex relative items-center ${
+                          canEditDepartment ? "cursor-pointer" : "cursor-not-allowed"
+                        }`}>
                           <input
                             type="checkbox"
                             className="sr-only peer"
@@ -165,8 +201,14 @@ export default function DepartmentScreen() {
                             onChange={() =>
                               handleToggle(dept.dept_id, dept.dept_is_active)
                             }
+                            disabled={!canEditDepartment}
+                            title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
                           />
-                          <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3" />
+                          <div className={`w-7 h-4 rounded-full peer transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3 ${
+                            canEditDepartment
+                              ? "bg-gray-200 peer-checked:bg-[#6237A0]"
+                              : "bg-gray-100 peer-checked:bg-gray-300"
+                          }`} />
                         </label>
                       </td>
                     </tr>
@@ -214,7 +256,12 @@ export default function DepartmentScreen() {
                   </button>
                   <button
                     onClick={handleSave}
-                    className="bg-purple-700 text-white px-4 py-1 rounded-lg text-sm hover:bg-purple-800 transition-colors duration-300"
+                    disabled={!canEditDepartment}
+                    className={`px-4 py-1 rounded-lg text-sm transition-colors duration-300 ${
+                      canEditDepartment
+                        ? "bg-purple-700 text-white hover:bg-purple-800"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
                     Save
                   </button>

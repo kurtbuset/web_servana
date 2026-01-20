@@ -13,7 +13,7 @@ import { useDashboard } from "../../hooks/useDashboard";
  * the exact same UI/UX as the original Dashboard screen.
  * 
  * Features:
- * - Role-based statistics display (Admin vs Agent)
+ * - Permission-based statistics display and actions
  * - Real-time activity feed
  * - Quick action buttons
  * - Responsive design with mobile sidebar
@@ -21,7 +21,7 @@ import { useDashboard } from "../../hooks/useDashboard";
 export default function DashboardScreen() {
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState(null);
-    const { userData, isAdmin, isAgent, getRoleName } = useUser();
+    const { userData, hasPermission, getRoleName } = useUser();
     const navigate = useNavigate();
     const { stats, activity, loading } = useDashboard();
 
@@ -98,7 +98,7 @@ export default function DashboardScreen() {
                     <MessageSquare size={20} className="text-[#6237A0]" />
                     <span className="text-sm font-medium text-gray-700">View All Chats</span>
                 </button>
-                {isAdmin() && (
+                {hasPermission("priv_can_create_account") && (
                     <button 
                         onClick={() => navigate('/manage-agents')}
                         className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-[#6237A0] hover:bg-purple-50 transition-all text-left"
@@ -118,9 +118,10 @@ export default function DashboardScreen() {
         </div>
     );
 
-    // Admin sees all stats, Agent sees personal stats
+    // Show different stats based on permissions
     const renderStats = () => {
-        if (isAdmin()) {
+        // If user has management permissions, show admin-level stats
+        if (hasPermission("priv_can_manage_role") || hasPermission("priv_can_create_account")) {
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <StatCard
@@ -167,7 +168,8 @@ export default function DashboardScreen() {
                     />
                 </div>
             );
-        } else if (isAgent()) {
+        } else if (hasPermission("priv_can_view_message")) {
+            // Agent-level stats for users with chat permissions
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard
@@ -200,7 +202,17 @@ export default function DashboardScreen() {
                 </div>
             );
         }
-        return null;
+        // Default minimal stats for users with no specific permissions
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StatCard
+                    icon={Activity}
+                    label="Welcome"
+                    value="Dashboard"
+                    color="bg-gradient-to-br from-gray-500 to-gray-600"
+                />
+            </div>
+        );
     };
 
     if (loading) {

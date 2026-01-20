@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { useQueues } from "../../hooks/useQueues";
+import { useUser } from "../../context/UserContext";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
 import ConfirmDialog from "../../components/chat/ConfirmDialog";
 import TransferModal from "../../components/chat/TransferModal";
@@ -30,6 +31,13 @@ export default function QueuesScreen() {
   const textareaRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
+  // Get user permissions
+  const { hasPermission } = useUser();
+  const canMessage = hasPermission("priv_can_message");
+  const canEndChat = hasPermission("priv_can_end_chat");
+  const canTransfer = hasPermission("priv_can_transfer");
+  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess");
+
   const {
     departments,
     selectedDepartment,
@@ -55,6 +63,10 @@ export default function QueuesScreen() {
   };
 
   const handleTransferClick = () => {
+    if (!canTransfer) {
+      console.warn("User does not have permission to transfer chats");
+      return;
+    }
     setOpenDropdown(null);
     setShowTransferModal(true);
     setTransferDepartment(selectedDepartment);
@@ -83,6 +95,10 @@ export default function QueuesScreen() {
   };
 
   const handleEndChat = () => {
+    if (!canEndChat) {
+      console.warn("User does not have permission to end chats");
+      return;
+    }
     setOpenDropdown(null);
     setShowEndChatModal(true);
   };
@@ -104,6 +120,11 @@ export default function QueuesScreen() {
   };
 
   const sendMessage = () => {
+    if (!canMessage) {
+      console.warn("User does not have permission to send messages");
+      return;
+    }
+    
     const trimmedMessage = inputMessage.replace(/\n+$/, "");
     if (trimmedMessage.trim() === "") return;
 
@@ -292,6 +313,8 @@ export default function QueuesScreen() {
                     onEndChat={handleEndChat}
                     onTransfer={handleTransferClick}
                     dropdownRef={dropdownRef}
+                    canEndChat={canEndChat}
+                    canTransfer={canTransfer}
                   />
 
                   <ChatMessages
@@ -318,15 +341,22 @@ export default function QueuesScreen() {
                       setShowCannedMessages(false);
                     }}
                     disabled={
-                      !selectedCustomer.isAccepted && !selectedCustomer.sys_user_id
+                      !canMessage || 
+                      (!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id)
                     }
                     chatEnded={chatEnded}
-                    disabledMessage="Accept chat to send messages"
+                    disabledMessage={
+                      !canMessage 
+                        ? "You don't have permission to reply/Chat"
+                        : "Accept chat to send messages"
+                    }
                     showPreviewBanner={
+                      canMessage &&
                       !selectedCustomer.isAccepted &&
                       !selectedCustomer.sys_user_id &&
                       !chatEnded
                     }
+                    canUseCannedMessages={canUseCannedMessages}
                   />
                 </>
               ) : (

@@ -14,9 +14,26 @@ export const UserProvider = ({ children }) => {
     try {
       const data = await ProfileService.getProfile();
       
+      // Debug logging to see what data we're receiving
+      console.log("🔍 UserContext - Full profile response:", data);
+      console.log("🔍 UserContext - User role:", data?.role_name);
+      console.log("🔍 UserContext - User privileges:", data?.privilege);
+      console.log("🔍 UserContext - Role ID:", data?.role_id);
+      
       // Validate role data
       if (!data?.role_name) {
-        console.warn("User role information is missing or invalid");
+        console.warn("⚠️ User role information is missing or invalid");
+      }
+      
+      // Validate privilege data
+      if (!data?.privilege) {
+        console.warn("🚨 User privilege data is missing!");
+      } else {
+        console.log("✅ Privilege data found:", Object.keys(data.privilege));
+        // Log each permission status
+        Object.entries(data.privilege).forEach(([key, value]) => {
+          console.log(`  ${key}: ${value}`);
+        });
       }
       
       setUserData(data);
@@ -69,13 +86,14 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Helper function for role checking
+  // Helper function for role checking (kept for backward compatibility)
   const hasRole = (roleName) => {
     if (!userData?.role_name) return false;
     return userData.role_name.toLowerCase() === roleName.toLowerCase();
   };
 
-  // Helper functions for role-based access
+  // Note: These role-based functions are deprecated in favor of permission-based checks
+  // They are kept for backward compatibility but should not be used for access control
   const isAdmin = () => {
     if (!userData?.role_name) return false;
     return userData.role_name.toLowerCase() === "admin";
@@ -92,13 +110,15 @@ export const UserProvider = ({ children }) => {
   };
   
   const hasPermission = (permission) => {
-    // If user is admin, grant all permissions
-    if (isAdmin()) {
-      return true;
+    // Remove admin override - everyone goes through privilege table
+    if (!userData?.privilege) {
+      console.warn(`🚨 hasPermission(${permission}): No privilege data available`);
+      return false;
     }
     
-    if (!userData?.privilege) return false;
-    return userData.privilege[permission] === true;
+    const result = userData.privilege[permission] === true;
+    console.log(`🔍 hasPermission(${permission}): ${result} (value: ${userData.privilege[permission]})`);
+    return result;
   };
 
   const getRoleName = () => {

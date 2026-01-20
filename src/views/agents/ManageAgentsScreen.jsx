@@ -3,6 +3,8 @@ import { Edit3, Search, X, Eye, EyeOff, Filter } from "react-feather";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { useAgents } from "../../hooks/useAgents";
+import { useUser } from "../../context/UserContext";
+import { toast } from "react-toastify";
 import "../../../src/App.css";
 
 /**
@@ -36,6 +38,11 @@ export default function ManageAgentsScreen() {
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [selectedDepartmentsFilter, setSelectedDepartmentsFilter] = useState([]);
   const filterRef = useRef(null);
+
+  // Get user permissions
+  const { hasPermission } = useUser();
+  const canAssignDepartment = hasPermission("priv_can_assign_dept");
+  const canCreateAccount = hasPermission("priv_can_create_account");
 
   // Get agent state and actions from hook
   const {
@@ -80,6 +87,12 @@ export default function ManageAgentsScreen() {
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const handleOpenEditModal = (index = null) => {
+    if (!canCreateAccount) {
+      console.warn("User does not have permission to create accounts");
+      toast.error("You don't have permission to create or edit accounts");
+      return;
+    }
+    
     setCurrentEditIndex(index);
     setEditForm(
       index !== null
@@ -124,6 +137,12 @@ export default function ManageAgentsScreen() {
   };
 
   const handleToggleActive = async (index) => {
+    if (!canCreateAccount) {
+      console.warn("User does not have permission to create accounts");
+      toast.error("You don't have permission to modify account status");
+      return;
+    }
+
     try {
       await toggleActive(index);
     } catch (error) {
@@ -133,6 +152,12 @@ export default function ManageAgentsScreen() {
   };
 
   const handleToggleDepartment = async (agentIndex, dept) => {
+    if (!canAssignDepartment) {
+      console.warn("User does not have permission to assign departments");
+      toast.error("You don't have permission to assign departments");
+      return;
+    }
+
     try {
       await toggleDepartment(agentIndex, dept);
     } catch (error) {
@@ -209,7 +234,13 @@ export default function ManageAgentsScreen() {
 
               <button
                 onClick={() => handleOpenEditModal()}
-                className="bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800"
+                disabled={!canCreateAccount}
+                className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                  canCreateAccount
+                    ? "bg-[#6237A0] text-white hover:bg-purple-800"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                title={!canCreateAccount ? "You don't have permission to create accounts" : ""}
               >
                 Add Agent
               </button>
@@ -248,8 +279,13 @@ export default function ManageAgentsScreen() {
                             <Edit3
                               size={18}
                               strokeWidth={1}
-                              className="text-gray-500 cursor-pointer hover:text-purple-700 flex-shrink-0 mt-1"
+                              className={`flex-shrink-0 mt-1 transition-colors ${
+                                canCreateAccount
+                                  ? "text-gray-500 cursor-pointer hover:text-purple-700"
+                                  : "text-gray-300 cursor-not-allowed"
+                              }`}
                               onClick={() => handleOpenEditModal(idx)}
+                              title={!canCreateAccount ? "You don't have permission to edit accounts" : ""}
                             />
                           </div>
                         </td>
@@ -258,6 +294,7 @@ export default function ManageAgentsScreen() {
                           <ToggleSwitch
                             checked={agent.active}
                             onChange={() => handleToggleActive(idx)}
+                            disabled={!canCreateAccount}
                           />
                         </td>
 
@@ -267,7 +304,11 @@ export default function ManageAgentsScreen() {
                               type="checkbox"
                               checked={agent.departments.includes(dept)}
                               onChange={() => handleToggleDepartment(idx, dept)}
-                              className="w-4 h-4 cursor-pointer"
+                              disabled={!canAssignDepartment}
+                              className={`w-4 h-4 ${
+                                canAssignDepartment ? "cursor-pointer" : "cursor-not-allowed"
+                              }`}
+                              title={!canAssignDepartment ? "You don't have permission to assign departments" : ""}
                             />
                           </td>
                         ))}
@@ -392,16 +433,23 @@ export default function ManageAgentsScreen() {
 }
 
 // ToggleSwitch component
-function ToggleSwitch({ checked, onChange }) {
+function ToggleSwitch({ checked, onChange, disabled = false }) {
   return (
-    <label className="inline-flex relative items-center cursor-pointer">
+    <label className={`inline-flex relative items-center ${
+      disabled ? "cursor-not-allowed" : "cursor-pointer"
+    }`}>
       <input
         type="checkbox"
         className="sr-only peer"
         checked={checked}
         onChange={onChange}
+        disabled={disabled}
       />
-      <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3" />
+      <div className={`w-7 h-4 rounded-full peer transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3 ${
+        disabled
+          ? "bg-gray-100 peer-checked:bg-gray-300"
+          : "bg-gray-200 peer-checked:bg-[#6237A0]"
+      }`} />
     </label>
   );
 }

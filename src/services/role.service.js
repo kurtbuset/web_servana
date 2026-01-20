@@ -95,6 +95,39 @@ class RoleService {
     });
     return response.data;
   }
+
+  /**
+   * Get all members for a specific role
+   * @param {number} roleId - Role ID
+   * @returns {Promise<Object>} Object containing role members data
+   */
+  static async getRoleMembers(roleId) {
+    console.log(`Making API call to /roles/${roleId}/members`);
+    try {
+      const response = await api.get(`/roles/${roleId}/members`);
+      console.log(`API response for role ${roleId}:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`API error for role ${roleId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Update member permission for a specific user in a role
+   * @param {number} roleId - Role ID
+   * @param {number} userId - User ID
+   * @param {string} permission - Permission name (e.g., 'priv_can_view_message')
+   * @param {boolean} value - Permission value
+   * @returns {Promise<Object>} Updated permission data
+   */
+  static async updateMemberPermission(roleId, userId, permission, value) {
+    const response = await api.put(`/roles/${roleId}/members/${userId}/permissions`, {
+      permission: permission,
+      value: value,
+    });
+    return response.data;
+  }
 }
 
 export default RoleService;
