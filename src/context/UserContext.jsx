@@ -9,9 +9,13 @@ export const UserProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
+  const fetchUser = async (forceRefresh = false) => {
     setLoading(true);
     try {
+      // Add timestamp to prevent caching issues
+      const timestamp = Date.now();
+      console.log(`🔄 UserContext - Fetching user data (${forceRefresh ? 'forced refresh' : 'normal'}) at ${timestamp}`);
+      
       const data = await ProfileService.getProfile();
       
       // Debug logging to see what data we're receiving
@@ -27,22 +31,41 @@ export const UserProvider = ({ children }) => {
       
       // Validate privilege data
       if (!data?.privilege) {
-        console.warn("🚨 User privilege data is missing!");
+        console.error("🚨 User privilege data is missing!");
+        console.error("🚨 This will cause permission checks to fail");
+        console.error("🚨 Backend response structure:", Object.keys(data || {}));
       } else {
         console.log("✅ Privilege data found:", Object.keys(data.privilege));
-        // Log each permission status
+        // Log each permission status with detailed info
         Object.entries(data.privilege).forEach(([key, value]) => {
-          console.log(`  ${key}: ${value}`);
+          const status = value === true ? "✅ GRANTED" : "❌ DENIED";
+          console.log(`  ${key}: ${value} ${status}`);
         });
       }
       
-      setUserData(data);
+      // Store with timestamp to track freshness
+      const userDataWithMeta = {
+        ...data,
+        _fetchedAt: timestamp,
+        _sessionId: Math.random().toString(36).substr(2, 9)
+      };
+      
+      setUserData(userDataWithMeta);
+      console.log(`✅ UserContext - User data updated successfully (session: ${userDataWithMeta._sessionId})`);
+      
     } catch (err) {
-      console.error("Failed to fetch user data:", err);
+      console.error("❌ Failed to fetch user data:", err);
+      console.error("❌ Error details:", err.response?.data || err.message);
       setUserData(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Force refresh user data (useful after login/logout)
+  const refreshUserData = async () => {
+    console.log("🔄 Force refreshing user data...");
+    await fetchUser(true);
   };
 
   useEffect(() => {
@@ -78,7 +101,16 @@ export const UserProvider = ({ children }) => {
   const logout = async () => {
     try {
       await AuthService.logout();
+      
+      // Clear all user data and force fresh fetch on next login
       setUserData(null);
+      
+      // Clear any potential cached data in localStorage/sessionStorage
+      localStorage.removeItem('userData');
+      sessionStorage.removeItem('userData');
+      
+      console.log("🔄 Logout complete - cleared all user data and cache");
+      
       return { success: true };
     } catch (err) {
       console.error("Failed to logout:", err);
@@ -90,11 +122,24 @@ export const UserProvider = ({ children }) => {
     // Remove admin override - everyone goes through privilege table
     if (!userData?.privilege) {
       console.warn(`🚨 hasPermission(${permission}): No privilege data available`);
+      console.warn(`🚨 UserData state:`, {
+        hasUserData: !!userData,
+        userDataKeys: userData ? Object.keys(userData) : [],
+        sessionId: userData?._sessionId,
+        fetchedAt: userData?._fetchedAt
+      });
       return false;
     }
     
-    const result = userData.privilege[permission] === true;
-    console.log(`🔍 hasPermission(${permission}): ${result} (value: ${userData.privilege[permission]})`);
+    const privilegeValue = userData.privilege[permission];
+    const result = privilegeValue === true;
+    
+    console.log(`🔍 hasPermission(${permission}): ${result} (raw value: ${privilegeValue}, type: ${typeof privilegeValue})`);
+    
+    if (!result && privilegeValue !== false) {
+      console.warn(`⚠️ Unexpected privilege value for ${permission}:`, privilegeValue);
+    }
+    
     return result;
   };
 
@@ -131,6 +176,7 @@ export const UserProvider = ({ children }) => {
       setUserData, 
       loading, 
       fetchUser,
+      refreshUserData,
       updateProfile,
       uploadProfileImage,
       logout,
