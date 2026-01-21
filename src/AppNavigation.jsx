@@ -6,44 +6,22 @@ import {
   Navigate,
 } from "react-router-dom";
 import api from "../src/api";
-import { useUser } from "./context/UserContext";
 
-// New refactored screens
-import LoginScreen from "./views/login/LoginScreen.jsx";
-import DashboardScreen from "./views/dashboard/DashboardScreen.jsx";
-import ChatsScreen from "./views/chats/ChatsScreen.jsx";
-import DepartmentScreen from "./views/departments/DepartmentScreen.jsx";
-import ManageAgentsScreen from "./views/agents/ManageAgentsScreen.jsx";
-import RolesScreen from "./views/roles/RolesScreen.jsx";
-import ChangeRolesScreen from "./views/change-roles/ChangeRolesScreen.jsx";
-import QueuesScreen from "./views/queues/QueuesScreen.jsx";
-import AutoRepliesScreen from "./views/auto-replies/AutoRepliesScreen.jsx";
-import MacrosAgentsScreen from "./views/macros/MacrosAgentsScreen.jsx";
-import MacrosClientsScreen from "./views/macros/MacrosClientsScreen.jsx";
-import Profile from "./views/profile/Profile.jsx";
-import ManageAdmin from "./views/manage-admin/ManageAdmin.jsx"
-
-// Legacy screens (not yet migrated)
-import "react-toastify/dist/ReactToastify.css";
-import { ToastContainer, toast } from "react-toastify";
-
-
-/**
- * PermissionRoute: Redirect to Dashboard if user doesn't have required permission
- */
-function PermissionRoute({ children, permission }) {
-  const { hasPermission, loading } = useUser();
-
-  if (loading) {
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading…</div>;
-  }
-
-  if (permission && !hasPermission(permission)) {
-    return <Navigate to="/Dashboard" replace />;
-  }
-
-  return children;
-}
+import Login from "../screens/Login.jsx";
+import Queues from "../screens/Queues.jsx";
+import Chats from "../screens/Chats.jsx";
+import Department from "../screens/Department.jsx";
+import Profile from "../screens/Profile.jsx";
+import ManageAgents from "../screens/ManageAgents.jsx";
+import ChangeRole from "../screens/ChangeRoles.jsx";
+import AutoReplies from "../screens/AutoReplies.jsx";
+import Agents from "../screens/MacrosAgents.jsx";
+import Clients from "../screens/MacrosClients.jsx";
+import ManageAdmin from "../screens/ManageAdmin.jsx";
+import Roles from "../screens/Roles.jsx";
+import MacrosAgents from "../screens/MacrosAgents.jsx";
+import MacrosClients from "../screens/MacrosClients.jsx";
+import Dashboard from "../screens/Dashboard.jsx";
 
 /**
  * ProtectedRoute: Redirect to login if not authenticated
@@ -147,7 +125,7 @@ function AppNavigation() {
           path="/"
           element={
             <PublicRoute>
-              <LoginScreen />
+              <Login />
             </PublicRoute>
           }
         />
@@ -158,7 +136,7 @@ function AppNavigation() {
           path="/Dashboard"
           element={
             <ProtectedRoute>
-              <DashboardScreen />
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -167,9 +145,7 @@ function AppNavigation() {
           path="/Queues"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
-                <QueuesScreen />
-              </PermissionRoute>
+              <Queues />
             </ProtectedRoute>
           }
         />
@@ -177,9 +153,7 @@ function AppNavigation() {
           path="/chats"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
-                <ChatsScreen />
-              </PermissionRoute>
+              <Chats />
             </ProtectedRoute>
           }
         />
@@ -187,9 +161,7 @@ function AppNavigation() {
           path="/department"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_dept">
-                <DepartmentScreen />
-              </PermissionRoute>
+              <Department />
             </ProtectedRoute>
           }
         />
@@ -205,9 +177,7 @@ function AppNavigation() {
           path="/manage-agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_create_account">
-                <ManageAgentsScreen />
-              </PermissionRoute>
+              <ManageAgents />
             </ProtectedRoute>
           }
         />
@@ -215,9 +185,7 @@ function AppNavigation() {
           path="/change-role"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_assign_role">
-                <ChangeRolesScreen />
-              </PermissionRoute>
+              <ChangeRole />
             </ProtectedRoute>
           }
         />
@@ -225,9 +193,7 @@ function AppNavigation() {
           path="/auto-replies"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_auto_reply">
-                <AutoRepliesScreen />
-              </PermissionRoute>
+              <AutoReplies />
             </ProtectedRoute>
           }
         />
@@ -235,9 +201,7 @@ function AppNavigation() {
           path="/agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
-                <MacrosAgentsScreen />
-              </PermissionRoute>
+              <Agents />
             </ProtectedRoute>
           }
         />
@@ -245,9 +209,7 @@ function AppNavigation() {
           path="/clients"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
-                <MacrosClientsScreen />
-              </PermissionRoute>
+              <Clients />
             </ProtectedRoute>
           }
         />
@@ -255,9 +217,7 @@ function AppNavigation() {
           path="/macros-agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
-                <MacrosAgentsScreen />
-              </PermissionRoute>
+              <MacrosAgents />
             </ProtectedRoute>
           }
         />
@@ -265,9 +225,7 @@ function AppNavigation() {
           path="/macros-clients"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
-                <MacrosClientsScreen />
-              </PermissionRoute>
+              <MacrosClients />
             </ProtectedRoute>
           }
         />
@@ -275,9 +233,7 @@ function AppNavigation() {
           path="/manage-admin"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_create_account">
-                <ManageAdmin />
-              </PermissionRoute>
+              <ManageAdmin />
             </ProtectedRoute>
           }
         />
@@ -285,9 +241,7 @@ function AppNavigation() {
           path="/roles"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_role">
-                <RolesScreen />
-              </PermissionRoute>
+              <Roles />
             </ProtectedRoute>
           }
         />
