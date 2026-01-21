@@ -1,16 +1,19 @@
 import {
   Layers,
   MessageSquare,
-  Grid,
   Users,
-  Repeat,
-  List,
   UserCheck,
-  Command,
   ChevronDown,
-  ChevronUp,
-  Activity
+  Activity,
+  Shield,
+  MessageCircle,
+  Zap,
+  Key,
+  FileText,
+  Headphones,
+  Cpu
 } from "react-feather";
+import { HiOfficeBuilding } from "react-icons/hi";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../../../src/context/UserContext";
@@ -18,58 +21,162 @@ import { useState, useEffect } from "react";
 import socket from "../../socket";
 import { ROUTES } from "../../constants/routes";
 
-const navItems = [
-  { to: ROUTES.DASHBOARD, icon: Activity, label: "Dashboard" }, // Always accessible - landing page
-  { to: ROUTES.QUEUES, icon: Layers, label: "Queues", permission: "priv_can_view_message", showBadge: true, badgeKey: "pendingChats" },
-  { to: ROUTES.CHATS, icon: MessageSquare, label: "Chats", permission: "priv_can_view_message", showBadge: true, badgeKey: "activeChats" },
-  { to: ROUTES.DEPARTMENTS, icon: Grid, label: "Department", permission: "priv_can_manage_dept" },
-  { to: ROUTES.AUTO_REPLIES, icon: Repeat, label: "Auto-Replies", permission: "priv_can_manage_auto_reply" },
-  { to: ROUTES.MANAGE_ADMIN, icon: UserCheck, label: "Manage Admin", permission: "priv_can_create_account" },
-  { to: ROUTES.ROLES, icon: Command, label: "Roles", permission: "priv_can_manage_role" },
+const navSections = [
+  {
+    title: "Overview",
+    items: [
+      { 
+        to: ROUTES.DASHBOARD, 
+        icon: Activity, 
+        label: "Dashboard",
+        description: "System overview & analytics"
+      }
+    ]
+  },
+  {
+    title: "Communication",
+    items: [
+      { 
+        to: ROUTES.QUEUES, 
+        icon: Layers, 
+        label: "Queues", 
+        permission: "priv_can_view_message", 
+        showBadge: true, 
+        badgeKey: "pendingChats",
+        description: "Pending customer requests"
+      },
+      { 
+        to: ROUTES.CHATS, 
+        icon: MessageSquare, 
+        label: "Active Chats", 
+        permission: "priv_can_view_message", 
+        showBadge: true, 
+        badgeKey: "activeChats",
+        description: "Ongoing conversations"
+      }
+    ]
+  },
+  {
+    title: "Management",
+    items: [
+      { 
+        to: ROUTES.DEPARTMENTS, 
+        icon: HiOfficeBuilding, 
+        label: "Departments", 
+        permission: "priv_can_manage_dept",
+        description: "Organize teams & workflows"
+      },
+      { 
+        to: ROUTES.AUTO_REPLIES, 
+        icon: Cpu, 
+        label: "Auto-Replies", 
+        permission: "priv_can_manage_auto_reply",
+        description: "Automated responses"
+      }
+    ]
+  },
+  {
+    title: "Administration",
+    items: [
+      { 
+        to: ROUTES.MANAGE_ADMIN, 
+        icon: Shield, 
+        label: "Admin Users", 
+        permission: "priv_can_create_account",
+        description: "System administrators"
+      },
+      { 
+        to: ROUTES.ROLES, 
+        icon: Key, 
+        label: "Roles & Permissions", 
+        permission: "priv_can_manage_role",
+        description: "Access control management"
+      }
+    ]
+  }
 ];
 
-const dropdownItems = [
+const dropdownSections = [
   {
-    id: "users",
+    id: "user-management",
     icon: Users,
+    label: "User Management",
+    description: "Manage system users",
     items: [
-      { to: ROUTES.MANAGE_AGENTS, label: "Manage Agents", permission: "priv_can_create_account" },
-      { to: ROUTES.CHANGE_ROLE, label: "Change Roles", permission: "priv_can_assign_role" },
-    ],
+      { 
+        to: ROUTES.MANAGE_AGENTS, 
+        label: "Manage Agents", 
+        icon: Headphones,
+        permission: "priv_can_create_account",
+        description: "Customer service agents"
+      },
+      { 
+        to: ROUTES.CHANGE_ROLE, 
+        label: "Change Roles", 
+        icon: UserCheck,
+        permission: "priv_can_assign_role",
+        description: "Modify user permissions"
+      }
+    ]
   },
   {
-    id: "macros",
-    icon: List,
+    id: "automation",
+    icon: Zap,
+    label: "Automation Tools",
+    description: "Automated responses & macros",
     items: [
-      { to: ROUTES.MACROS_AGENTS, label: "Macros Agents", permission: "priv_can_use_canned_mess" },
-      { to: ROUTES.MACROS_CLIENTS, label: "Macros Clients", permission: "priv_can_use_canned_mess" },
-    ],
-  },
+      { 
+        to: ROUTES.MACROS_AGENTS, 
+        label: "Agent Macros", 
+        icon: MessageCircle,
+        permission: "priv_can_use_canned_mess",
+        description: "Quick responses for agents"
+      },
+      { 
+        to: ROUTES.MACROS_CLIENTS, 
+        label: "Client Macros", 
+        icon: FileText,
+        permission: "priv_can_use_canned_mess",
+        description: "Automated client messages"
+      }
+    ]
+  }
 ];
 
-const NavItem = ({ to, Icon, label, isActive, badgeCount }) => (
-  <div className="relative" key={to}>
+const NavItem = ({ to, Icon, label, description, isActive, badgeCount }) => (
+  <div className="relative group" key={to}>
     {isActive && (
       <motion.div
         layoutId="activeHighlight"
-        className="absolute inset-0 rounded-lg bg-[#6237A0] z-0"
+        className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#6237A0] to-[#7C4DFF] z-0"
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       />
     )}
     <Link
       to={to}
-      className={`relative flex items-center gap-3 px-3 py-2 rounded-lg z-10 ${
-        isActive ? "text-white" : "text-black hover:text-gray-700"
+      className={`relative flex items-center gap-3 px-4 py-2 rounded-lg z-10 transition-all duration-200 ${
+        isActive 
+          ? "text-white shadow-lg" 
+          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
       }`}
     >
-      <Icon size={18} strokeWidth={1} />
-      <span className="w-full text-left">{label}</span>
+      <div className={`p-1 rounded-md ${isActive ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+        <Icon size={14} strokeWidth={isActive ? 2 : 1.5} className={isActive ? 'text-white' : 'text-gray-600'} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-xs">{label}</div>
+        {description && (
+          <div className={`text-xs mt-0.5 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+            {description}
+          </div>
+        )}
+      </div>
       {badgeCount !== undefined && badgeCount > 0 && (
-        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-semibold ${
+        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
           isActive 
             ? "bg-white text-[#6237A0]" 
             : "bg-[#6237A0] text-white"
-        }`}>
+        } shadow-sm`}>
           {badgeCount > 99 ? '99+' : badgeCount}
         </span>
       )}
@@ -77,7 +184,15 @@ const NavItem = ({ to, Icon, label, isActive, badgeCount }) => (
   </div>
 );
 
-const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasPermission }) => {
+const SectionHeader = ({ title }) => (
+  <div className="px-4 py-2 mb-1">
+    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+      {title}
+    </h3>
+  </div>
+);
+
+const DropdownItem = ({ icon: Icon, label, description, items, id, isOpen, toggleDropdown, hasPermission }) => {
   const location = useLocation();
   
   // Filter items based on permissions only
@@ -95,9 +210,7 @@ const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasPermis
   const isActive = !!activeItem;
 
   const handleDropdownToggle = () => {
-    if (!(isOpen && isActive)) {
-      toggleDropdown(id);
-    }
+    toggleDropdown(isOpen ? null : id);
   };
 
   return (
@@ -105,41 +218,70 @@ const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasPermis
       {isActive && (
         <motion.div
           layoutId="activeHighlight"
-          className="absolute inset-0 rounded-lg bg-[#6237A0] z-0"
+          className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#6237A0] to-[#7C4DFF] z-0"
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
       )}
       <button
         onClick={handleDropdownToggle}
-        className={`relative flex items-center gap-3 px-3 py-2 w-full rounded-lg z-10 ${
-          isActive ? "text-white" : "text-black hover:text-gray-700"
+        className={`relative flex items-center gap-3 px-4 py-2 w-full rounded-lg z-10 transition-all duration-200 group ${
+          isActive 
+            ? "text-white shadow-lg" 
+            : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
         }`}
       >
-        <Icon size={18} strokeWidth={1} />
-        <span className="w-full text-left">
-          {activeItem?.label || id.charAt(0).toUpperCase() + id.slice(1)}
-        </span>
-        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <div className={`p-1 rounded-md ${isActive ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+          <Icon size={14} strokeWidth={isActive ? 2 : 1.5} className={isActive ? 'text-white' : 'text-gray-600'} />
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <div className="font-medium text-xs">
+            {activeItem?.label || label}
+          </div>
+          {description && (
+            <div className={`text-xs mt-0.5 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+              {description}
+            </div>
+          )}
+        </div>
+        <ChevronDown 
+          size={12} 
+          className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${
+            isActive ? 'text-white' : 'text-gray-400'
+          }`} 
+        />
       </button>
 
       <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-0 top-full mt-1 w-48 bg-white shadow-lg border border-gray-100 rounded-lg z-50 text-sm text-gray-700"
+            className="absolute left-0 top-full mt-2 w-64 bg-white shadow-xl border border-gray-200 rounded-xl z-50 overflow-hidden"
           >
-            {visibleItems.map(({ to, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className="block px-4 py-2 hover:bg-gray-100"
-              >
-                {label}
-              </Link>
-            ))}
+            <div className="p-2">
+              {visibleItems.map(({ to, label, icon: ItemIcon, description }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-150 group"
+                  onClick={() => toggleDropdown(null)} // Close dropdown when item is clicked
+                >
+                  {ItemIcon && (
+                    <div className="p-1 rounded-md bg-gray-100 group-hover:bg-gray-200">
+                      <ItemIcon size={12} className="text-gray-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-xs text-gray-900">{label}</div>
+                    {description && (
+                      <div className="text-xs text-gray-500 mt-0.5">{description}</div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -243,19 +385,22 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
 
   if (isMobile && !isOpen) return null;
 
-  // Filter navigation items based on permissions only
-  const visibleNavItems = navItems.filter(item => {
-    // If no permission specified, item is always visible (like Dashboard)
-    if (!item.permission) {
-      return true;
-    }
-    
-    // Check permission
-    return hasPermission(item.permission);
-  });
+  // Filter navigation sections based on permissions
+  const visibleNavSections = navSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      // If no permission specified, item is always visible (like Dashboard)
+      if (!item.permission) {
+        return true;
+      }
+      
+      // Check permission
+      return hasPermission(item.permission);
+    })
+  })).filter(section => section.items.length > 0); // Only show sections with visible items
 
   // Filter dropdown items based on permissions
-  const visibleDropdownItems = dropdownItems.filter(item => {
+  const visibleDropdownItems = dropdownSections.filter(item => {
     // Check if dropdown has any visible items
     const visibleItems = item.items.filter(subItem => {
       if (!subItem.permission) return true;
@@ -272,32 +417,55 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
         isMobile
           ? "absolute top-16 left-0 z-40 h-[calc(100vh-4rem)]"
           : "hidden md:flex"
-      } w-64 bg-white text-black flex-col p-6 shadow-md overflow-y-auto`}
+      } w-72 bg-white text-black flex-col shadow-lg border-r border-gray-200 overflow-y-auto`}
     >
-      <nav className="flex flex-col gap-6 mt-4 relative">
-        {visibleNavItems.map((item) => (
-          <NavItem
-            key={item.to}
-            to={item.to}
-            Icon={item.icon}
-            label={item.label}
-            isActive={isActivePath(item.to)}
-            badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
-          />
-        ))}
+      <div className="p-4">
 
-        {visibleDropdownItems.map((item) => (
-          <DropdownItem
-            key={item.id}
-            icon={item.icon}
-            id={item.id}
-            items={item.items}
-            isOpen={openDropdown === item.id}
-            toggleDropdown={toggleDropdown}
-            hasPermission={hasPermission}
-          />
-        ))}
-      </nav>
+
+        <nav className="space-y-4">
+          {/* Navigation Sections */}
+          {visibleNavSections.map((section) => (
+            <div key={section.title}>
+              <SectionHeader title={section.title} />
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavItem
+                    key={item.to}
+                    to={item.to}
+                    Icon={item.icon}
+                    label={item.label}
+                    description={item.description}
+                    isActive={isActivePath(item.to)}
+                    badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Dropdown Sections */}
+          {visibleDropdownItems.length > 0 && (
+            <div>
+              <SectionHeader title="Advanced Tools" />
+              <div className="space-y-1">
+                {visibleDropdownItems.map((item) => (
+                  <DropdownItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    description={item.description}
+                    id={item.id}
+                    items={item.items}
+                    isOpen={openDropdown === item.id}
+                    toggleDropdown={toggleDropdown}
+                    hasPermission={hasPermission}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </nav>
+      </div>
     </aside>
   );
 };

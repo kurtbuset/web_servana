@@ -86,29 +86,6 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Helper function for role checking (kept for backward compatibility)
-  const hasRole = (roleName) => {
-    if (!userData?.role_name) return false;
-    return userData.role_name.toLowerCase() === roleName.toLowerCase();
-  };
-
-  // Note: These role-based functions are deprecated in favor of permission-based checks
-  // They are kept for backward compatibility but should not be used for access control
-  const isAdmin = () => {
-    if (!userData?.role_name) return false;
-    return userData.role_name.toLowerCase() === "admin";
-  };
-
-  const isAgent = () => {
-    if (!userData?.role_name) return false;
-    return userData.role_name.toLowerCase() === "agent";
-  };
-
-  const isClient = () => {
-    if (!userData?.role_name) return false;
-    return userData.role_name.toLowerCase() === "client";
-  };
-  
   const hasPermission = (permission) => {
     // Remove admin override - everyone goes through privilege table
     if (!userData?.privilege) {
@@ -157,10 +134,6 @@ export const UserProvider = ({ children }) => {
       updateProfile,
       uploadProfileImage,
       logout,
-      hasRole,
-      isAdmin,
-      isAgent,
-      isClient,
       hasPermission,
       getRoleName,
       getUserId,
