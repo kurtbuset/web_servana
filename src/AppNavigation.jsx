@@ -4,24 +4,29 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import api from "../src/api";
 
-import Login from "../screens/Login.jsx";
-import Queues from "../screens/Queues.jsx";
-import Chats from "../screens/Chats.jsx";
-import Department from "../screens/Department.jsx";
-import Profile from "../screens/Profile.jsx";
-import ManageAgents from "../screens/ManageAgents.jsx";
-import ChangeRole from "../screens/ChangeRoles.jsx";
-import AutoReplies from "../screens/AutoReplies.jsx";
-import Agents from "../screens/MacrosAgents.jsx";
-import Clients from "../screens/MacrosClients.jsx";
-import ManageAdmin from "../screens/ManageAdmin.jsx";
-import Roles from "../screens/Roles.jsx";
-import MacrosAgents from "../screens/MacrosAgents.jsx";
-import MacrosClients from "../screens/MacrosClients.jsx";
-import Dashboard from "../screens/Dashboard.jsx";
+// New refactored screens
+import LoginScreen from "./views/login/LoginScreen.jsx";
+import DashboardScreen from "./views/dashboard/DashboardScreen.jsx";
+import ChatsScreen from "./views/chats/ChatsScreen.jsx";
+import DepartmentScreen from "./views/departments/DepartmentScreen.jsx";
+import ManageAgentsScreen from "./views/agents/ManageAgentsScreen.jsx";
+import RolesScreen from "./views/roles/RolesScreen.jsx";
+import ChangeRolesScreen from "./views/change-roles/ChangeRolesScreen.jsx";
+import QueuesScreen from "./views/queues/QueuesScreen.jsx";
+import AutoRepliesScreen from "./views/auto-replies/AutoRepliesScreen.jsx";
+import MacrosAgentsScreen from "./views/macros/MacrosAgentsScreen.jsx";
+import MacrosClientsScreen from "./views/macros/MacrosClientsScreen.jsx";
+import Profile from "./views/profile/Profile.jsx";
+import ManageAdmin from "./views/manage-admin/ManageAdmin.jsx"
+
+// Legacy screens (not yet migrated)
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer, toast } from "react-toastify";
+
 
 /**
  * ProtectedRoute: Redirect to login if not authenticated
@@ -70,7 +75,7 @@ function ProtectedRoute({ children }) {
 }
 
 /**
- * PublicRoute: Redirect authenticated users away from Login to /Queues
+ * PublicRoute: Redirect authenticated users away from Login to /Dashboard
  */
 function PublicRoute({ children }) {
   const [state, setState] = React.useState({ loading: true, authed: false });
@@ -82,7 +87,9 @@ function PublicRoute({ children }) {
       api
         .get("/auth/me")
         .then(() => {
-          if (isMounted) setState({ loading: false, authed: true });
+          if (isMounted) {
+            setState({ loading: false, authed: true });
+          }
         })
         .catch(() => {
           if (isMounted) setState({ loading: false, authed: false });
@@ -116,16 +123,36 @@ function PublicRoute({ children }) {
 }
 
 
+function ToastHandler() {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    // Check if we should show login toast
+    const showLoginToast = localStorage.getItem("showLoginToast");
+    if (showLoginToast === "true") {
+      localStorage.removeItem("showLoginToast");
+      toast.success("Welcome back! You've successfully logged in.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    }
+  }, [location]);
+
+  return null;
+}
+
 function AppNavigation() {
   return (
     <Router>
+      <ToastContainer />
+      <ToastHandler />
       <Routes>
         {/* Public: Login, redirect if authed */}
         <Route
           path="/"
           element={
             <PublicRoute>
-              <Login />
+              <LoginScreen />
             </PublicRoute>
           }
         />
@@ -136,7 +163,7 @@ function AppNavigation() {
           path="/Dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardScreen />
             </ProtectedRoute>
           }
         />
@@ -145,7 +172,7 @@ function AppNavigation() {
           path="/Queues"
           element={
             <ProtectedRoute>
-              <Queues />
+              <QueuesScreen />
             </ProtectedRoute>
           }
         />
@@ -153,7 +180,7 @@ function AppNavigation() {
           path="/chats"
           element={
             <ProtectedRoute>
-              <Chats />
+              <ChatsScreen />
             </ProtectedRoute>
           }
         />
@@ -161,7 +188,7 @@ function AppNavigation() {
           path="/department"
           element={
             <ProtectedRoute>
-              <Department />
+              <DepartmentScreen />
             </ProtectedRoute>
           }
         />
@@ -177,7 +204,7 @@ function AppNavigation() {
           path="/manage-agents"
           element={
             <ProtectedRoute>
-              <ManageAgents />
+              <ManageAgentsScreen />
             </ProtectedRoute>
           }
         />
@@ -185,7 +212,7 @@ function AppNavigation() {
           path="/change-role"
           element={
             <ProtectedRoute>
-              <ChangeRole />
+              <ChangeRolesScreen />
             </ProtectedRoute>
           }
         />
@@ -193,7 +220,7 @@ function AppNavigation() {
           path="/auto-replies"
           element={
             <ProtectedRoute>
-              <AutoReplies />
+              <AutoRepliesScreen />
             </ProtectedRoute>
           }
         />
@@ -201,7 +228,7 @@ function AppNavigation() {
           path="/agents"
           element={
             <ProtectedRoute>
-              <Agents />
+              <MacrosAgentsScreen />
             </ProtectedRoute>
           }
         />
@@ -209,7 +236,7 @@ function AppNavigation() {
           path="/clients"
           element={
             <ProtectedRoute>
-              <Clients />
+              <MacrosClientsScreen />
             </ProtectedRoute>
           }
         />
@@ -217,7 +244,7 @@ function AppNavigation() {
           path="/macros-agents"
           element={
             <ProtectedRoute>
-              <MacrosAgents />
+              <MacrosAgentsScreen />
             </ProtectedRoute>
           }
         />
@@ -225,7 +252,7 @@ function AppNavigation() {
           path="/macros-clients"
           element={
             <ProtectedRoute>
-              <MacrosClients />
+              <MacrosClientsScreen />
             </ProtectedRoute>
           }
         />
@@ -241,7 +268,7 @@ function AppNavigation() {
           path="/roles"
           element={
             <ProtectedRoute>
-              <Roles />
+              <RolesScreen />
             </ProtectedRoute>
           }
         />
