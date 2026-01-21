@@ -141,29 +141,11 @@ function PublicRoute({ children }) {
 }
 
 
-function ToastHandler() {
-  const location = useLocation();
-
-  React.useEffect(() => {
-    // Check if we should show login toast
-    const showLoginToast = localStorage.getItem("showLoginToast");
-    if (showLoginToast === "true") {
-      localStorage.removeItem("showLoginToast");
-      toast.success("Welcome back! You've successfully logged in.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
-    }
-  }, [location]);
-
-  return null;
-}
 
 function AppNavigation() {
   return (
     <Router>
       <ToastContainer />
-      <ToastHandler />
       <Routes>
         {/* Public: Login, redirect if authed */}
         <Route
