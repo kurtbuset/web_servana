@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Privileges</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Privilege Debug Tool</h1>
+    
+    <div class="debug-section">
+        <h3>Test Privilege Fetching</h3>
+        <button onclick="testPrivileges()">Test Current User Privileges</button>
+        <button onclick="debugPrivilegeTable()">Debug Privilege Table Structure</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        
+        async function testPrivileges() {
+            try {
+                addResult('🔄 Testing privilege fetching...', 'info');
+                
+                const response = await fetch(`${API_BASE}/profile`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                addResult('✅ Profile fetch successful', 'success');
+                addResult('Profile Data:', 'info');
+                addResult(JSON.stringify(data, null, 2), 'code');
+                
+                // Check privilege data specifically
+                if (data.privilege) {
+                    addResult('✅ Privilege data found:', 'success');
+                    Object.entries(data.privilege).forEach(([key, value]) => {
+                        const status = value === true ? '✅' : '❌';
+                        addResult(`  ${key}: ${value} ${status}`, 'info');
+                    });
+                } else {
+                    addResult('❌ No privilege data in response', 'error');
+                }
+                
+            } catch (error) {
+                addResult(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function debugPrivilegeTable() {
+            try {
+                addResult('🔧 Debugging privilege table structure...', 'info');
+                
+                const response = await fetch(`${API_BASE}/profile/debug/privileges`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                addResult('✅ Debug fetch successful', 'success');
+                addResult('Debug Data:', 'info');
+                addResult(JSON.stringify(data, null, 2), 'code');
+                
+            } catch (error) {
+                addResult(`❌ Debug Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `debug-section ${type}`;
+            
+            if (type === 'code') {
+                const pre = document.createElement('pre');
+                pre.textContent = message;
+                div.appendChild(pre);
+            } else {
+                div.textContent = message;
+            }
+            
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Add timestamp
+        addResult(`Debug tool loaded at ${new Date().toLocaleString()}`, 'info');
+    </script>
+</body>
+</html>

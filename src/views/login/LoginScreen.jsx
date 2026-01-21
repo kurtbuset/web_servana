@@ -18,7 +18,7 @@ import { useUser } from "../../../src/context/UserContext";
  */
 export default function LoginScreen() {
   const { login, loading, error } = useAuth();
-  const { fetchUser } = useUser();
+  const { refreshUserData } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -28,8 +28,9 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await login(email, password);
-      // Fetch user data after successful login
-      await fetchUser();
+      // Force refresh user data after successful login to ensure fresh privileges
+      console.log("🔄 Login successful - refreshing user data...");
+      await refreshUserData();
       // Set flag for showing toast after navigation
       localStorage.setItem("showLoginToast", "true");
     } catch (err) {
