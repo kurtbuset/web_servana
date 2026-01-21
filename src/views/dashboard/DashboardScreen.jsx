@@ -231,6 +231,8 @@ export default function DashboardScreen() {
             <div className="flex flex-col h-screen overflow-hidden">
                 <TopNavbar toggleSidebar={toggleSidebar} />
 
+
+
                 <div className="flex flex-1 overflow-hidden">
                     <Sidebar
                         isMobile={true}
@@ -246,35 +248,16 @@ export default function DashboardScreen() {
                         openDropdown={openDropdown}
                     />
 
-                    <main className="flex-1 bg-[#F7F5FB] p-6 overflow-y-auto">
-                        <div className="max-w-7xl mx-auto space-y-6">
-                            {/* Header */}
-                            <div className="mb-6">
-                                <h1 className="text-3xl font-bold text-[#2E1065] mb-2">Dashboard</h1>
-                                <p className="text-gray-600">
-                                    Welcome back, {userData?.profile?.prof_firstname || 'User'}! 
-                                    <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                                        {getRoleName()}
-                                    </span>
-                                </p>
-                            </div>
-
-                            {/* Stats Grid - Role-based */}
-                            {renderStats()}
-
-                            {/* Activity & Quick Actions */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2">
-                                    <RecentActivity />
-                                </div>
-                                <div>
-                                    <QuickActions />
-                                </div>
-                            </div>
+                    <main className="flex-1 bg-gray-100 p-15 overflow-y-auto transition-colors duration-300">
+                        <div className="bg-white p-4 rounded-lg flex flex-col flex-1 min-h-0 transition-all duration-300">
+                            <h1>Dashboard</h1>
                         </div>
                     </main>
+
+
                 </div>
             </div>
+
         </>
-    );
+    )
 }

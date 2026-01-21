@@ -47,7 +47,7 @@ const dropdownItems = [
   },
 ];
 
-const NavItem = ({ to, Icon, label, isActive, badgeCount }) => (
+const NavItem = ({ to, Icon, label, isActive }) => (
   <div className="relative" key={to}>
     {isActive && (
       <motion.div
@@ -64,15 +64,6 @@ const NavItem = ({ to, Icon, label, isActive, badgeCount }) => (
     >
       <Icon size={18} strokeWidth={1} />
       <span className="w-full text-left">{label}</span>
-      {badgeCount !== undefined && badgeCount > 0 && (
-        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-semibold ${
-          isActive 
-            ? "bg-white text-[#6237A0]" 
-            : "bg-[#6237A0] text-white"
-        }`}>
-          {badgeCount > 99 ? '99+' : badgeCount}
-        </span>
-      )}
     </Link>
   </div>
 );
@@ -131,7 +122,7 @@ const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasPermis
             transition={{ duration: 0.2 }}
             className="absolute left-0 top-full mt-1 w-48 bg-white shadow-lg border border-gray-100 rounded-lg z-50 text-sm text-gray-700"
           >
-            {visibleItems.map(({ to, label }) => (
+            {items.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
@@ -149,15 +140,10 @@ const DropdownItem = ({ icon: Icon, items, id, isOpen, toggleDropdown, hasPermis
 
 const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
   const location = useLocation();
-  const { userData, hasPermission } = useUser();
-  const [counts, setCounts] = useState({
-    pendingChats: 0,
-    activeChats: 0
-  });
 
-  const isActivePath = (to, extraPaths = []) =>
-    location.pathname.toLowerCase() === to.toLowerCase() ||
-    extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase());
+const isActivePath = (to, extraPaths = []) =>
+  location.pathname.toLowerCase() === to.toLowerCase() ||
+  extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase());
 
   // Fetch initial chat counts and set up WebSocket listeners
   useEffect(() => {
@@ -275,18 +261,17 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
       } w-64 bg-white text-black flex-col p-6 shadow-md overflow-y-auto`}
     >
       <nav className="flex flex-col gap-6 mt-4 relative">
-        {visibleNavItems.map((item) => (
+        {navItems.map((item) => (
           <NavItem
             key={item.to}
             to={item.to}
             Icon={item.icon}
             label={item.label}
             isActive={isActivePath(item.to)}
-            badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
           />
         ))}
 
-        {visibleDropdownItems.map((item) => (
+        {dropdownItems.map((item) => (
           <DropdownItem
             key={item.id}
             icon={item.icon}
