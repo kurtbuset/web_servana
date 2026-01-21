@@ -3,6 +3,8 @@ import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { Search, X } from "react-feather";
 import { useUserRoles } from "../../hooks/useRoles";
+import { useUser } from "../../context/UserContext";
+import { toast } from "react-toastify";
 import "../../App.css";
 
 export default function ChangeRolesScreen() {
@@ -10,15 +12,29 @@ export default function ChangeRolesScreen() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get user permissions
+  const { hasPermission } = useUser();
+  const canAssignRoles = hasPermission("priv_can_assign_role");
+
   const { users, availableRoles, loading, changeUserRole, toggleUserActive } = useUserRoles();
 
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const handleToggleActive = (user) => {
+    if (!canAssignRoles) {
+      console.warn("User does not have permission to assign roles");
+      toast.error("You don't have permission to modify user status");
+      return;
+    }
     toggleUserActive(user.sys_user_id, user.sys_user_is_active);
   };
 
   const handleChangeRole = (user, newRoleId) => {
+    if (!canAssignRoles) {
+      console.warn("User does not have permission to assign roles");
+      toast.error("You don't have permission to change user roles");
+      return;
+    }
     changeUserRole(user.sys_user_id, parseInt(newRoleId));
   };
 
@@ -99,14 +115,22 @@ export default function ChangeRolesScreen() {
                       >
                         <td className="py-2 px-3">{user.sys_user_email}</td>
                         <td className="py-2 px-3 text-center">
-                          <label className="inline-flex relative items-center cursor-pointer">
+                          <label className={`inline-flex relative items-center ${
+                            canAssignRoles ? "cursor-pointer" : "cursor-not-allowed"
+                          }`}>
                             <input
                               type="checkbox"
                               className="sr-only peer"
                               checked={user.sys_user_is_active || false}
                               onChange={() => handleToggleActive(user)}
+                              disabled={!canAssignRoles}
+                              title={!canAssignRoles ? "You don't have permission to modify user status" : ""}
                             />
-                            <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3" />
+                            <div className={`w-7 h-4 rounded-full peer transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3 ${
+                              canAssignRoles
+                                ? "bg-gray-200 peer-checked:bg-[#6237A0]"
+                                : "bg-gray-100 peer-checked:bg-gray-300"
+                            }`} />
                           </label>
                         </td>
                         <td className="py-2 px-3 text-center">
@@ -118,7 +142,13 @@ export default function ChangeRolesScreen() {
                                 e.target.value ? parseInt(e.target.value) : null
                               )
                             }
-                            className="rounded-md px-2 py-1 text-sm text-gray-800 border-none text-center"
+                            disabled={!canAssignRoles}
+                            className={`rounded-md px-2 py-1 text-sm border-none text-center ${
+                              canAssignRoles
+                                ? "text-gray-800 cursor-pointer"
+                                : "text-gray-400 cursor-not-allowed bg-gray-100"
+                            }`}
+                            title={!canAssignRoles ? "You don't have permission to change user roles" : ""}
                           >
                             {availableRoles.map((role) => (
                               <option

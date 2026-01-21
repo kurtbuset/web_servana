@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChatService } from '../services/chat.service';
+import { useUser } from '../context/UserContext';
 import { toast } from 'react-toastify';
 import socket from '../socket';
 
@@ -18,6 +19,9 @@ import socket from '../socket';
  * @returns {Object} Chat state and actions
  */
 export const useChat = () => {
+  // Get user permissions
+  const { hasPermission } = useUser();
+  
   // Chat groups and filtering
   const [departmentCustomers, setDepartmentCustomers] = useState({});
   const [departments, setDepartments] = useState([]);
@@ -112,6 +116,13 @@ export const useChat = () => {
    * Fetch canned messages for current user's role
    */
   const fetchCannedMessages = useCallback(async () => {
+    // Check permission before fetching
+    if (!hasPermission("priv_can_use_canned_mess")) {
+      console.log("User does not have permission to use canned messages");
+      setCannedMessages([]);
+      return;
+    }
+
     try {
       const data = await ChatService.getCannedMessages();
       if (Array.isArray(data)) {
@@ -121,7 +132,7 @@ export const useChat = () => {
       console.error('Failed to load canned messages:', err);
       // Don't show error toast for canned messages - not critical
     }
-  }, []);
+  }, [hasPermission]);
 
   /**
    * Load canned messages on mount
@@ -233,6 +244,13 @@ export const useChat = () => {
    * Send a message via Socket.IO
    */
   const sendMessage = useCallback(() => {
+    // Check permission first
+    if (!hasPermission("priv_can_message")) {
+      console.warn("User does not have permission to send messages");
+      toast.error("You don't have permission to send messages");
+      return;
+    }
+
     const trimmedMessage = inputMessage.replace(/\n+$/, '');
     if (trimmedMessage.trim() === '') return;
     if (!selectedCustomer) return;
@@ -259,12 +277,19 @@ export const useChat = () => {
       sys_user_id: 1, // TODO: Get from UserContext
       client_id: null,
     });
-  }, [inputMessage, selectedCustomer]);
+  }, [inputMessage, selectedCustomer, hasPermission]);
 
   /**
    * End the current chat
    */
   const endChat = useCallback(() => {
+    // Check permission first
+    if (!hasPermission("priv_can_end_chat")) {
+      console.warn("User does not have permission to end chats");
+      toast.error("You don't have permission to end chats");
+      return;
+    }
+
     if (!selectedCustomer) return;
 
     setChatEnded(true);
@@ -294,7 +319,7 @@ export const useChat = () => {
 
     setSelectedCustomer(null);
     setMessages([]);
-  }, [selectedCustomer, messages]);
+  }, [selectedCustomer, messages, hasPermission]);
 
   /**
    * Clear selected customer

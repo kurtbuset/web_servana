@@ -17,6 +17,8 @@ export default function ChatHeader({
   onEndChat,
   onTransfer,
   dropdownRef,
+  canEndChat = true,
+  canTransfer = true,
 }) {
   return (
     <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4">
@@ -70,7 +72,7 @@ export default function ChatHeader({
           )}
 
           {/* Three-dot menu */}
-          {showMenu && !chatEnded && (
+          {showMenu && !chatEnded && (canEndChat || canTransfer) && (
             <button
               className="p-2 text-black hover:text-[#6237A0] transition rounded-full"
               onClick={onMenuToggle}
@@ -83,19 +85,30 @@ export default function ChatHeader({
               ref={dropdownRef}
               className="absolute right-0 mt-2 w-44 bg-white border border-gray-300 rounded-md shadow-sm z-20"
             >
-              <button
-                className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
-                onClick={onEndChat}
-              >
-                End Chat
-              </button>
-              <div className="border-t border-gray-200" />
-              <button
-                className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-                onClick={onTransfer}
-              >
-                Transfer Department
-              </button>
+              {canEndChat && (
+                <button
+                  className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                  onClick={onEndChat}
+                >
+                  End Chat
+                </button>
+              )}
+              {canEndChat && canTransfer && (
+                <div className="border-t border-gray-200" />
+              )}
+              {canTransfer && (
+                <button
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                  onClick={onTransfer}
+                >
+                  Transfer Department
+                </button>
+              )}
+              {!canEndChat && !canTransfer && (
+                <div className="px-4 py-2 text-sm text-gray-400">
+                  No actions available
+                </div>
+              )}
             </div>
           )}
         </div>

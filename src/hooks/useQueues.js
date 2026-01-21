@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import QueueService from "../services/queue.service";
 import SocketService from "../services/socket.service";
+import { useUser } from "../context/UserContext";
+import { toast } from "react-toastify";
 
 /**
  * useQueues Hook
  * Manages queue data with Socket.IO real-time updates
  */
 export const useQueues = () => {
+  // Get user permissions
+  const { hasPermission } = useUser();
+  
   const [departmentCustomers, setDepartmentCustomers] = useState({});
   const [departments, setDepartments] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState("All");
@@ -29,7 +34,6 @@ export const useQueues = () => {
     try {
       const chatGroups = await QueueService.getQueuedChats();
       const deptMap = {};
-      console.log('chatGroups: ', chatGroups)
 
       chatGroups.forEach((group) => {
         const dept = group.department;
@@ -54,6 +58,13 @@ export const useQueues = () => {
    * Fetch canned messages
    */
   const fetchCannedMessages = useCallback(async () => {
+    // Check permission before fetching
+    if (!hasPermission("priv_can_use_canned_mess")) {
+      console.log("User does not have permission to use canned messages");
+      setCannedMessages([]);
+      return;
+    }
+
     try {
       const data = await QueueService.getCannedMessages();
       if (Array.isArray(data)) {
@@ -62,7 +73,7 @@ export const useQueues = () => {
     } catch (err) {
       console.error("Failed to load canned messages:", err);
     }
-  }, []);
+  }, [hasPermission]);
 
   /**
    * Load messages for a specific client
@@ -168,6 +179,13 @@ export const useQueues = () => {
    */
   const sendMessage = useCallback(
     (messageContent) => {
+      // Check permission first
+      if (!hasPermission("priv_can_message")) {
+        console.warn("User does not have permission to send messages");
+        toast.error("You don't have permission to send messages");
+        return;
+      }
+
       if (!selectedCustomer || !messageContent.trim()) return;
 
       const now = new Date();
@@ -191,13 +209,20 @@ export const useQueues = () => {
         client_id: null,
       });
     },
-    [selectedCustomer]
+    [selectedCustomer, hasPermission]
   );
 
   /**
    * End the current chat
    */
   const endChat = useCallback(() => {
+    // Check permission first
+    if (!hasPermission("priv_can_end_chat")) {
+      console.warn("User does not have permission to end chats");
+      toast.error("You don't have permission to end chats");
+      return;
+    }
+
     if (!selectedCustomer) return;
 
     setChatEnded(true);
@@ -227,7 +252,7 @@ export const useQueues = () => {
 
     setSelectedCustomer(null);
     setMessages([]);
-  }, [selectedCustomer, messages]);
+  }, [selectedCustomer, messages, hasPermission]);
 
   // Initialize: Connect socket and fetch initial data
   useEffect(() => {

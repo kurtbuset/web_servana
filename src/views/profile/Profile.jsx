@@ -6,6 +6,7 @@ import { Upload } from "react-feather";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import { useUser } from "../../../src/context/UserContext";
+import { toast } from "react-toastify";
 
 
 /**
@@ -33,8 +34,9 @@ export default function Profile() {
     address: "",
     dateOfBirth: "",
   });
-  const { setUserData } = useUser();
+  const { setUserData, hasPermission } = useUser();
   const navigate = useNavigate();
+  const canManageProfile = hasPermission("priv_can_manage_profile");
 
   // ---------------- FETCH PROFILE ----------------
   const fetchProfile = useCallback(async () => {
@@ -79,6 +81,12 @@ export default function Profile() {
 
   // ---------------- HANDLE IMAGE SELECTION ----------------
   const handleFileChange = (e) => {
+    if (!canManageProfile) {
+      console.warn("User does not have permission to manage profile");
+      toast.error("You don't have permission to edit your profile");
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (file) {
       setFileName(file.name);
@@ -101,6 +109,12 @@ export default function Profile() {
 
   // ---------------- UPLOAD IMAGE ----------------
   const handleSaveImage = async () => {
+    if (!canManageProfile) {
+      console.warn("User does not have permission to manage profile");
+      toast.error("You don't have permission to edit your profile");
+      return;
+    }
+
     if (!selectedFile) return;
 
     const formData = new FormData();
@@ -122,6 +136,12 @@ export default function Profile() {
 
   // ---------------- UPDATE PROFILE ----------------
   const handleSave = async () => {
+    if (!canManageProfile) {
+      console.warn("User does not have permission to manage profile");
+      toast.error("You don't have permission to edit your profile");
+      return;
+    }
+
     try {
       await api.put("/profile", profileData, { withCredentials: true });
       setIsEditModalOpen(false);
@@ -129,6 +149,16 @@ export default function Profile() {
     } catch (error) {
       console.error("Profile update failed:", error?.response?.data || error);
     }
+  };
+
+  // ---------------- OPEN EDIT MODAL ----------------
+  const openEditModal = () => {
+    if (!canManageProfile) {
+      console.warn("User does not have permission to manage profile");
+      toast.error("You don't have permission to edit your profile");
+      return;
+    }
+    setIsEditModalOpen(true);
   };
 
   // ---------------- LOGOUT ----------------
@@ -189,15 +219,25 @@ export default function Profile() {
                     type="file"
                     className="hidden"
                     onChange={handleFileChange}
+                    disabled={!canManageProfile}
                   />
                   <label
                     htmlFor="file-upload"
-                    className="w-full p-2 bg-transparent border border-gray-300 rounded-md cursor-pointer flex items-center justify-center"
+                    className={`w-full p-2 border border-gray-300 rounded-md flex items-center justify-center transition-colors ${
+                      canManageProfile
+                        ? "bg-transparent cursor-pointer hover:bg-gray-50"
+                        : "bg-gray-100 cursor-not-allowed"
+                    }`}
+                    title={!canManageProfile ? "You don't have permission to edit your profile" : ""}
                   >
-                    <span className="text-gray-700 text-xs flex-1 text-center">
+                    <span className={`text-xs flex-1 text-center ${
+                      canManageProfile ? "text-gray-700" : "text-gray-400"
+                    }`}>
                       {fileName}
                     </span>
-                    <Upload className="w-3 h-3 ml-2" strokeWidth={1} />
+                    <Upload className={`w-3 h-3 ml-2 ${
+                      canManageProfile ? "text-gray-700" : "text-gray-400"
+                    }`} strokeWidth={1} />
                   </label>
                 </div>
 
@@ -205,7 +245,13 @@ export default function Profile() {
                   <div className="mt-4">
                     <button
                       onClick={handleSaveImage}
-                      className="text-purple-600 hover:underline"
+                      disabled={!canManageProfile}
+                      className={`transition-colors ${
+                        canManageProfile
+                          ? "text-purple-600 hover:underline"
+                          : "text-gray-400 cursor-not-allowed"
+                      }`}
+                      title={!canManageProfile ? "You don't have permission to edit your profile" : ""}
                     >
                       Save
                     </button>
@@ -244,8 +290,14 @@ export default function Profile() {
 
                 <div className="mt-6">
                   <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="flex items-center px-4 py-2 border border-purple-500 text-purple-600 rounded-md hover:bg-purple-50 transition"
+                    onClick={openEditModal}
+                    disabled={!canManageProfile}
+                    className={`flex items-center px-4 py-2 border rounded-md transition ${
+                      canManageProfile
+                        ? "border-purple-500 text-purple-600 hover:bg-purple-50"
+                        : "border-gray-300 text-gray-400 cursor-not-allowed bg-gray-50"
+                    }`}
+                    title={!canManageProfile ? "You don't have permission to edit your profile" : ""}
                   >
                     <svg
                       className="w-4 h-4 mr-2"
@@ -299,7 +351,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
+                    canManageProfile ? "" : "bg-gray-100 cursor-not-allowed"
+                  }`}
                   value={profileData.firstName}
                   onChange={(e) =>
                     setProfileData({
@@ -307,6 +361,7 @@ export default function Profile() {
                       firstName: e.target.value,
                     })
                   }
+                  disabled={!canManageProfile}
                 />
               </div>
               <div>
@@ -315,7 +370,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
+                    canManageProfile ? "" : "bg-gray-100 cursor-not-allowed"
+                  }`}
                   value={profileData.middleName}
                   onChange={(e) =>
                     setProfileData({
@@ -323,6 +380,7 @@ export default function Profile() {
                       middleName: e.target.value,
                     })
                   }
+                  disabled={!canManageProfile}
                 />
               </div>
               <div>
@@ -331,7 +389,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
+                    canManageProfile ? "" : "bg-gray-100 cursor-not-allowed"
+                  }`}
                   value={profileData.lastName}
                   onChange={(e) =>
                     setProfileData({
@@ -339,6 +399,7 @@ export default function Profile() {
                       lastName: e.target.value,
                     })
                   }
+                  disabled={!canManageProfile}
                 />
               </div>
               <div>
@@ -347,7 +408,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="email"
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
+                    canManageProfile ? "" : "bg-gray-100 cursor-not-allowed"
+                  }`}
                   value={profileData.email}
                   onChange={(e) =>
                     setProfileData({
@@ -355,6 +418,7 @@ export default function Profile() {
                       email: e.target.value,
                     })
                   }
+                  disabled={!canManageProfile}
                 />
               </div>
               <div>
@@ -363,7 +427,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
+                    canManageProfile ? "" : "bg-gray-100 cursor-not-allowed"
+                  }`}
                   value={profileData.address}
                   onChange={(e) =>
                     setProfileData({
@@ -371,6 +437,7 @@ export default function Profile() {
                       address: e.target.value,
                     })
                   }
+                  disabled={!canManageProfile}
                 />
               </div>
               <div>
@@ -379,7 +446,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="date"
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
+                    canManageProfile ? "" : "bg-gray-100 cursor-not-allowed"
+                  }`}
                   value={profileData.dateOfBirth}
                   onChange={(e) =>
                     setProfileData({
@@ -387,6 +456,7 @@ export default function Profile() {
                       dateOfBirth: e.target.value,
                     })
                   }
+                  disabled={!canManageProfile}
                 />
               </div>
             </div>
@@ -399,7 +469,13 @@ export default function Profile() {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                disabled={!canManageProfile}
+                className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                  canManageProfile
+                    ? "bg-purple-600 text-white hover:bg-purple-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                title={!canManageProfile ? "You don't have permission to edit your profile" : ""}
               >
                 Save
               </button>

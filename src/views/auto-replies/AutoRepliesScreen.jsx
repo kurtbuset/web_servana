@@ -4,6 +4,7 @@ import Sidebar from "../../../src/components/Sidebar";
 import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
 import { useUser } from "../../../src/context/UserContext";
+import { toast } from "react-toastify";
 import "../../App.css";
 
 export default function AutoRepliesScreen() {
@@ -16,7 +17,8 @@ export default function AutoRepliesScreen() {
   const [selectedDeptId, setSelectedDeptId] = useState(null);
   const [editingReplyId, setEditingReplyId] = useState(null);
 
-  const { userData } = useUser();
+  const { userData, hasPermission } = useUser();
+  const canEditAutoReplies = hasPermission("priv_can_manage_auto_reply");
   const {
     replies,
     activeDepartments,
@@ -36,6 +38,12 @@ export default function AutoRepliesScreen() {
   );
 
   const handleSaveEdit = async () => {
+    if (!canEditAutoReplies) {
+      console.warn("User does not have permission to edit auto-replies");
+      toast.error("You don't have permission to edit auto-replies");
+      return;
+    }
+    
     if (!editingReplyId || !userData?.sys_user_id) return;
 
     const success = await updateAutoReply(
@@ -53,6 +61,12 @@ export default function AutoRepliesScreen() {
   };
 
   const handleSaveAdd = async () => {
+    if (!canEditAutoReplies) {
+      console.warn("User does not have permission to edit auto-replies");
+      toast.error("You don't have permission to edit auto-replies");
+      return;
+    }
+    
     if (!userData?.sys_user_id) return;
 
     const success = await createAutoReply(
@@ -69,22 +83,46 @@ export default function AutoRepliesScreen() {
   };
 
   const handleStatusToggle = async (id, currentActive) => {
+    if (!canEditAutoReplies) {
+      console.warn("User does not have permission to edit auto-replies");
+      toast.error("You don't have permission to edit auto-replies");
+      return;
+    }
+    
     if (!userData?.sys_user_id) return;
     await toggleAutoReply(id, currentActive, userData.sys_user_id);
   };
 
   const handleDeptChange = async (id, newDeptId) => {
+    if (!canEditAutoReplies) {
+      console.warn("User does not have permission to edit auto-replies");
+      toast.error("You don't have permission to edit auto-replies");
+      return;
+    }
+    
     if (!userData?.sys_user_id) return;
     await updateDepartment(id, newDeptId, userData.sys_user_id);
   };
 
   const openEditModal = (reply) => {
+    if (!canEditAutoReplies) {
+      console.warn("User does not have permission to edit auto-replies");
+      toast.error("You don't have permission to edit auto-replies");
+      return;
+    }
+    
     setEditText(reply.auto_reply_message);
     setEditingReplyId(reply.auto_reply_id);
     setIsEditModalOpen(true);
   };
 
   const openAddModal = () => {
+    if (!canEditAutoReplies) {
+      console.warn("User does not have permission to edit auto-replies");
+      toast.error("You don't have permission to edit auto-replies");
+      return;
+    }
+    
     setEditText("");
     setSelectedDeptId(activeDepartments[0]?.dept_id || null);
     setIsAddModalOpen(true);
@@ -130,7 +168,13 @@ export default function AutoRepliesScreen() {
 
               <button
                 onClick={openAddModal}
-                className="bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800"
+                disabled={!canEditAutoReplies}
+                className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                  canEditAutoReplies
+                    ? "bg-[#6237A0] text-white hover:bg-purple-800"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
               >
                 Add Replies
               </button>
@@ -176,14 +220,21 @@ export default function AutoRepliesScreen() {
                             <div className="absolute top-1/2 right-0 -translate-y-1/2">
                               <Edit3
                                 size={18}
-                                className="text-gray-500 cursor-pointer hover:text-purple-700"
+                                className={`transition-colors ${
+                                  canEditAutoReplies
+                                    ? "text-gray-500 cursor-pointer hover:text-purple-700"
+                                    : "text-gray-300 cursor-not-allowed"
+                                }`}
                                 onClick={() => openEditModal(reply)}
+                                title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
                               />
                             </div>
                           </div>
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <label className="inline-flex relative items-center cursor-pointer">
+                          <label className={`inline-flex relative items-center ${
+                            canEditAutoReplies ? "cursor-pointer" : "cursor-not-allowed"
+                          }`}>
                             <input
                               type="checkbox"
                               className="sr-only peer"
@@ -194,8 +245,14 @@ export default function AutoRepliesScreen() {
                                   reply.auto_reply_is_active
                                 )
                               }
+                              disabled={!canEditAutoReplies}
+                              title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
                             />
-                            <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3" />
+                            <div className={`w-7 h-4 rounded-full peer relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3 ${
+                              canEditAutoReplies
+                                ? "bg-gray-200 peer-checked:bg-[#6237A0]"
+                                : "bg-gray-100 peer-checked:bg-gray-300"
+                            }`} />
                           </label>
                         </td>
                         <td className="py-2 px-3 text-center">
@@ -207,7 +264,13 @@ export default function AutoRepliesScreen() {
                                 e.target.value ? parseInt(e.target.value) : null
                               )
                             }
-                            className="rounded-md px-2 py-1 text-sm text-gray-800 border-none text-center"
+                            disabled={!canEditAutoReplies}
+                            className={`rounded-md px-2 py-1 text-sm border-none text-center ${
+                              canEditAutoReplies
+                                ? "text-gray-800 cursor-pointer"
+                                : "text-gray-400 cursor-not-allowed bg-gray-100"
+                            }`}
+                            title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
                           >
                             <option value="">All</option>
                             {allDepartments.map((dept) => (
@@ -258,7 +321,12 @@ export default function AutoRepliesScreen() {
                   </button>
                   <button
                     onClick={handleSaveEdit}
-                    className="bg-purple-700 text-white px-4 py-1 rounded-lg text-sm hover:bg-purple-800"
+                    disabled={!canEditAutoReplies}
+                    className={`px-4 py-1 rounded-lg text-sm transition-colors ${
+                      canEditAutoReplies
+                        ? "bg-purple-700 text-white hover:bg-purple-800"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
                     Save
                   </button>
@@ -309,7 +377,12 @@ export default function AutoRepliesScreen() {
                   </button>
                   <button
                     onClick={handleSaveAdd}
-                    className="bg-purple-700 text-white px-4 py-1 rounded-lg text-sm hover:bg-purple-800"
+                    disabled={!canEditAutoReplies}
+                    className={`px-4 py-1 rounded-lg text-sm transition-colors ${
+                      canEditAutoReplies
+                        ? "bg-purple-700 text-white hover:bg-purple-800"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
                     Save
                   </button>
