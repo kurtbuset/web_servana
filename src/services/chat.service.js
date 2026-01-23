@@ -56,4 +56,24 @@ export class ChatService {
     const response = await api.get('/chat/counts');
     return response.data;
   }
+
+  /**
+   * Transfer chat group to another department
+   * @param {number} chatGroupId - Chat group ID to transfer
+   * @param {number} deptId - Target department ID
+   * @returns {Promise<Object>} Transfer success response
+   */
+  static async transferChatGroup(chatGroupId, deptId) {
+    const response = await api.post(`/chat/${chatGroupId}/transfer`, { deptId });
+    return response.data;
+  }
+
+  /**
+   * Get all departments
+   * @returns {Promise<Array>} Array of department objects with id and name
+   */
+  static async getAllDepartments() {
+    const response = await api.get('/departments');
+    return response.data;
+  }
 }

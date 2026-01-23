@@ -53,9 +53,9 @@ export default function ChatHeader({
             <h3 className="text-lg font-medium text-gray-800">
               {customer.name}
             </h3>
-            {!customer.isAccepted && !customer.sys_user_id && (
+            {(!customer.isAccepted && !customer.sys_user_id) && (
               <span className="text-xs text-orange-500 font-medium">
-                Waiting in Queue
+                {customer.status === "transferred" ? "Transferred - Waiting for Accept" : "Waiting in Queue"}
               </span>
             )}
           </div>

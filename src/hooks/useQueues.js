@@ -76,6 +76,20 @@ export const useQueues = () => {
   }, [hasPermission]);
 
   /**
+   * Determine frontend sender type for message display
+   */
+  const determineFrontendSender = useCallback((msg) => {
+    // For UI compatibility:
+    // - client and previous_agent messages go to left (system)
+    // - current_agent messages go to right (user)
+    if (msg.sender_type === 'current_agent') {
+      return 'user';
+    } else {
+      return 'system'; // client, previous_agent, system all go to left
+    }
+  }, []);
+
+  /**
    * Load messages for a specific client
    */
   const loadMessages = useCallback(
@@ -84,9 +98,11 @@ export const useQueues = () => {
         const response = await QueueService.getMessages(clientId, before, 10);
         const newMessages = response.messages.map((msg, index) => ({
           id: msg.chat_id || index,
-          sender: msg.sys_user_id ? "user" : "system",
+          sender: determineFrontendSender(msg),
           content: msg.chat_body,
           timestamp: msg.chat_created_at,
+          sender_name: msg.sender_name || 'Unknown',
+          sender_type: msg.sender_type || 'system',
           displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -120,7 +136,7 @@ export const useQueues = () => {
         console.error("Error loading messages:", err);
       }
     },
-    []
+    [determineFrontendSender]
   );
 
   /**
@@ -155,15 +171,58 @@ export const useQueues = () => {
         // Emit socket event to update all clients
         SocketService.emit("acceptChat", {
           chatGroupId: selectedCustomer.chat_group_id,
-          agentId: response.agentId,
+          agentId: response.data.sys_user_id,
         });
 
-        // Update local state - mark as accepted
+        // Remove the accepted chat from the queue immediately
+        setDepartmentCustomers((prevDeptCustomers) => {
+          const updatedDeptCustomers = { ...prevDeptCustomers };
+          
+          // Find and remove the accepted customer from all departments
+          Object.keys(updatedDeptCustomers).forEach((dept) => {
+            updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+              (customer) => customer.chat_group_id !== selectedCustomer.chat_group_id
+            );
+            
+            // Remove empty departments
+            if (updatedDeptCustomers[dept].length === 0) {
+              delete updatedDeptCustomers[dept];
+            }
+          });
+          
+          return updatedDeptCustomers;
+        });
+
+        // Update departments list to remove empty departments
+        setDepartments((prevDepartments) => {
+          const activeDepartments = Object.keys(departmentCustomers).filter(
+            (dept) => departmentCustomers[dept] && departmentCustomers[dept].length > 0
+          );
+          return ["All", ...activeDepartments];
+        });
+
+        // Clear chat messages when accepting a chat
+        setMessages([]);
+        setEarliestMessageTime(null);
+        setHasMoreMessages(true);
+        setChatEnded(false); // Reset chat ended status for fresh conversation
+
+        // Update selected customer to mark as accepted
         setSelectedCustomer((prev) => ({
           ...prev,
           isAccepted: true,
-          sys_user_id: response.agentId,
+          sys_user_id: response.data.sys_user_id,
         }));
+
+        // Clear selection if no customers left in current department
+        const currentDeptCustomers = departmentCustomers[selectedDepartment] || [];
+        const remainingCustomers = currentDeptCustomers.filter(
+          (customer) => customer.chat_group_id !== selectedCustomer.chat_group_id
+        );
+        
+        if (remainingCustomers.length === 0 && selectedDepartment !== "All") {
+          setSelectedDepartment("All");
+        }
 
         return true;
       }
@@ -172,7 +231,7 @@ export const useQueues = () => {
       console.error("Error accepting chat:", err);
       return false;
     }
-  }, [selectedCustomer]);
+  }, [selectedCustomer, selectedDepartment, departmentCustomers]);
 
   /**
    * Send a message
