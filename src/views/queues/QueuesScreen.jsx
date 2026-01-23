@@ -345,11 +345,6 @@ export default function QueuesScreen() {
                       (!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id)
                     }
                     chatEnded={chatEnded}
-                    disabledMessage={
-                      !canMessage 
-                        ? "You don't have permission to reply/Chat"
-                        : "Accept chat to send messages"
-                    }
                     showPreviewBanner={
                       canMessage &&
                       !selectedCustomer.isAccepted &&

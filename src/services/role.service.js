@@ -15,6 +15,20 @@ class RoleService {
   }
 
   /**
+   * Get role ID by role name
+   * @param {string} roleName - Role name (e.g., "Agent", "Client")
+   * @returns {Promise<number>} Role ID
+   */
+  static async getRoleIdByName(roleName) {
+    const roles = await this.getRoles();
+    const role = roles.find(r => r.name === roleName);
+    if (!role) {
+      throw new Error(`Role "${roleName}" not found`);
+    }
+    return role.role_id;
+  }
+
+  /**
    * Create a new role
    * @param {Object} roleData - Role data
    * @param {string} roleData.name - Role name

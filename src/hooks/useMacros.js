@@ -26,7 +26,7 @@ const useMacros = (roleId) => {
     setError(null);
 
     try {
-      const data = roleId === 3 
+      const data = roleId === 12
         ? await MacroService.getAgentMacros()
         : await MacroService.getClientMacros();
 
@@ -42,7 +42,7 @@ const useMacros = (roleId) => {
       setDepartments(data.departments || []);
     } catch (err) {
       console.error('Failed to fetch macros:', err);
-      const errorMessage = roleId === 3 
+      const errorMessage = roleId === 12
         ? "Failed to fetch Agent's canned messages."
         : "Failed to fetch Client's canned messages.";
       setError(errorMessage);

@@ -35,11 +35,11 @@ export const UserProvider = ({ children }) => {
         console.error("🚨 This will cause permission checks to fail");
         console.error("🚨 Backend response structure:", Object.keys(data || {}));
       } else {
-        console.log("✅ Privilege data found:", Object.keys(data.privilege));
+        // console.log("✅ Privilege data found:", Object.keys(data.privilege));
         // Log each permission status with detailed info
         Object.entries(data.privilege).forEach(([key, value]) => {
           const status = value === true ? "✅ GRANTED" : "❌ DENIED";
-          console.log(`  ${key}: ${value} ${status}`);
+          // console.log(`  ${key}: ${value} ${status}`);
         });
       }
       
@@ -134,7 +134,7 @@ export const UserProvider = ({ children }) => {
     const privilegeValue = userData.privilege[permission];
     const result = privilegeValue === true;
     
-    console.log(`🔍 hasPermission(${permission}): ${result} (raw value: ${privilegeValue}, type: ${typeof privilegeValue})`);
+    // console.log(`🔍 hasPermission(${permission}): ${result} (raw value: ${privilegeValue}, type: ${typeof privilegeValue})`);
     
     if (!result && privilegeValue !== false) {
       console.warn(`⚠️ Unexpected privilege value for ${permission}:`, privilegeValue);
@@ -150,18 +150,18 @@ export const UserProvider = ({ children }) => {
 
   // Get user ID
   const getUserId = () => {
-    return userData?.user_id || null;
+    return userData?.sys_user_id || null;
   };
 
   // Get user email
   const getUserEmail = () => {
-    return userData?.user_email || null;
+    return userData?.sys_user_email || null;
   };
 
   // Get user full name
   const getUserName = () => {
-    const firstName = userData?.user_fname || "";
-    const lastName = userData?.user_lname || "";
+    const firstName = userData?.profile.prof_firstname || "";
+    const lastName = userData?.profile.prof_lastname || "";
     return `${firstName} ${lastName}`.trim() || "Unknown User";
   };
 
