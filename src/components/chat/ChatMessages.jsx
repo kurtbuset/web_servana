@@ -24,11 +24,11 @@ export default function ChatMessages({
             return (
               <div
                 key={`date-${index}`}
-                className="text-[10px] text-gray-400 text-center flex items-center gap-2 my-2"
+                className="text-[10px] text-gray-400 dark:text-gray-500 text-center flex items-center gap-2 my-2 transition-colors duration-200"
               >
-                <div className="flex-grow h-px bg-gray-200" />
+                <div className="flex-grow h-px bg-gray-200 dark:bg-gray-600 transition-colors duration-200" />
                 {item.content}
-                <div className="flex-grow h-px bg-gray-200" />
+                <div className="flex-grow h-px bg-gray-200 dark:bg-gray-600 transition-colors duration-200" />
               </div>
             );
           } else {
@@ -52,20 +52,20 @@ export default function ChatMessages({
                   />
                 )}
                 <div
-                  className={`${
+                  className={`px-4 py-2 rounded-xl max-w-[320px] text-sm break-words whitespace-pre-wrap transition-colors duration-200 ${
                     item.sender === "user"
-                      ? "bg-[#f5f5f5] text-gray-800"
+                      ? "chat-message-user bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                       : item.sender === "system"
-                      ? "bg-[#6237A0] text-white"
-                      : "bg-[#f5f5f5] text-gray-800"
-                  } px-4 py-2 rounded-xl max-w-[320px] text-sm break-words whitespace-pre-wrap`}
+                      ? "chat-message-system bg-[#6237A0] text-white"
+                      : "chat-message-customer bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
                 >
                   {item.content}
                   <div
-                    className={`text-[10px] text-right mt-1 ${
+                    className={`text-[10px] text-right mt-1 transition-colors duration-200 ${
                       item.sender === "system"
                         ? "text-gray-300"
-                        : "text-gray-400"
+                        : "text-gray-400 dark:text-gray-500"
                     }`}
                   >
                     {item.displayTime}
@@ -77,10 +77,10 @@ export default function ChatMessages({
         })}
 
         {chatEnded && (
-          <div className="text-[10px] text-gray-400 text-center flex items-center gap-2 my-2">
-            <div className="flex-grow h-px bg-gray-200" />
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center flex items-center gap-2 my-2 transition-colors duration-200">
+            <div className="flex-grow h-px bg-gray-200 dark:bg-gray-600 transition-colors duration-200" />
             Chat has ended
-            <div className="flex-grow h-px bg-gray-200" />
+            <div className="flex-grow h-px bg-gray-200 dark:bg-gray-600 transition-colors duration-200" />
           </div>
         )}
         <div ref={bottomRef} />

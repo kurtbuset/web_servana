@@ -1,19 +1,25 @@
 import { useState } from 'react';
+import { Plus, MessageSquare, User } from 'react-feather';
 import TopNavbar from '../../../src/components/TopNavbar';
 import Sidebar from '../../../src/components/Sidebar';
-import { Edit3, Search, X } from 'react-feather';
+import MacroCard from '../../components/macros/MacroCard';
+import MacroModal from '../../components/macros/MacroModal';
+import MacroFilters from '../../components/macros/MacroFilters';
 import useMacros from '../../hooks/useMacros';
+import { useUser } from '../../context/UserContext';
 import '../../App.css';
 
 export default function MacrosClientsScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentEditId, setCurrentEditId] = useState(null);
-  const [editText, setEditText] = useState('');
+  const [currentEditMacro, setCurrentEditMacro] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
-  const [currentUserId] = useState(1); // authenticated user ID
+  const [viewMode, setViewMode] = useState('grid');
+
+  const { getUserId } = useUser();
+  const currentUserId = getUserId() || 1;
 
   // Use the macros hook with roleId = 2 (Client)
   const {
@@ -28,47 +34,55 @@ export default function MacrosClientsScreen() {
   } = useMacros(2);
 
   // Filter macros based on search and department
-  const filteredReplies = macros.filter((reply) => {
-    const matchesSearch = reply.text
+  const filteredMacros = macros.filter((macro) => {
+    const matchesSearch = macro.text
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesDepartment =
       selectedDepartment === 'All' ||
-      reply.dept_id ===
+      macro.dept_id ===
         departments.find((d) => d.dept_name === selectedDepartment)?.dept_id;
     return matchesSearch && matchesDepartment;
   });
 
-  const handleSaveMacro = async () => {
-    if (currentEditId !== null) {
+  const handleSaveMacro = async (text, departmentName) => {
+    if (currentEditMacro) {
       // Update existing macro
-      const macro = macros.find((m) => m.id === currentEditId);
-      if (!macro) return;
-
       const success = await updateMacro(
-        currentEditId,
-        editText,
-        macro.active,
-        macro.dept_id,
+        currentEditMacro.id,
+        text,
+        currentEditMacro.active,
+        currentEditMacro.dept_id,
         currentUserId
       );
 
       if (success) {
         setIsModalOpen(false);
+        setCurrentEditMacro(null);
       }
     } else {
       // Create new macro
       const selectedDept = departments.find(
-        (dept) => dept.dept_name === selectedDepartment
+        (dept) => dept.dept_name === departmentName
       );
-      const dept_id = selectedDepartment === 'All' ? null : selectedDept?.dept_id;
+      const dept_id = departmentName === 'All' ? null : selectedDept?.dept_id;
 
-      const success = await createMacro(editText, dept_id, currentUserId);
+      const success = await createMacro(text, dept_id, currentUserId);
 
       if (success) {
         setIsModalOpen(false);
       }
     }
+  };
+
+  const handleEditMacro = (macro) => {
+    setCurrentEditMacro(macro);
+    setIsModalOpen(true);
+  };
+
+  const handleAddMacro = () => {
+    setCurrentEditMacro(null);
+    setIsModalOpen(true);
   };
 
   const handleToggleActive = (id) => {
@@ -86,6 +100,9 @@ export default function MacrosClientsScreen() {
   const toggleSidebar = () => {
     setMobileSidebarOpen((prev) => !prev);
   };
+
+  const getActiveCount = () => macros.filter(m => m.active).length;
+  const getInactiveCount = () => macros.filter(m => !m.active).length;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden relative">
@@ -105,188 +122,143 @@ export default function MacrosClientsScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-gray-100 p-15 overflow-y-auto transition-colors duration-300">
-          <div className="bg-white p-4 rounded-lg min-h-[80vh] transition-all duration-300">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center bg-gray-100 px-3 py-2 rounded-md w-1/3 relative">
-                <Search size={18} className="text-gray-500 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent focus:outline-none text-sm w-full pr-6"
-                />
-                {searchQuery && (
-                  <X
-                    size={16}
-                    className="text-gray-500 cursor-pointer absolute right-3"
-                    onClick={() => setSearchQuery('')}
-                  />
-                )}
+        <main className="flex-1 bg-gray-50 overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[#E6DCF7] rounded-xl">
+                  <User size={24} className="text-[#6237A0]" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Client Macros</h1>
+                  <p className="text-gray-600">Manage quick response templates for clients</p>
+                </div>
               </div>
-
+              
               <button
-                onClick={() => {
-                  setEditText('');
-                  setSelectedDepartment('All');
-                  setCurrentEditId(null);
-                  setIsModalOpen(true);
-                }}
-                className="bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800 transition-colors duration-300"
+                onClick={handleAddMacro}
+                className="flex items-center gap-2 bg-[#6237A0] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#4c2b7d] focus:ring-2 focus:ring-[#6237A0] focus:ring-offset-2 transition-all duration-200 shadow-sm"
               >
+                <Plus size={18} />
                 Add Macro
               </button>
             </div>
 
-            <div className="overflow-y-auto max-h-[65vh] w-full custom-scrollbar">
-              <table className="w-full text-sm text-left">
-                <thead className="text-gray-500 bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_0_#000000]">
-                  <tr>
-                    <th className="py-2 px-3 pl-3">Replies</th>
-                    <th className="py-2 px-3 text-center">Active Status</th>
-                    <th className="py-2 px-3 text-center">Department</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredReplies.map((reply) => (
-                    <tr key={reply.id} className="hover:bg-gray-100">
-                      <td className="py-2 px-3 align-top">
-                        <div className="max-w-xs break-words text-gray-800 relative pr-6">
-                          <span>{reply.text}</span>
-                          <div className="absolute top-1/2 right-0 -translate-y-1/2">
-                            <Edit3
-                              size={18}
-                              strokeWidth={1}
-                              className="text-gray-500 cursor-pointer hover:text-purple-700"
-                              onClick={() => {
-                                setCurrentEditId(reply.id);
-                                setEditText(reply.text);
-                                setIsModalOpen(true);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <label className="inline-flex relative items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={reply.active}
-                            onChange={() => handleToggleActive(reply.id)}
-                          />
-                          <div className="w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3" />
-                        </label>
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <select
-                          className="rounded-md px-2 py-1 text-sm text-gray-800 border-none text-center"
-                          value={reply.dept_id ?? ''}
-                          onChange={(e) =>
-                            handleChangeDepartment(
-                              reply.id,
-                              e.target.value ? parseInt(e.target.value) : null
-                            )
-                          }
-                        >
-                          <option value="">All</option>
-                          {departments.map((dept) => (
-                            <option
-                              key={dept.dept_id}
-                              value={dept.dept_id}
-                              disabled={
-                                !dept.dept_is_active &&
-                                dept.dept_id !== reply.dept_id
-                              }
-                              className={
-                                !dept.dept_is_active ? 'text-red-400' : ''
-                              }
-                            >
-                              {dept.dept_name}
-                              {!dept.dept_is_active && ' (Inactive)'}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {loading && (
-                <p className="pt-15 text-center text-gray-600 py-4">
-                  Loading...
-                </p>
-              )}
-
-              {error && (
-                <p className="pt-15 text-center text-red-600 mb-4 font-semibold">
-                  {error}
-                </p>
-              )}
+            {/* Stats */}
+            <div className="flex items-center gap-6 mt-4">
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600">Active: </span>
+                <span className="font-semibold text-gray-900">{getActiveCount()}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                <span className="text-gray-600">Inactive: </span>
+                <span className="font-semibold text-gray-900">{getInactiveCount()}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <MessageSquare size={14} className="text-gray-500" />
+                <span className="text-gray-600">Total: </span>
+                <span className="font-semibold text-gray-900">{macros.length}</span>
+              </div>
             </div>
           </div>
 
-          {isModalOpen && (
-            <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-center z-50">
-              <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-                <h2 className="text-md font-semibold mb-2">
-                  {currentEditId ? 'Edit Macro' : 'Add Macro'}
-                </h2>
+          {/* Filters */}
+          <MacroFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedDepartment={selectedDepartment}
+            onDepartmentChange={setSelectedDepartment}
+            departments={departments}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            totalCount={macros.length}
+            filteredCount={filteredMacros.length}
+          />
 
-                <label className="text-sm text-gray-700 mb-1 block">
-                  Message
-                </label>
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm mb-4 h-24 focus:ring-2 focus:ring-purple-500"
-                />
-
-                {!currentEditId && (
-                  <div className="mb-4">
-                    <label className="text-sm text-gray-700 mb-1 block">
-                      Department
-                    </label>
-                    <select
-                      className="w-full border rounded-md p-2 text-sm"
-                      value={selectedDepartment}
-                      onChange={(e) => setSelectedDepartment(e.target.value)}
-                    >
-                      <option value="All">All</option>
-                      {departments.map((dept) => (
-                        <option
-                          key={dept.dept_id}
-                          value={dept.dept_name}
-                          disabled={!dept.dept_is_active}
-                          className={!dept.dept_is_active ? 'text-red-400' : ''}
-                        >
-                          {dept.dept_name}
-                          {!dept.dept_is_active && ' (Inactive)'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="bg-gray-300 text-gray-800 px-4 py-1 rounded-lg text-sm hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveMacro}
-                    className="bg-purple-700 text-white px-4 py-1 rounded-lg text-sm hover:bg-purple-800"
-                  >
-                    Save
-                  </button>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {loading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 border-2 border-[#6237A0] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-600">Loading macros...</span>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">!</span>
+                  </div>
+                  <p className="text-red-800 font-medium">Error loading macros</p>
+                </div>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+            )}
+
+            {!loading && !error && filteredMacros.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <MessageSquare size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {macros.length === 0 ? 'No macros yet' : 'No macros found'}
+                </h3>
+                <p className="text-gray-600 mb-4 max-w-sm">
+                  {macros.length === 0 
+                    ? 'Create your first macro to get started with quick responses.'
+                    : 'Try adjusting your search or filter criteria.'
+                  }
+                </p>
+                {macros.length === 0 && (
+                  <button
+                    onClick={handleAddMacro}
+                    className="flex items-center gap-2 bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#4c2b7d] transition-colors"
+                  >
+                    <Plus size={16} />
+                    Create First Macro
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!loading && !error && filteredMacros.length > 0 && (
+              <div className={
+                viewMode === 'grid' 
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+                  : 'space-y-3'
+              }>
+                {filteredMacros.map((macro) => (
+                  <MacroCard
+                    key={macro.id}
+                    macro={macro}
+                    departments={departments}
+                    onEdit={handleEditMacro}
+                    onToggleActive={handleToggleActive}
+                    onChangeDepartment={handleChangeDepartment}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Modal */}
+          <MacroModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setCurrentEditMacro(null);
+            }}
+            onSave={handleSaveMacro}
+            macro={currentEditMacro}
+            departments={departments}
+            title={currentEditMacro ? 'Edit Client Macro' : 'Add Client Macro'}
+          />
         </main>
       </div>
     </div>

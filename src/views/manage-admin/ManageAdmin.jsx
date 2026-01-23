@@ -130,6 +130,7 @@ export default function ManageAgents() {
           ...(editPassword !== "" && { sys_user_password: editPassword }),
           sys_user_is_active: editActive,
           sys_user_updated_by: updatedBy,
+          role_name: "admin" // Use lowercase role name
         });
       } else {
         await api.post("/admins", {
@@ -137,6 +138,7 @@ export default function ManageAgents() {
           sys_user_password: editPassword,
           sys_user_is_active: true,
           sys_user_created_by: updatedBy,
+          role_name: "admin" // Use lowercase role name
         });
       }
 

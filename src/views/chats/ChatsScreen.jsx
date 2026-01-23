@@ -266,13 +266,13 @@ export default function ChatsScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-white">
+        <main className="flex-1 bg-white transition-colors duration-200">
           <div className="flex flex-col md:flex-row h-full">
             {/* Chat list */}
             <div
               className={`${
                 view === "chatList" ? "block" : "hidden md:block"
-              } w-full md:w-[320px] bg-[#F5F5F5] overflow-y-auto`}
+              } w-full md:w-[320px] bg-[#F5F5F5] overflow-y-auto transition-colors duration-200`}
             >
               <DepartmentFilter
                 departments={departments}
@@ -345,7 +345,7 @@ export default function ChatsScreen() {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="text-gray-400">
+                  <div className="text-gray-400 dark:text-gray-500 transition-colors duration-200">
                     {endedChats.length > 0
                       ? "Select a customer to start a new chat"
                       : "Select a customer to view chat"}

@@ -1,24 +1,28 @@
-import React, { useState } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar";
-import { Edit3, Search, X } from "react-feather";
+import { useState } from "react";
+import { Plus, MessageCircle, Zap } from "react-feather";
+import TopNavbar from "../../components/TopNavbar";
+import Sidebar from "../../components/Sidebar";
+import AutoReplyCard from "../../components/auto-replies/AutoReplyCard";
+import AutoReplyModal from "../../components/auto-replies/AutoReplyModal";
+import AutoReplyFilters from "../../components/auto-replies/AutoReplyFilters";
+import ResponsiveContainer from "../../components/responsive/ResponsiveContainer";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
-import { useUser } from "../../../src/context/UserContext";
+import { useUser } from "../../context/UserContext";
 import { toast } from "react-toastify";
 import "../../App.css";
 
 export default function AutoRepliesScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editText, setEditText] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentEditReply, setCurrentEditReply] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDeptId, setSelectedDeptId] = useState(null);
-  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("All");
+  const [viewMode, setViewMode] = useState("grid");
 
   const { userData, hasPermission } = useUser();
   const canEditAutoReplies = hasPermission("priv_can_manage_auto_reply");
+  
   const {
     replies,
     activeDepartments,
@@ -33,365 +37,328 @@ export default function AutoRepliesScreen() {
 
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
-  const filteredReplies = replies.filter((reply) =>
-    reply.auto_reply_message?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleSaveEdit = async () => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
-      return;
-    }
-    
-    if (!editingReplyId || !userData?.sys_user_id) return;
-
-    const success = await updateAutoReply(
-      editingReplyId,
-      editText,
-      undefined,
-      userData.sys_user_id
-    );
-
-    if (success) {
-      setIsEditModalOpen(false);
-      setEditText("");
-      setEditingReplyId(null);
-    }
-  };
-
-  const handleSaveAdd = async () => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
-      return;
-    }
-    
-    if (!userData?.sys_user_id) return;
-
-    const success = await createAutoReply(
-      editText,
-      selectedDeptId,
-      userData.sys_user_id
-    );
-
-    if (success) {
-      setIsAddModalOpen(false);
-      setEditText("");
-      setSelectedDeptId(null);
-    }
-  };
-
-  const handleStatusToggle = async (id, currentActive) => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
-      return;
-    }
-    
-    if (!userData?.sys_user_id) return;
-    await toggleAutoReply(id, currentActive, userData.sys_user_id);
-  };
-
-  const handleDeptChange = async (id, newDeptId) => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
-      return;
-    }
-    
-    if (!userData?.sys_user_id) return;
-    await updateDepartment(id, newDeptId, userData.sys_user_id);
-  };
-
-  const openEditModal = (reply) => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
-      return;
-    }
-    
-    setEditText(reply.auto_reply_message);
-    setEditingReplyId(reply.auto_reply_id);
-    setIsEditModalOpen(true);
-  };
-
-  const openAddModal = () => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
-      return;
-    }
-    
-    setEditText("");
-    setSelectedDeptId(activeDepartments[0]?.dept_id || null);
-    setIsAddModalOpen(true);
-  };
+  // Filter replies based on search and department
+  const filteredReplies = replies.filter((reply) => {
+    const matchesSearch = reply.auto_reply_message
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesDepartment =
+      selectedDepartment === "All" ||
+      reply.dept_id ===
+        allDepartments.find((d) => d.dept_name === selectedDepartment)?.dept_id;
+    return matchesSearch && matchesDepartment;
+  });
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNavbar toggleSidebar={toggleSidebar} />
+    <ResponsiveContainer>
+      {({ isMobile, isTablet }) => {
+        
+        const handleEditReply = (reply) => {
+          if (!canEditAutoReplies) {
+            toast.error("You don't have permission to edit auto-replies", {
+              position: isMobile ? "bottom-center" : "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              className: "text-sm",
+              bodyClassName: "text-sm",
+            });
+            return;
+          }
+          setCurrentEditReply(reply);
+          setIsModalOpen(true);
+        };
 
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
+        const handleAddReply = () => {
+          if (!canEditAutoReplies) {
+            toast.error("You don't have permission to edit auto-replies", {
+              position: isMobile ? "bottom-center" : "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              className: "text-sm",
+              bodyClassName: "text-sm",
+            });
+            return;
+          }
+          setCurrentEditReply(null);
+          setIsModalOpen(true);
+        };
 
-        <main className="flex-1 bg-gray-100 p-[60px] transition-colors duration-300 flex flex-col min-h-0 w-full overflow-auto">
-          <div className="bg-white p-4 rounded-lg flex flex-col flex-1 min-h-0 transition-all duration-300">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center bg-gray-100 px-3 py-2 rounded-md w-1/3 relative">
-                <Search size={18} strokeWidth={1} className="text-gray-500 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent focus:outline-none text-sm w-full pr-6"
+        const handleToggleActive = async (id, currentActive) => {
+          if (!canEditAutoReplies) {
+            toast.error("You don't have permission to edit auto-replies", {
+              position: isMobile ? "bottom-center" : "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              className: "text-sm",
+              bodyClassName: "text-sm",
+            });
+            return;
+          }
+          await toggleAutoReply(id, currentActive, userData?.sys_user_id);
+        };
+
+        const handleChangeDepartment = async (id, newDeptId) => {
+          if (!canEditAutoReplies) {
+            toast.error("You don't have permission to edit auto-replies", {
+              position: isMobile ? "bottom-center" : "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              className: "text-sm",
+              bodyClassName: "text-sm",
+            });
+            return;
+          }
+          await updateDepartment(id, newDeptId, userData?.sys_user_id);
+        };
+
+        const toggleDropdown = (name) => {
+          setOpenDropdown((prev) => (prev === name ? null : name));
+        };
+
+        const getActiveCount = () => replies.filter(r => r.auto_reply_is_active).length;
+        const getInactiveCount = () => replies.filter(r => !r.auto_reply_is_active).length;
+
+        const handleSaveReply = async (message, departmentName) => {
+          if (!canEditAutoReplies) {
+            toast.error("You don't have permission to edit auto-replies", {
+              position: isMobile ? "bottom-center" : "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              className: "text-sm",
+              bodyClassName: "text-sm",
+            });
+            return;
+          }
+
+          if (currentEditReply) {
+            // Update existing reply
+            const success = await updateAutoReply(
+              currentEditReply.auto_reply_id,
+              message,
+              currentEditReply.dept_id,
+              userData?.sys_user_id
+            );
+
+            if (success) {
+              setIsModalOpen(false);
+              setCurrentEditReply(null);
+            }
+          } else {
+            // Create new reply
+            const selectedDept = activeDepartments.find(
+              (dept) => dept.dept_name === departmentName
+            );
+            const dept_id = departmentName === "All" ? null : selectedDept?.dept_id;
+
+            const success = await createAutoReply(
+              message,
+              dept_id,
+              userData?.sys_user_id
+            );
+
+            if (success) {
+              setIsModalOpen(false);
+            }
+          }
+        };
+
+        return (
+          <div className="flex flex-col h-screen overflow-hidden">
+            <TopNavbar toggleSidebar={toggleSidebar} />
+
+            <div className="flex flex-1 overflow-hidden">
+              <Sidebar
+                isMobile={true}
+                isOpen={mobileSidebarOpen}
+                toggleDropdown={toggleDropdown}
+                openDropdown={openDropdown}
+                onClose={() => setMobileSidebarOpen(false)}
+              />
+              <Sidebar
+                isMobile={false}
+                toggleDropdown={toggleDropdown}
+                openDropdown={openDropdown}
+              />
+
+              <main className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden flex flex-col transition-colors duration-200">
+                {/* Header */}
+                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-colors duration-200">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                      <div className={`p-2 sm:p-2.5 md:p-3 bg-[#E6DCF7] dark:bg-purple-900/30 rounded-lg md:rounded-xl ${isMobile ? 'flex-shrink-0' : ''} transition-colors duration-200`}>
+                        <Zap size={isMobile ? 18 : isTablet ? 20 : 24} className="text-[#6237A0] dark:text-purple-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">Auto Replies</h1>
+                        <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
+                          {isMobile ? "Manage auto responses" : "Manage automatic response messages for incoming chats"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={handleAddReply}
+                      disabled={!canEditAutoReplies}
+                      className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm touch-target ${
+                        canEditAutoReplies
+                          ? "bg-[#6237A0] dark:bg-purple-600 text-white hover:bg-[#4c2b7d] dark:hover:bg-purple-700 focus:ring-2 focus:ring-[#6237A0] dark:focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                          : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                      } ${isMobile ? 'w-full sm:w-auto justify-center' : ''}`}
+                      title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
+                    >
+                      <Plus size={isMobile ? 16 : 18} />
+                      {isMobile ? "Add Reply" : "Add Auto Reply"}
+                    </button>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 mt-3 sm:mt-4">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-gray-600 dark:text-gray-400">Active: </span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{getActiveCount()}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gray-400 rounded-full"></div>
+                      <span className="text-gray-600 dark:text-gray-400">Inactive: </span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{getInactiveCount()}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      <MessageCircle size={isMobile ? 12 : 14} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-gray-600 dark:text-gray-400">Total: </span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{replies.length}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <AutoReplyFilters
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  selectedDepartment={selectedDepartment}
+                  onDepartmentChange={setSelectedDepartment}
+                  departments={allDepartments}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  totalCount={replies.length}
+                  filteredCount={filteredReplies.length}
+                  isMobile={isMobile}
+                  isTablet={isTablet}
                 />
-                {searchQuery && (
-                  <X
-                    size={16}
-                    className="text-gray-500 cursor-pointer absolute right-3"
-                    onClick={() => setSearchQuery("")}
-                  />
-                )}
-              </div>
 
-              <button
-                onClick={openAddModal}
-                disabled={!canEditAutoReplies}
-                className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                  canEditAutoReplies
-                    ? "bg-[#6237A0] text-white hover:bg-purple-800"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-                title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
-              >
-                Add Replies
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-              <table className="w-full text-sm text-left">
-                <thead className="text-gray-500 bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_0_#000000]">
-                  <tr>
-                    <th className="py-2 px-3">Replies</th>
-                    <th className="py-2 px-3 text-center">Active Status</th>
-                    <th className="py-2 px-3 text-center">Department</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8 text-gray-600">
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : error ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8 text-red-600">
-                        {error}
-                      </td>
-                    </tr>
-                  ) : filteredReplies.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8 text-gray-600">
-                        No auto-replies found
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredReplies.map((reply) => (
-                      <tr
-                        key={reply.auto_reply_id}
-                        className="hover:bg-gray-100 transition-colors"
-                      >
-                        <td className="py-2 px-3 align-top">
-                          <div className="max-w-xs break-words text-gray-800 relative pr-6">
-                            <span>{reply.auto_reply_message}</span>
-                            <div className="absolute top-1/2 right-0 -translate-y-1/2">
-                              <Edit3
-                                size={18}
-                                className={`transition-colors ${
-                                  canEditAutoReplies
-                                    ? "text-gray-500 cursor-pointer hover:text-purple-700"
-                                    : "text-gray-300 cursor-not-allowed"
-                                }`}
-                                onClick={() => openEditModal(reply)}
-                                title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
-                              />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <label className={`inline-flex relative items-center ${
-                            canEditAutoReplies ? "cursor-pointer" : "cursor-not-allowed"
-                          }`}>
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={reply.auto_reply_is_active}
-                              onChange={() =>
-                                handleStatusToggle(
-                                  reply.auto_reply_id,
-                                  reply.auto_reply_is_active
-                                )
-                              }
-                              disabled={!canEditAutoReplies}
-                              title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
-                            />
-                            <div className={`w-7 h-4 rounded-full peer relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform peer-checked:after:translate-x-3 ${
-                              canEditAutoReplies
-                                ? "bg-gray-200 peer-checked:bg-[#6237A0]"
-                                : "bg-gray-100 peer-checked:bg-gray-300"
-                            }`} />
-                          </label>
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <select
-                            value={reply.dept_id ?? ""}
-                            onChange={(e) =>
-                              handleDeptChange(
-                                reply.auto_reply_id,
-                                e.target.value ? parseInt(e.target.value) : null
-                              )
-                            }
-                            disabled={!canEditAutoReplies}
-                            className={`rounded-md px-2 py-1 text-sm border-none text-center ${
-                              canEditAutoReplies
-                                ? "text-gray-800 cursor-pointer"
-                                : "text-gray-400 cursor-not-allowed bg-gray-100"
-                            }`}
-                            title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
-                          >
-                            <option value="">All</option>
-                            {allDepartments.map((dept) => (
-                              <option
-                                key={dept.dept_id}
-                                value={dept.dept_id}
-                                disabled={
-                                  !dept.dept_is_active &&
-                                  dept.dept_id !== reply.dept_id
-                                }
-                                className={
-                                  !dept.dept_is_active ? "text-red-400" : ""
-                                }
-                              >
-                                {dept.dept_name}
-                                {!dept.dept_is_active && " (Inactive)"}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 custom-scrollbar">
+                  {loading && (
+                    <div className="flex items-center justify-center h-32 sm:h-48 md:h-64">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 border-2 border-[#6237A0] dark:border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading auto replies...</span>
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
+
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-xs">!</span>
+                        </div>
+                        <p className="text-red-800 dark:text-red-200 font-medium text-sm sm:text-base">Error loading auto replies</p>
+                      </div>
+                      <p className="text-red-600 dark:text-red-300 text-xs sm:text-sm mt-1">{error}</p>
+                    </div>
+                  )}
+
+                  {!loading && !error && filteredReplies.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-32 sm:h-48 md:h-64 text-center px-4">
+                      <div className="p-3 sm:p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-3 sm:mb-4">
+                        <MessageCircle size={isMobile ? 24 : isTablet ? 28 : 32} className="text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-1 sm:mb-2">
+                        {replies.length === 0 ? 'No auto replies yet' : 'No auto replies found'}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base mb-3 sm:mb-4 max-w-sm">
+                        {replies.length === 0 
+                          ? 'Create your first auto reply to automatically respond to incoming chats.'
+                          : 'Try adjusting your search or filter criteria.'
+                        }
+                      </p>
+                      {replies.length === 0 && canEditAutoReplies && (
+                        <button
+                          onClick={handleAddReply}
+                          className="flex items-center gap-1.5 sm:gap-2 bg-[#6237A0] dark:bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#4c2b7d] dark:hover:bg-purple-700 transition-colors touch-target"
+                        >
+                          <Plus size={14} />
+                          Create First Auto Reply
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {!loading && !error && filteredReplies.length > 0 && (
+                    <div className={
+                      viewMode === 'grid' 
+                        ? `grid gap-2 sm:gap-3 md:gap-4 ${
+                            isMobile 
+                              ? 'grid-cols-1' 
+                              : isTablet 
+                                ? 'grid-cols-1 sm:grid-cols-2' 
+                                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                          }`
+                        : 'space-y-2 sm:space-y-3'
+                    }>
+                      {filteredReplies.map((reply) => (
+                        <AutoReplyCard
+                          key={reply.auto_reply_id}
+                          reply={reply}
+                          departments={allDepartments}
+                          onEdit={handleEditReply}
+                          onToggleActive={handleToggleActive}
+                          onChangeDepartment={handleChangeDepartment}
+                          canEdit={canEditAutoReplies}
+                          isMobile={isMobile}
+                          isTablet={isTablet}
+                          viewMode={isMobile ? 'grid' : viewMode}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal */}
+                <AutoReplyModal
+                  isOpen={isModalOpen}
+                  onClose={() => {
+                    setIsModalOpen(false);
+                    setCurrentEditReply(null);
+                  }}
+                  onSave={handleSaveReply}
+                  reply={currentEditReply}
+                  departments={activeDepartments}
+                  canEdit={canEditAutoReplies}
+                  isMobile={isMobile}
+                  isTablet={isTablet}
+                />
+              </main>
             </div>
           </div>
-
-          {/* Edit Modal */}
-          {isEditModalOpen && (
-            <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-center z-50">
-              <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-                <h2 className="text-md font-semibold mb-2">Edit Reply</h2>
-                <label className="text-sm text-gray-700 mb-1 block">
-                  Message
-                </label>
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm mb-4 h-24 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                />
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setIsEditModalOpen(false)}
-                    className="bg-gray-300 text-gray-800 px-4 py-1 rounded-lg text-sm hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveEdit}
-                    disabled={!canEditAutoReplies}
-                    className={`px-4 py-1 rounded-lg text-sm transition-colors ${
-                      canEditAutoReplies
-                        ? "bg-purple-700 text-white hover:bg-purple-800"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Add Modal */}
-          {isAddModalOpen && (
-            <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-center z-50">
-              <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-                <h2 className="text-md font-semibold mb-2">Add New Reply</h2>
-                <label className="text-sm text-gray-700 mb-1 block">
-                  Message
-                </label>
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm mb-4 h-24 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                />
-                <label className="text-sm text-gray-700 mb-1 block">
-                  Department
-                </label>
-                <select
-                  value={selectedDeptId ?? ""}
-                  onChange={(e) =>
-                    setSelectedDeptId(
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
-                  }
-                  className="w-full border rounded-md p-2 text-sm mb-4 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                >
-                  <option value="">All</option>
-                  {activeDepartments.map((dept) => (
-                    <option key={dept.dept_id} value={dept.dept_id}>
-                      {dept.dept_name}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setIsAddModalOpen(false)}
-                    className="bg-gray-300 text-gray-800 px-4 py-1 rounded-lg text-sm hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveAdd}
-                    disabled={!canEditAutoReplies}
-                    className={`px-4 py-1 rounded-lg text-sm transition-colors ${
-                      canEditAutoReplies
-                        ? "bg-purple-700 text-white hover:bg-purple-800"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
+        );
+      }}
+    </ResponsiveContainer>
   );
 }

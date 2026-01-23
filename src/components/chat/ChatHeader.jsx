@@ -21,7 +21,7 @@ export default function ChatHeader({
   canTransfer = true,
 }) {
   return (
-    <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4">
+    <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 transition-colors duration-200">
       <div className="flex items-center">
         {isMobile && (
           <button
@@ -50,7 +50,7 @@ export default function ChatHeader({
           />
 
           <div>
-            <h3 className="text-lg font-medium text-gray-800">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors duration-200">
               {customer.name}
             </h3>
             {!customer.isAccepted && !customer.sys_user_id && (
@@ -74,7 +74,7 @@ export default function ChatHeader({
           {/* Three-dot menu */}
           {showMenu && !chatEnded && (canEndChat || canTransfer) && (
             <button
-              className="p-2 text-black hover:text-[#6237A0] transition rounded-full"
+              className="p-2 text-black dark:text-gray-200 hover:text-[#6237A0] dark:hover:text-purple-400 transition rounded-full"
               onClick={onMenuToggle}
             >
               <MoreVertical size={22} />
@@ -83,29 +83,29 @@ export default function ChatHeader({
           {menuOpen && (
             <div
               ref={dropdownRef}
-              className="absolute right-0 mt-2 w-44 bg-white border border-gray-300 rounded-md shadow-sm z-20"
+              className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm z-20 transition-colors duration-200"
             >
               {canEndChat && (
                 <button
-                  className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={onEndChat}
                 >
                   End Chat
                 </button>
               )}
               {canEndChat && canTransfer && (
-                <div className="border-t border-gray-200" />
+                <div className="border-t border-gray-200 dark:border-gray-600" />
               )}
               {canTransfer && (
                 <button
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={onTransfer}
                 >
                   Transfer Department
                 </button>
               )}
               {!canEndChat && !canTransfer && (
-                <div className="px-4 py-2 text-sm text-gray-400">
+                <div className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">
                   No actions available
                 </div>
               )}

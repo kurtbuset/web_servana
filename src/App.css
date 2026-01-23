@@ -1,10 +1,449 @@
+/* Import responsive utilities */
+@import './styles/responsive.css';
+
+/* Import responsive utilities */
+@import './styles/responsive.css';
+
+/* SERVANA THEME SYSTEM - COMPLETELY INDEPENDENT OF BROWSER SETTINGS */
+
+/* Force CSS custom properties regardless of browser theme */
+:root {
+  --servana-bg-primary: #ffffff !important;
+  --servana-bg-secondary: #f9fafb !important;
+  --servana-bg-tertiary: #f3f4f6 !important;
+  --servana-text-primary: #1f2937 !important;
+  --servana-text-secondary: #374151 !important;
+  --servana-text-muted: #6b7280 !important;
+  --servana-border: #e5e7eb !important;
+  --servana-border-light: #d1d5db !important;
+  --servana-shadow: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Override browser color scheme completely */
+html {
+  color-scheme: light !important;
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+body {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+#root {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Force transitions on all elements */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+}
+
+/* DARK MODE OVERRIDES - COMPLETELY INDEPENDENT */
+
+/* Dark mode CSS variables - override everything */
+html.dark,
+html[data-theme="dark"],
+body.dark,
+body[data-theme="dark"] {
+  --servana-bg-primary: #111827 !important;
+  --servana-bg-secondary: #1f2937 !important;
+  --servana-bg-tertiary: #374151 !important;
+  --servana-text-primary: #f9fafb !important;
+  --servana-text-secondary: #e5e7eb !important;
+  --servana-text-muted: #9ca3af !important;
+  --servana-border: #374151 !important;
+  --servana-border-light: #4b5563 !important;
+  --servana-shadow: rgba(0, 0, 0, 0.5) !important;
+  
+  color-scheme: dark !important;
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* AGGRESSIVE DARK MODE OVERRIDES */
+
+/* Force all backgrounds regardless of browser theme */
+.dark .bg-white,
+.dark [class*="bg-white"],
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] [class*="bg-white"] {
+  background-color: var(--servana-bg-secondary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+.dark .bg-gray-50,
+.dark [class*="bg-gray-50"],
+html[data-theme="dark"] .bg-gray-50,
+html[data-theme="dark"] [class*="bg-gray-50"] {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+.dark .bg-gray-100,
+.dark [class*="bg-gray-100"],
+html[data-theme="dark"] .bg-gray-100,
+html[data-theme="dark"] [class*="bg-gray-100"] {
+  background-color: var(--servana-bg-tertiary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Force opacity backgrounds */
+.dark .bg-opacity-80,
+.dark [class*="bg-opacity-80"],
+html[data-theme="dark"] .bg-opacity-80,
+html[data-theme="dark"] [class*="bg-opacity-80"] {
+  background-color: rgba(31, 41, 55, 0.8) !important;
+}
+
+.dark .bg-opacity-90,
+.dark [class*="bg-opacity-90"],
+html[data-theme="dark"] .bg-opacity-90,
+html[data-theme="dark"] [class*="bg-opacity-90"] {
+  background-color: rgba(31, 41, 55, 0.9) !important;
+}
+
+/* Force all text colors */
+.dark .text-gray-900,
+.dark [class*="text-gray-900"],
+html[data-theme="dark"] .text-gray-900,
+html[data-theme="dark"] [class*="text-gray-900"] {
+  color: var(--servana-text-primary) !important;
+}
+
+.dark .text-gray-800,
+.dark [class*="text-gray-800"],
+html[data-theme="dark"] .text-gray-800,
+html[data-theme="dark"] [class*="text-gray-800"] {
+  color: var(--servana-text-secondary) !important;
+}
+
+.dark .text-gray-700,
+.dark [class*="text-gray-700"],
+html[data-theme="dark"] .text-gray-700,
+html[data-theme="dark"] [class*="text-gray-700"] {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-600,
+.dark [class*="text-gray-600"],
+html[data-theme="dark"] .text-gray-600,
+html[data-theme="dark"] [class*="text-gray-600"] {
+  color: var(--servana-text-muted) !important;
+}
+
+.dark .text-gray-500,
+.dark [class*="text-gray-500"],
+html[data-theme="dark"] .text-gray-500,
+html[data-theme="dark"] [class*="text-gray-500"] {
+  color: #6b7280 !important;
+}
+
+.dark .text-gray-400,
+.dark [class*="text-gray-400"],
+html[data-theme="dark"] .text-gray-400,
+html[data-theme="dark"] [class*="text-gray-400"] {
+  color: var(--servana-text-muted) !important;
+}
+
+/* Force all border colors */
+.dark .border-gray-200,
+.dark [class*="border-gray-200"],
+html[data-theme="dark"] .border-gray-200,
+html[data-theme="dark"] [class*="border-gray-200"] {
+  border-color: var(--servana-border) !important;
+}
+
+.dark .border-gray-300,
+.dark [class*="border-gray-300"],
+html[data-theme="dark"] .border-gray-300,
+html[data-theme="dark"] [class*="border-gray-300"] {
+  border-color: var(--servana-border-light) !important;
+}
+
+.dark .border-white,
+.dark [class*="border-white"],
+html[data-theme="dark"] .border-white,
+html[data-theme="dark"] [class*="border-white"] {
+  border-color: var(--servana-border) !important;
+}
+
+/* Force layout elements */
+.dark header,
+html[data-theme="dark"] header {
+  background-color: var(--servana-bg-secondary) !important;
+  color: var(--servana-text-primary) !important;
+  border-color: var(--servana-border) !important;
+}
+
+.dark aside,
+html[data-theme="dark"] aside {
+  background-color: var(--servana-bg-secondary) !important;
+  color: var(--servana-text-primary) !important;
+  border-color: var(--servana-border) !important;
+}
+
+.dark main,
+html[data-theme="dark"] main {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+.dark nav,
+html[data-theme="dark"] nav {
+  background-color: var(--servana-bg-secondary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Force form elements */
+.dark input,
+.dark select,
+.dark textarea,
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  background-color: var(--servana-bg-tertiary) !important;
+  color: var(--servana-text-primary) !important;
+  border-color: var(--servana-border-light) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder,
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: var(--servana-text-muted) !important;
+}
+
+/* Force hover states */
+.dark .hover\:bg-gray-50:hover,
+.dark [class*="hover:bg-gray-50"]:hover,
+html[data-theme="dark"] .hover\:bg-gray-50:hover,
+html[data-theme="dark"] [class*="hover:bg-gray-50"]:hover {
+  background-color: var(--servana-bg-tertiary) !important;
+}
+
+.dark .hover\:bg-gray-100:hover,
+.dark [class*="hover:bg-gray-100"]:hover,
+html[data-theme="dark"] .hover\:bg-gray-100:hover,
+html[data-theme="dark"] [class*="hover:bg-gray-100"]:hover {
+  background-color: var(--servana-border-light) !important;
+}
+
+.dark .hover\:bg-white:hover,
+.dark [class*="hover:bg-white"]:hover,
+html[data-theme="dark"] .hover\:bg-white:hover,
+html[data-theme="dark"] [class*="hover:bg-white"]:hover {
+  background-color: var(--servana-bg-tertiary) !important;
+}
+
+/* Force shadows */
+.dark .shadow,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark [class*="shadow"],
+html[data-theme="dark"] .shadow,
+html[data-theme="dark"] .shadow-lg,
+html[data-theme="dark"] .shadow-xl,
+html[data-theme="dark"] [class*="shadow"] {
+  box-shadow: 0 10px 15px -3px var(--servana-shadow), 0 4px 6px -2px var(--servana-shadow) !important;
+}
+
+/* Chat message specific */
+.dark .chat-message-user,
+.dark .chat-message-customer,
+html[data-theme="dark"] .chat-message-user,
+html[data-theme="dark"] .chat-message-customer {
+  background-color: var(--servana-bg-tertiary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+.dark .chat-message-system,
+html[data-theme="dark"] .chat-message-system {
+  background-color: #6237A0 !important;
+  color: #ffffff !important;
+}
+
+/* Backdrop blur */
+.dark .backdrop-blur-xl,
+.dark [class*="backdrop-blur"],
+html[data-theme="dark"] .backdrop-blur-xl,
+html[data-theme="dark"] [class*="backdrop-blur"] {
+  backdrop-filter: blur(24px) !important;
+}
+
+.dark div[class*="backdrop-blur"],
+html[data-theme="dark"] div[class*="backdrop-blur"] {
+  background-color: rgba(31, 41, 55, 0.8) !important;
+}
+
+/* Specific component backgrounds */
+.dark .bg-\[#F5F5F5\],
+.dark .bg-\[#f5f5f5\],
+html[data-theme="dark"] .bg-\[#F5F5F5\],
+html[data-theme="dark"] .bg-\[#f5f5f5\] {
+  background-color: var(--servana-bg-tertiary) !important;
+}
+
+.dark .bg-\[#E6DCF7\],
+html[data-theme="dark"] .bg-\[#E6DCF7\] {
+  background-color: rgba(124, 77, 255, 0.2) !important;
+}
+
+/* Status badges */
+.dark .bg-green-50,
+html[data-theme="dark"] .bg-green-50 { background-color: rgba(34, 197, 94, 0.1) !important; }
+.dark .bg-blue-50,
+html[data-theme="dark"] .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+.dark .bg-purple-50,
+html[data-theme="dark"] .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1) !important; }
+.dark .bg-orange-50,
+html[data-theme="dark"] .bg-orange-50 { background-color: rgba(249, 115, 22, 0.1) !important; }
+.dark .bg-red-50,
+html[data-theme="dark"] .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+
+.dark .bg-green-100,
+html[data-theme="dark"] .bg-green-100 { background-color: rgba(34, 197, 94, 0.2) !important; }
+.dark .bg-blue-100,
+html[data-theme="dark"] .bg-blue-100 { background-color: rgba(59, 130, 246, 0.2) !important; }
+.dark .bg-purple-100,
+html[data-theme="dark"] .bg-purple-100 { background-color: rgba(168, 85, 247, 0.2) !important; }
+.dark .bg-orange-100,
+html[data-theme="dark"] .bg-orange-100 { background-color: rgba(249, 115, 22, 0.2) !important; }
+.dark .bg-red-100,
+html[data-theme="dark"] .bg-red-100 { background-color: rgba(239, 68, 68, 0.2) !important; }
+
+/* Badge text colors */
+.dark .text-green-700,
+html[data-theme="dark"] .text-green-700 { color: #4ade80 !important; }
+.dark .text-blue-700,
+html[data-theme="dark"] .text-blue-700 { color: #60a5fa !important; }
+.dark .text-purple-700,
+html[data-theme="dark"] .text-purple-700 { color: #a78bfa !important; }
+.dark .text-orange-700,
+html[data-theme="dark"] .text-orange-700 { color: #fb923c !important; }
+.dark .text-red-700,
+html[data-theme="dark"] .text-red-700 { color: #f87171 !important; }
+.dark .text-green-600,
+html[data-theme="dark"] .text-green-600 { color: #4ade80 !important; }
+.dark .text-purple-600,
+html[data-theme="dark"] .text-purple-600 { color: #a78bfa !important; }
+
+/* NUCLEAR OPTION - Override inline styles */
+.dark div[style*="background-color: #f5f5f5"],
+.dark div[style*="background-color:#f5f5f5"],
+.dark div[style*="background-color: #F5F5F5"],
+.dark div[style*="background-color:#F5F5F5"],
+.dark div[style*="background-color: rgb(245, 245, 245)"],
+html[data-theme="dark"] div[style*="background-color: #f5f5f5"],
+html[data-theme="dark"] div[style*="background-color:#f5f5f5"],
+html[data-theme="dark"] div[style*="background-color: #F5F5F5"],
+html[data-theme="dark"] div[style*="background-color:#F5F5F5"],
+html[data-theme="dark"] div[style*="background-color: rgb(245, 245, 245)"] {
+  background-color: var(--servana-bg-tertiary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+.dark div[style*="background-color: #ffffff"],
+.dark div[style*="background-color:#ffffff"],
+.dark div[style*="background-color: #FFFFFF"],
+.dark div[style*="background-color:#FFFFFF"],
+.dark div[style*="background-color: rgb(255, 255, 255)"],
+html[data-theme="dark"] div[style*="background-color: #ffffff"],
+html[data-theme="dark"] div[style*="background-color:#ffffff"],
+html[data-theme="dark"] div[style*="background-color: #FFFFFF"],
+html[data-theme="dark"] div[style*="background-color:#FFFFFF"],
+html[data-theme="dark"] div[style*="background-color: rgb(255, 255, 255)"] {
+  background-color: var(--servana-bg-secondary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* ULTIMATE OVERRIDE - Force all elements with white/light backgrounds */
+.dark *[class*="bg-white"],
+.dark *[class*="bg-gray-50"],
+.dark *[class*="bg-gray-100"],
+html[data-theme="dark"] *[class*="bg-white"],
+html[data-theme="dark"] *[class*="bg-gray-50"],
+html[data-theme="dark"] *[class*="bg-gray-100"] {
+  background-color: var(--servana-bg-secondary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Force main elements */
+.dark main[class*="bg-white"],
+.dark section[class*="bg-white"],
+.dark article[class*="bg-white"],
+.dark div[class*="bg-white"],
+html[data-theme="dark"] main[class*="bg-white"],
+html[data-theme="dark"] section[class*="bg-white"],
+html[data-theme="dark"] article[class*="bg-white"],
+html[data-theme="dark"] div[class*="bg-white"] {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Force specific background colors */
+.dark .bg-\[#ffffff\],
+.dark .bg-\[#FFFFFF\],
+html[data-theme="dark"] .bg-\[#ffffff\],
+html[data-theme="dark"] .bg-\[#FFFFFF\] {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Chat and queue specific overrides */
+.dark .chat-container,
+.dark .queue-container,
+.dark .customer-list,
+.dark .chat-area,
+html[data-theme="dark"] .chat-container,
+html[data-theme="dark"] .queue-container,
+html[data-theme="dark"] .customer-list,
+html[data-theme="dark"] .chat-area {
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Force all containers */
+.dark [class*="container"],
+.dark [class*="wrapper"],
+.dark [class*="content"],
+html[data-theme="dark"] [class*="container"],
+html[data-theme="dark"] [class*="wrapper"],
+html[data-theme="dark"] [class*="content"] {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Override any remaining white elements */
+.dark *:not(.text-white):not([class*="text-white"]) {
+  color: var(--servana-text-primary) !important;
+}
+
+.dark *[style*="background: white"],
+.dark *[style*="background: #fff"],
+.dark *[style*="background: #ffffff"],
+.dark *[style*="background-color: white"],
+html[data-theme="dark"] *[style*="background: white"],
+html[data-theme="dark"] *[style*="background: #fff"],
+html[data-theme="dark"] *[style*="background: #ffffff"],
+html[data-theme="dark"] *[style*="background-color: white"] {
+  background: var(--servana-bg-primary) !important;
+  background-color: var(--servana-bg-primary) !important;
+  color: var(--servana-text-primary) !important;
+}
+
+/* Optimized scrollbar */
 .custom-scrollbar {
-  scrollbar-width: thin;             /* Firefox */
-  scrollbar-color: #d1d5db transparent; /* thumb and track colors for Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--servana-border-light) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;                        /* for Chrome, Safari */
+  width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -12,11 +451,60 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;         /* gray-300 */
+  background-color: var(--servana-border-light);
   border-radius: 9999px;
 }
 
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: #a1a1aa;         /* gray-400 on hover */
+  background-color: var(--servana-text-muted);
 }
 
+/* Dark mode scrollbar */
+.dark .custom-scrollbar,
+html[data-theme="dark"] .custom-scrollbar {
+  scrollbar-color: var(--servana-text-muted) transparent;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--servana-text-muted);
+}
+
+.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--servana-text-muted);
+}
+
+/* FINAL NUCLEAR OVERRIDE - Catch everything */
+.dark {
+  --tw-bg-opacity: 1 !important;
+}
+
+.dark .bg-white {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(31 41 55 / var(--tw-bg-opacity)) !important;
+}
+
+.dark .bg-gray-50 {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(55 65 81 / var(--tw-bg-opacity)) !important;
+}
+
+.dark .bg-gray-100 {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(55 65 81 / var(--tw-bg-opacity)) !important;
+}
+
+/* Force all elements with computed white backgrounds */
+@media (prefers-color-scheme: dark), (prefers-color-scheme: light) {
+  .dark * {
+    background-color: inherit !important;
+  }
+  
+  .dark *[style*="background-color: white"],
+  .dark *[style*="background-color: #fff"],
+  .dark *[style*="background-color: #ffffff"],
+  .dark *[style*="background-color: rgb(255, 255, 255)"] {
+    background-color: var(--servana-bg-secondary) !important;
+  }
+}

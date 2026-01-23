@@ -25,8 +25,8 @@ export const useAgents = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Default role ID for new agents
-  const DEFAULT_ROLE_ID = 2;
+  // Default role name for new agents
+  const DEFAULT_ROLE_NAME = "client";
 
   /**
    * Fetch all agents and departments
@@ -116,7 +116,7 @@ export const useAgents = () => {
         password: trimmedPassword,
         active: true,
         departments: [],
-        roleId: DEFAULT_ROLE_ID,
+        role_name: DEFAULT_ROLE_NAME.toLowerCase(), // Ensure lowercase
       };
 
       const result = await AgentService.createAgent(payload);

@@ -18,7 +18,7 @@ export default function CustomerList({
           <div
             key={customer.id}
             onClick={() => onCustomerClick(customer)}
-            className={`flex items-center justify-between px-4 py-3 border-2 ${
+            className={`flex items-center justify-between px-4 py-3 border-2 transition-colors duration-200 ${
               isSelected
                 ? "bg-[#E6DCF7]"
                 : isEnded
@@ -37,34 +37,34 @@ export default function CustomerList({
 
               <div className="flex-1 min-w-0">
                 <div className="flex justify-end mb-1">
-                  <span className="text-[10px] font-semibold text-purple-600 bg-purple-100 px-2 py-[2px] rounded-full whitespace-nowrap">
+                  <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-2 py-[2px] rounded-full whitespace-nowrap transition-colors duration-200">
                     {customer.department}
                   </span>
                 </div>
                 <p
-                  className={`text-sm font-medium truncate ${
+                  className={`text-sm font-medium truncate transition-colors duration-200 ${
                     isSelected
-                      ? "text-[#6237A0]"
+                      ? "text-[#6237A0] dark:text-purple-300"
                       : isEnded
-                      ? "text-gray-500"
-                      : "text-gray-800"
+                      ? "text-gray-500 dark:text-gray-400"
+                      : "text-gray-800 dark:text-gray-200"
                   }`}
                 >
                   {customer.name}
                 </p>
                 <div className="flex justify-between items-center">
                   <p
-                    className={`text-xs truncate ${
+                    className={`text-xs truncate transition-colors duration-200 ${
                       isSelected
-                        ? "text-[#6237A0]"
+                        ? "text-[#6237A0] dark:text-purple-300"
                         : isEnded
-                        ? "text-gray-400"
-                        : "text-gray-500"
+                        ? "text-gray-400 dark:text-gray-500"
+                        : "text-gray-500 dark:text-gray-400"
                     }`}
                   >
                     {customer.number}
                   </p>
-                  <span className="text-[10px] text-gray-400 ml-2 whitespace-nowrap mt-5">
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-2 whitespace-nowrap mt-5 transition-colors duration-200">
                     {customer.time}
                   </span>
                 </div>

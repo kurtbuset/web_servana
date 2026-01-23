@@ -37,7 +37,7 @@ export default function MessageInput({
 
   if (showCannedMessages && canUseCannedMessages) {
     return (
-      <div className="border-t border-gray-200 pt-4 bg-white canned-dropdown">
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 bg-white dark:bg-gray-800 canned-dropdown transition-colors duration-200">
         <div className="flex items-center gap-2 px-4 pb-3">
           <button
             className={`p-3 rounded-full ${
@@ -58,10 +58,10 @@ export default function MessageInput({
             onChange={onInputChange}
             onClick={handleToggleCannedMessages}
             onKeyDown={handleKeyDown}
-            className={`flex-1 rounded-xl px-4 py-2 leading-tight focus:outline-none resize-none overflow-y-auto ${
+            className={`flex-1 rounded-xl px-4 py-2 leading-tight focus:outline-none resize-none overflow-y-auto transition-colors duration-200 ${
               disabled
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-[#F2F0F0] text-gray-800"
+                ? "bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                : "bg-[#F2F0F0] dark:bg-gray-700 text-gray-800 dark:text-gray-200"
             }`}
             style={{ maxHeight: "100px" }}
             disabled={disabled}
@@ -87,7 +87,7 @@ export default function MessageInput({
                 <button
                   key={index}
                   onClick={() => onSelectCannedMessage(msg)}
-                  className="text-sm text-left px-4 py-3 bg-[#F5F5F5] rounded-xl hover:bg-[#EFEAFE] transition text-gray-800"
+                  className="text-sm text-left px-4 py-3 bg-[#F5F5F5] dark:bg-gray-700 rounded-xl hover:bg-[#EFEAFE] dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200"
                 >
                   {msg}
                 </button>
@@ -100,19 +100,19 @@ export default function MessageInput({
   }
 
   return (
-    <div className="mt-4 flex flex-col border-t border-gray-200 pt-4 px-4">
+    <div className="mt-4 flex flex-col border-t border-gray-200 dark:border-gray-700 pt-4 px-4 transition-colors duration-200">
       {/* Permission denied banner */}
       {disabled && !chatEnded && disabledMessage !== "Message" && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700 text-center">
+        <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors duration-200">
+          <p className="text-sm text-red-700 dark:text-red-300 text-center">
             <span className="font-semibold">Access Denied:</span> {disabledMessage}
           </p>
         </div>
       )}
 
       {showPreviewBanner && !chatEnded && (
-        <div className="mb-4 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg">
-          <p className="text-sm text-orange-700 text-center">
+        <div className="mb-4 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg transition-colors duration-200">
+          <p className="text-sm text-orange-700 dark:text-orange-300 text-center">
             <span className="font-semibold">Preview Mode:</span> Accept this
             chat to start communicating with the client
           </p>
@@ -139,10 +139,10 @@ export default function MessageInput({
           value={inputMessage}
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
-          className={`flex-1 rounded-xl px-4 py-2 mb-4 leading-tight focus:outline-none resize-none overflow-y-auto ${
+          className={`flex-1 rounded-xl px-4 py-2 mb-4 leading-tight focus:outline-none resize-none overflow-y-auto transition-colors duration-200 ${
             chatEnded || disabled
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-[#F2F0F0] text-gray-800"
+              ? "bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              : "bg-[#F2F0F0] dark:bg-gray-700 text-gray-800 dark:text-gray-200"
           }`}
           style={{ maxHeight: "100px" }}
           disabled={chatEnded || disabled}
