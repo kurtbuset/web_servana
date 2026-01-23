@@ -34,7 +34,7 @@ class MacroService {
    * @returns {Promise<Object>} Created macro
    */
   static async createMacro(data, roleId) {
-    const endpoint = roleId === 3 ? '/agents' : '/clients';
+    const endpoint = roleId === 12 ? '/agents' : '/clients';
     const response = await api.post(endpoint, data);
     return response.data;
   }
@@ -51,7 +51,7 @@ class MacroService {
    * @returns {Promise<Object>} Updated macro
    */
   static async updateMacro(id, data, roleId) {
-    const endpoint = roleId === 3 ? `/agents/${id}` : `/clients/${id}`;
+    const endpoint = roleId === 12 ? `/agents/${id}` : `/clients/${id}`;
     const response = await api.put(endpoint, data);
     return response.data;
   }

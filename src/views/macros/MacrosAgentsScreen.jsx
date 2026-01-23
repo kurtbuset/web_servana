@@ -3,6 +3,8 @@ import TopNavbar from '../../../src/components/TopNavbar';
 import Sidebar from '../../../src/components/Sidebar';
 import { Edit3, Search, X } from 'react-feather';
 import useMacros from '../../hooks/useMacros';
+import useRoleId from '../../hooks/useRoleId';
+import { useUser } from '../../context/UserContext';
 import '../../App.css';
 
 export default function MacrosAgentsScreen() {
@@ -13,9 +15,15 @@ export default function MacrosAgentsScreen() {
   const [editText, setEditText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
-  const [currentUserId] = useState(1); // authenticated user ID
+  
+  // Get user ID from UserContext
+  const { getUserId } = useUser();
+  const currentUserId = getUserId();
 
-  // Use the macros hook with roleId = 3 (Agent)
+  // Get Agent role ID dynamically
+  const { roleId: agentRoleId, loading: roleLoading, error: roleError } = useRoleId('Agent');
+
+  // Use the macros hook with dynamic Agent role ID
   const {
     macros,
     departments,
@@ -25,7 +33,7 @@ export default function MacrosAgentsScreen() {
     updateMacro,
     toggleActive,
     changeDepartment,
-  } = useMacros(3);
+  } = useMacros(agentRoleId);
 
   // Filter macros based on search and department
   const filteredReplies = macros.filter((reply) => {
@@ -214,15 +222,15 @@ export default function MacrosAgentsScreen() {
                 </tbody>
               </table>
 
-              {loading && (
+              {(loading || roleLoading) && (
                 <p className="pt-15 text-center text-gray-600 py-4">
                   Loading...
                 </p>
               )}
 
-              {error && (
+              {(error || roleError) && (
                 <p className="pt-15 text-center text-red-600 mb-4 font-semibold">
-                  {error}
+                  {error || roleError}
                 </p>
               )}
             </div>
