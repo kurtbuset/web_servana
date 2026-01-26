@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar/index";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { FiLogOut } from "react-icons/fi";
 import { Upload } from "react-feather";
 import { useNavigate } from "react-router-dom";
@@ -203,7 +204,7 @@ export default function Profile() {
 
 
           {isLoading ? (
-            <div className="text-sm text-gray-500">Loading profile...</div>
+            <LoadingSpinner message="Loading profile..." />
           ) : (
             <div className="bg-white rounded-2xl shadow-md p-10 w-full max-w-4xl flex flex-col items-center sm:flex-row sm:items-center sm:space-x-10">
               <div className="flex flex-col items-center">

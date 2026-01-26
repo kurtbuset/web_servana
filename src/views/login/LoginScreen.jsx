@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "react-feather";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../hooks/useAuth";
 import { useUser } from "../../../src/context/UserContext";
 
@@ -126,29 +127,11 @@ export default function LoginScreen() {
                 disabled={loading}
                 className="w-full rounded-lg bg-[#6237A0] py-3 text-sm font-semibold text-white transition hover:bg-[#552C8C] disabled:opacity-70 flex items-center justify-center"
               >
-                {loading && (
-                  <svg
-                    className="animate-spin h-5 w-5 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
-                  </svg>
+                {loading ? (
+                  <LoadingSpinner variant="button" message="Logging in..." size="sm" />
+                ) : (
+                  "Login"
                 )}
-                {loading ? "Logging in..." : "Login"}
               </button>
             </div>
           </div>

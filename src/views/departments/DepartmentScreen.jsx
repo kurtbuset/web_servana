@@ -1,6 +1,7 @@
 import { useState } from "react";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { Edit3, Search, X } from "react-feather";
 import { useDepartments } from "../../hooks/useDepartments";
 import { useUser } from "../../context/UserContext";
@@ -217,9 +218,7 @@ export default function DepartmentScreen() {
               </table>
 
               {loading && (
-                <p className="pt-15 text-center text-gray-600 py-4">
-                  Loading...
-                </p>
+                <LoadingSpinner variant="table" message="Loading departments..." />
               )}
 
               {error && (

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Search, X, Settings, Users, Shield, MessageSquare, ChevronDown, ChevronRight } from "react-feather";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../components/Sidebar";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useUser } from "../../../src/context/UserContext";
 import { useRoles } from "../../hooks/useRoles";
 import RoleService from "../../services/role.service";
@@ -268,7 +269,7 @@ export default function RolesScreen() {
               
               <div className="flex-1 overflow-y-auto">
                 {loading ? (
-                  <div className="p-4 text-center text-gray-500">Loading roles...</div>
+                  <LoadingSpinner message="Loading roles..." />
                 ) : filteredRoles.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">No roles found</div>
                 ) : (
@@ -469,10 +470,7 @@ function RoleItem({
           </div>
           
           {membersLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6237A0]"></div>
-              <span className="ml-2 text-sm text-gray-600">Loading members...</span>
-            </div>
+            <LoadingSpinner size="sm" message="Loading members..." />
           ) : membersError ? (
             <div className="text-center py-4">
               <p className="text-sm text-red-600 mb-2">{membersError}</p>

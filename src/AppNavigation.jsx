@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import api from "../src/api";
 import { useUser } from "./context/UserContext";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 // New refactored screens
 import LoginScreen from "./views/login/LoginScreen.jsx";
@@ -36,7 +37,7 @@ function PermissionRoute({ children, permission }) {
   const { hasPermission, loading } = useUser();
 
   if (loading) {
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading…</div>;
+    return <LoadingSpinner variant="page" message="Checking permissions..." />;
   }
 
   if (permission && !hasPermission(permission)) {
@@ -82,7 +83,7 @@ function ProtectedRoute({ children }) {
   }, []);
 
   if (state.loading) {
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading…</div>;
+    return <LoadingSpinner variant="page" message="Authenticating..." />;
   }
 
   if (!state.authed) {
@@ -130,7 +131,7 @@ function PublicRoute({ children }) {
   }, []);
 
   if (state.loading) {
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading…</div>;
+    return <LoadingSpinner variant="page" message="Loading application..." />;
   }
 
   if (state.authed) {

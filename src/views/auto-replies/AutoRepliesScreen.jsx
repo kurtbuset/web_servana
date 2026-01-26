@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
 import { useUser } from "../../../src/context/UserContext";
@@ -191,11 +192,7 @@ export default function AutoRepliesScreen() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8 text-gray-600">
-                        Loading...
-                      </td>
-                    </tr>
+                    <LoadingSpinner variant="table" message="Loading auto-replies..." />
                   ) : error ? (
                     <tr>
                       <td colSpan={3} className="text-center py-8 text-red-600">

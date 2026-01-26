@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { Search, X } from "react-feather";
 import { useUserRoles } from "../../hooks/useRoles";
 import { useUser } from "../../context/UserContext";
@@ -96,11 +97,7 @@ export default function ChangeRolesScreen() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8 text-gray-600">
-                        Loading...
-                      </td>
-                    </tr>
+                    <LoadingSpinner variant="table" message="Loading users..." />
                   ) : filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="text-center py-8 text-gray-600">
