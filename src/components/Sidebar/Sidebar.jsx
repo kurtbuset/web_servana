@@ -28,8 +28,7 @@ const navSections = [
       { 
         to: ROUTES.DASHBOARD, 
         icon: Activity, 
-        label: "Dashboard",
-        description: "System overview & analytics"
+        label: "Dashboard"
       }
     ]
   },
@@ -42,8 +41,7 @@ const navSections = [
         label: "Queues", 
         permission: "priv_can_view_message", 
         showBadge: true, 
-        badgeKey: "pendingChats",
-        description: "Pending customer requests"
+        badgeKey: "pendingChats"
       },
       { 
         to: ROUTES.CHATS, 
@@ -51,8 +49,7 @@ const navSections = [
         label: "Active Chats", 
         permission: "priv_can_view_message", 
         showBadge: true, 
-        badgeKey: "activeChats",
-        description: "Ongoing conversations"
+        badgeKey: "activeChats"
       }
     ]
   },
@@ -63,15 +60,13 @@ const navSections = [
         to: ROUTES.DEPARTMENTS, 
         icon: HiOfficeBuilding, 
         label: "Departments", 
-        permission: "priv_can_manage_dept",
-        description: "Organize teams & workflows"
+        permission: "priv_can_manage_dept"
       },
       { 
         to: ROUTES.AUTO_REPLIES, 
         icon: Cpu, 
         label: "Auto-Replies", 
-        permission: "priv_can_manage_auto_reply",
-        description: "Automated responses"
+        permission: "priv_can_manage_auto_reply"
       }
     ]
   },
@@ -82,15 +77,13 @@ const navSections = [
         to: ROUTES.MANAGE_ADMIN, 
         icon: Shield, 
         label: "Admin Users", 
-        permission: "priv_can_create_account",
-        description: "System administrators"
+        permission: "priv_can_create_account"
       },
       { 
         to: ROUTES.ROLES, 
         icon: Key, 
         label: "Roles & Permissions", 
-        permission: "priv_can_manage_role",
-        description: "Access control management"
+        permission: "priv_can_manage_role"
       }
     ]
   }
@@ -101,21 +94,18 @@ const dropdownSections = [
     id: "user-management",
     icon: Users,
     label: "User Management",
-    description: "Manage system users",
     items: [
       { 
         to: ROUTES.MANAGE_AGENTS, 
         label: "Manage Agents", 
         icon: Headphones,
-        permission: "priv_can_create_account",
-        description: "Customer service agents"
+        permission: "priv_can_create_account"
       },
       { 
         to: ROUTES.CHANGE_ROLE, 
         label: "Change Roles", 
         icon: UserCheck,
-        permission: "priv_can_assign_role",
-        description: "Modify user permissions"
+        permission: "priv_can_assign_role"
       }
     ]
   },
@@ -123,27 +113,24 @@ const dropdownSections = [
     id: "automation",
     icon: Zap,
     label: "Automation Tools",
-    description: "Automated responses & macros",
     items: [
       { 
         to: ROUTES.MACROS_AGENTS, 
         label: "Agent Macros", 
         icon: MessageCircle,
         permission: "priv_can_use_canned_mess",
-        description: "Quick responses for agents"
       },
       { 
         to: ROUTES.MACROS_CLIENTS, 
         label: "Client Macros", 
         icon: FileText,
         permission: "priv_can_use_canned_mess",
-        description: "Automated client messages"
       }
     ]
   }
 ];
 
-const NavItem = ({ to, Icon, label, description, isActive, badgeCount }) => (
+const NavItem = ({ to, Icon, label, isActive, badgeCount }) => (
   <div className="relative group" key={to}>
     {isActive && (
       <motion.div
@@ -165,11 +152,6 @@ const NavItem = ({ to, Icon, label, description, isActive, badgeCount }) => (
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-xs">{label}</div>
-        {description && (
-          <div className={`text-xs mt-0.5 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-            {description}
-          </div>
-        )}
       </div>
       {badgeCount !== undefined && badgeCount > 0 && (
         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
@@ -192,7 +174,7 @@ const SectionHeader = ({ title }) => (
   </div>
 );
 
-const DropdownItem = ({ icon: Icon, label, description, items, id, isOpen, toggleDropdown, hasPermission }) => {
+const DropdownItem = ({ icon: Icon, label, items, id, isOpen, toggleDropdown, hasPermission }) => {
   const location = useLocation();
   
   // Filter items based on permissions only
@@ -237,11 +219,6 @@ const DropdownItem = ({ icon: Icon, label, description, items, id, isOpen, toggl
           <div className="font-medium text-xs">
             {activeItem?.label || label}
           </div>
-          {description && (
-            <div className={`text-xs mt-0.5 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-              {description}
-            </div>
-          )}
         </div>
         <ChevronDown 
           size={12} 
@@ -261,7 +238,7 @@ const DropdownItem = ({ icon: Icon, label, description, items, id, isOpen, toggl
             className="absolute left-0 top-full mt-2 w-64 bg-white shadow-xl border border-gray-200 rounded-xl z-50 overflow-hidden"
           >
             <div className="p-2">
-              {visibleItems.map(({ to, label, icon: ItemIcon, description }) => (
+              {visibleItems.map(({ to, label, icon: ItemIcon }) => (
                 <Link
                   key={to}
                   to={to}
@@ -275,9 +252,6 @@ const DropdownItem = ({ icon: Icon, label, description, items, id, isOpen, toggl
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-xs text-gray-900">{label}</div>
-                    {description && (
-                      <div className="text-xs text-gray-500 mt-0.5">{description}</div>
-                    )}
                   </div>
                 </Link>
               ))}
@@ -434,7 +408,6 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
                     to={item.to}
                     Icon={item.icon}
                     label={item.label}
-                    description={item.description}
                     isActive={isActivePath(item.to)}
                     badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
                   />
@@ -453,7 +426,6 @@ const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
                     key={item.id}
                     icon={item.icon}
                     label={item.label}
-                    description={item.description}
                     id={item.id}
                     items={item.items}
                     isOpen={openDropdown === item.id}

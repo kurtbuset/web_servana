@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Edit3, Search, X, Eye, EyeOff, Filter } from "react-feather";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAgents } from "../../hooks/useAgents";
 import { useUser } from "../../context/UserContext";
 import { toast } from "react-toastify";
@@ -318,7 +319,7 @@ export default function ManageAgentsScreen() {
                 </table>
 
                 {loading && (
-                  <p className="text-center text-gray-600 py-4">Loading...</p>
+                  <LoadingSpinner message="Loading agents..." />
                 )}
               </div>
             </div>

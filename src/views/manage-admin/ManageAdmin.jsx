@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../api";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar/index";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { Edit3, Search, X, Eye, EyeOff } from "react-feather";
 import "../../../src/App.css";
 
@@ -319,7 +320,7 @@ export default function ManageAgents() {
                 </tbody>
               </table>
               {loading && (
-                <p className="pt-15 text-center text-gray-600">Loading...</p>
+                <LoadingSpinner variant="table" message="Loading administrators..." />
               )}
               {error && (
                 <p className="pt-15 text-center text-red-600 mb-2 font-semibold">

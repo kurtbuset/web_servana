@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import TopNavbar from '../../../src/components/TopNavbar';
 import Sidebar from '../../../src/components/Sidebar';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { Edit3, Search, X } from 'react-feather';
 import useMacros from '../../hooks/useMacros';
 import useRoleId from '../../hooks/useRoleId';
@@ -223,9 +224,7 @@ export default function MacrosAgentsScreen() {
               </table>
 
               {(loading || roleLoading) && (
-                <p className="pt-15 text-center text-gray-600 py-4">
-                  Loading...
-                </p>
+                <LoadingSpinner variant="table" message="Loading agent macros..." />
               )}
 
               {(error || roleError) && (
