@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/stack": "^7.2.10",
@@ -24,6 +27,7 @@
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.5.0",
     "react-select": "^5.10.1",
+    "react-toastify": "^11.0.5",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.3"
   },
