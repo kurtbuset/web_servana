@@ -194,8 +194,26 @@ export default function ManageAgents() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNavbar toggleSidebar={toggleSidebar} />
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #6237A0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #552C8C;
+        }
+      `}</style>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopNavbar toggleSidebar={toggleSidebar} />
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile Sidebar */}
         <Sidebar
@@ -211,170 +229,189 @@ export default function ManageAgents() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-gray-100 p-15 overflow-y-auto transition-colors duration-300">
-          <div className="bg-white p-4 rounded-lg min-h-[80vh] transition-all duration-300">
-            {/* Header row */}
-            <div className="flex justify-between items-center mb-4">
-              {/* Search */}
-              <div className="flex items-center bg-gray-100 px-3 py-2 rounded-md w-1/3 relative">
-                <Search
-                  size={18}
-                  strokeWidth={1}
-                  className="text-gray-500 mr-2 flex-shrink-0"
-                />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent focus:outline-none text-sm w-full pr-6"
-                />
-                {searchQuery && (
-                  <X
-                    size={16}
-                    strokeWidth={1}
-                    className="text-gray-500 cursor-pointer absolute right-3 hover:text-gray-700"
-                    onClick={() => setSearchQuery("")}
+        <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Manage Admins</h1>
+              
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                {/* Search Bar */}
+                <div className="flex items-center bg-gray-100 px-2.5 py-1.5 rounded-lg flex-1 sm:flex-initial sm:w-56 md:w-64">
+                  <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search admins..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent focus:outline-none text-xs w-full pr-6"
                   />
-                )}
-              </div>
+                  {searchQuery && (
+                    <X
+                      size={14}
+                      className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                      onClick={() => setSearchQuery("")}
+                    />
+                  )}
+                </div>
 
-              {/* Add Account */}
-              <button
-                onClick={openAddModal}
-                className="bg-[#6237A0] text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800 transition-colors duration-300"
-              >
-                Add Account
-              </button>
+                {/* Add Button */}
+                <button
+                  onClick={openAddModal}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-[#6237A0] text-white hover:bg-[#552C8C]"
+                >
+                  + Add Admin
+                </button>
+              </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-y-auto max-h-[65vh] w-full custom-scrollbar">
-              <table className="w-full text-sm text-left">
-                <thead className="text-gray-500 bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_0_#000000]">
-                  <tr>
-                    <th className="py-2 px-3 pl-3">Email</th>
-                    <th className="py-2 px-3 text-center">Active Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAgents.map((agent) => {
-                    const isSelf = agent.sys_user_id === currentUserId;
-
-                    return (
-                      <tr
-                        key={agent.sys_user_id}
-                        className="transition-colors duration-200 hover:bg-gray-100"
-                      >
-                        <td className="py-2 px-3 flex items-center gap-2">
-                          <p className="text-sm break-words max-w-[200px] whitespace-pre-wrap">
-                            {agent.email}
-                          </p>
-                          <Edit3
-                            size={18}
-                            strokeWidth={1}
-                            className={`text-gray-500 w-[18px] h-[18px] flex-shrink-0 transition-colors duration-200 ${
-                              isSelf
-                                ? "cursor-not-allowed"
-                                : "cursor-pointer hover:text-purple-700"
-                            }`}
-                            onClick={() => {
-                              if (!isSelf) {
-                                openEditModal(agent);
-                                setError(null);
-                              }
-                            }}
-                          />
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <label
-                            title={
-                              isSelf
-                                ? "You cannot deactivate your own account"
-                                : ""
-                            }
-                            className={`inline-flex relative items-center ${
-                              isSelf ? "cursor-not-allowed" : "cursor-pointer"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={agent.active}
-                              disabled={isSelf}
-                              onChange={() =>
-                                toggleActiveStatus(agent.sys_user_id)
-                              }
-                            />
-                            <div
-                              className={`w-7 h-4 bg-gray-200 rounded-full peer peer-checked:bg-[#6237A0] transition-colors duration-300 relative
-              after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3 ${
-                isSelf ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
-                            />
-                          </label>
-                        </td>
+            {/* Table Container */}
+            <div className="flex-1 overflow-hidden">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
+                    <span className="text-gray-600 text-sm">Loading administrators...</span>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-red-600 text-sm font-semibold">{error}</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
+                  <table className="w-full text-xs">
+                    <thead className="text-gray-600 bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                      <tr>
+                        <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Email</th>
+                        <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {loading && (
-                <LoadingSpinner variant="table" message="Loading administrators..." />
-              )}
-              {error && (
-                <p className="pt-15 text-center text-red-600 mb-2 font-semibold">
-                  {error}
-                </p>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredAgents.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="text-center py-12">
+                            <p className="text-gray-500 text-sm">
+                              {searchQuery ? "No admins found matching your search" : "No administrators available"}
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAgents.map((agent) => {
+                        const isSelf = agent.sys_user_id === currentUserId;
+
+                        return (
+                          <tr
+                            key={agent.sys_user_id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-2 px-2.5 sm:px-3">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <p className="text-xs text-gray-800 break-words flex-1">
+                                  {agent.email}
+                                  {isSelf && (
+                                    <span className="ml-2 text-xs text-purple-600 font-medium">(You)</span>
+                                  )}
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    if (!isSelf) {
+                                      openEditModal(agent);
+                                      setError(null);
+                                    }
+                                  }}
+                                  disabled={isSelf}
+                                  className={`flex-shrink-0 p-1 rounded transition-colors ${
+                                    isSelf
+                                      ? "text-gray-300 cursor-not-allowed"
+                                      : "text-gray-500 hover:text-[#6237A0] hover:bg-purple-50"
+                                  }`}
+                                  title={isSelf ? "You cannot edit your own account" : "Edit"}
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                              </div>
+                            </td>
+
+                            <td className="py-2 px-2.5 sm:px-3 text-center">
+                              <label
+                                title={isSelf ? "You cannot deactivate your own account" : ""}
+                                className={`inline-flex relative items-center ${
+                                  isSelf ? "cursor-not-allowed" : "cursor-pointer"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="sr-only peer"
+                                  checked={agent.active}
+                                  disabled={isSelf}
+                                  onChange={() => toggleActiveStatus(agent.sys_user_id)}
+                                />
+                                <div className={`w-11 h-6 rounded-full peer transition-colors relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-5 ${
+                                  isSelf
+                                    ? "bg-gray-200 peer-checked:bg-gray-400"
+                                    : "bg-gray-300 peer-checked:bg-[#6237A0]"
+                                }`} />
+                              </label>
+                            </td>
+                          </tr>
+                        );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
 
           {/* Modal */}
           {isModalOpen && (
-            <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-center z-50 transition-opacity duration-300">
-              <div className="bg-white rounded-lg shadow-xl p-6 w-96 transform scale-95 animate-fade-in">
+            <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-xl">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
                     {currentEditId !== null ? "Edit Admin" : "Add Admin"}
                   </h3>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="text-gray-700 hover:text-gray-900"
+                    className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors"
                   >
-                    <X size={24} strokeWidth={2} />
+                    <X size={20} />
                   </button>
                 </div>
 
                 {modalError && (
-                  <div className="bg-red-100 text-red-700 px-4 py-2 rounded-md mb-3 text-sm font-medium border border-red-300">
+                  <div className="bg-red-50 text-red-700 px-3 sm:px-4 py-2.5 rounded-lg mb-4 text-sm font-medium border border-red-200">
                     {modalError}
                   </div>
                 )}
 
-                <label className="block mb-3">
-                  <span className="block text-sm font-medium text-gray-700">
+                <label className="block mb-4">
+                  <span className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </span>
                   <input
                     type="email"
-                    className="mt-1 w-full rounded-md border border-gray-300 p-2 focus:border-purple-700 focus:outline-none focus:ring-1 focus:ring-purple-700"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 sm:p-3 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                    placeholder="admin@example.com"
                     value={editEmail}
                     onChange={(e) => {
                       setEditEmail(e.target.value);
-                      // clear modal error as user types; revalidate lightly
                       if (modalError) setModalError(null);
                     }}
+                    autoFocus
                   />
                 </label>
 
-                <label className="block mb-3 relative">
-                  <span className="block text-sm font-medium text-gray-700">
+                <label className="block mb-5 relative">
+                  <span className="block text-sm font-medium text-gray-700 mb-2">
                     Password
                   </span>
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="mt-1 w-full rounded-md border border-gray-300 p-2 pr-10 focus:border-purple-700 focus:outline-none focus:ring-1 focus:ring-purple-700"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 sm:p-3 pr-10 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                    placeholder="Enter password"
                     value={editPassword}
                     onChange={(e) => {
                       setEditPassword(e.target.value);
@@ -384,26 +421,31 @@ export default function ManageAgents() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-8 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700"
                     tabIndex={-1}
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </label>
 
-                <div className="flex justify-end gap-4 mt-4">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     onClick={() => {
                       setIsModalOpen(false);
                       setModalError(null);
                     }}
-                    className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={saveAdmin}
-                    className="bg-[#6237A0] text-white px-4 py-2 rounded-md hover:bg-purple-800 transition"
+                    disabled={!editEmail.trim() || !editPassword.trim()}
+                    className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-colors ${
+                      editEmail.trim() && editPassword.trim()
+                        ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
                     Save
                   </button>
@@ -414,5 +456,6 @@ export default function ManageAgents() {
         </main>
       </div>
     </div>
+    </>
   );
 }

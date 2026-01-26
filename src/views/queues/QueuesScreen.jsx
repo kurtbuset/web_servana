@@ -216,8 +216,38 @@ export default function QueuesScreen() {
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNavbar toggleSidebar={toggleSidebar} />
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #6237A0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #7A4ED9;
+        }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-in {
+          animation: slideIn 0.3s ease-out;
+        }
+      `}</style>
+      <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB]">
+        <TopNavbar toggleSidebar={toggleSidebar} />
 
       {/* End Chat Modal */}
       <ConfirmDialog
@@ -265,14 +295,27 @@ export default function QueuesScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-white">
-          <div className="flex flex-col md:flex-row h-full">
-            {/* Queues list */}
+        <main className="flex-1 bg-transparent">
+          <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
+            {/* Queues list - Enhanced */}
             <div
               className={`${
                 view === "chatList" ? "block" : "hidden md:block"
-              } w-full md:w-[320px] bg-[#F5F5F5] overflow-y-auto`}
+              } w-full md:w-[320px] lg:w-[360px] bg-white md:rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col`}
             >
+              {/* Header Section */}
+              <div className="bg-gradient-to-r from-[#6237A0] to-[#7A4ED9] p-3 md:p-4">
+                <h2 className="text-base md:text-lg font-bold text-white mb-0.5 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Queue
+                </h2>
+                <p className="text-purple-100 text-[10px] md:text-xs">
+                  {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} waiting
+                </p>
+              </div>
+
               <DepartmentFilter
                 departments={departments}
                 selectedDepartment={selectedDepartment}
@@ -281,18 +324,20 @@ export default function QueuesScreen() {
                 onToggle={() => setShowDeptDropdown((prev) => !prev)}
               />
 
-              <CustomerList
-                customers={filteredCustomers}
-                selectedCustomer={selectedCustomer}
-                onCustomerClick={handleChatClick}
-              />
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <CustomerList
+                  customers={filteredCustomers}
+                  selectedCustomer={selectedCustomer}
+                  onCustomerClick={handleChatClick}
+                />
+              </div>
             </div>
 
-            {/* Chat area */}
+            {/* Chat area - Enhanced */}
             <div
               className={`${
                 view === "conversation" ? "block" : "hidden md:flex"
-              } flex-1 flex flex-col`}
+              } flex-1 flex flex-col bg-white md:rounded-xl shadow-sm border border-gray-100 overflow-hidden`}
             >
               {selectedCustomer ? (
                 <>
@@ -355,9 +400,17 @@ export default function QueuesScreen() {
                   />
                 </>
               ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-gray-400">
-                    Select a customer to view chat
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="text-center animate-slide-in">
+                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full flex items-center justify-center">
+                      <svg className="w-10 h-10 md:w-12 md:h-12 text-[#6237A0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No Chat Selected</h3>
+                    <p className="text-xs md:text-sm text-gray-500 max-w-xs mx-auto">
+                      Select a customer from the queue to start chatting
+                    </p>
                   </div>
                 </div>
               )}
@@ -366,5 +419,6 @@ export default function QueuesScreen() {
         </main>
       </div>
     </div>
+    </>
   );
 }
