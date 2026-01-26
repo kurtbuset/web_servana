@@ -3,6 +3,7 @@ import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { useChat } from "../../hooks/useChat";
 import { useUser } from "../../context/UserContext";
+import { ChatService } from "../../services/chat.service";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
 import ConfirmDialog from "../../components/chat/ConfirmDialog";
 import TransferModal from "../../components/chat/TransferModal";
@@ -38,6 +39,7 @@ export default function ChatsScreen() {
   const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [transferDepartment, setTransferDepartment] = useState(null);
+  const [allDepartments, setAllDepartments] = useState([]);
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
@@ -69,6 +71,7 @@ export default function ChatsScreen() {
     selectCustomer,
     sendMessage,
     endChat,
+    transferChat,
     bottomRef,
     textareaRef,
   } = useChat();
@@ -98,10 +101,17 @@ export default function ChatsScreen() {
     }
   };
 
-  const confirmTransfer = () => {
+  const confirmTransfer = async () => {
     setShowTransferConfirmModal(false);
-    console.log(`Transferring to ${transferDepartment}`);
-    alert(`Customer transferred to ${transferDepartment}`);
+    
+    // Find the selected department object
+    const selectedDept = allDepartments.find(dept => dept.dept_name === transferDepartment);
+    if (selectedDept) {
+      const success = await transferChat(selectedDept.dept_id);
+      if (success && isMobile) {
+        setView("chatList");
+      }
+    }
   };
 
   const cancelTransfer = () => {
@@ -174,6 +184,20 @@ export default function ChatsScreen() {
 
   const groupedMessages = groupMessagesByDate(messages);
 
+  // Fetch all departments on component mount
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const depts = await ChatService.getAllDepartments();
+        setAllDepartments(depts);
+      } catch (err) {
+        console.error("Failed to fetch departments:", err);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -234,7 +258,7 @@ export default function ChatsScreen() {
       {/* Transfer Modal */}
       <TransferModal
         isOpen={showTransferModal}
-        departments={departments}
+        departments={allDepartments.map(dept => dept.dept_name)}
         selectedDepartment={transferDepartment}
         currentDepartment={selectedDepartment}
         onDepartmentChange={setTransferDepartment}

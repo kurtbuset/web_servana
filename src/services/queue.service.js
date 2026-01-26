@@ -37,6 +37,7 @@ class QueueService {
    * @returns {Promise<Object>} Success response with agent and chat group info
    */
   static async acceptChat(chatGroupId) {
+    console.log('chatGroupId: ', chatGroupId)
     const response = await api.post(`/queues/${chatGroupId}/accept`);
     return response.data;
   }

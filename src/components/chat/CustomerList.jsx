@@ -8,6 +8,24 @@ export default function CustomerList({
   onCustomerClick,
   endedChats = [],
 }) {
+  const getStatusBadge = (customer) => {
+    if (customer.status === "queued") {
+      return (
+        <span className="text-[9px] font-semibold text-orange-600 bg-orange-100 px-2 py-[2px] rounded-full whitespace-nowrap ml-1">
+          QUEUED
+        </span>
+      );
+    }
+    if (customer.status === "transferred") {
+      return (
+        <span className="text-[9px] font-semibold text-blue-600 bg-blue-100 px-2 py-[2px] rounded-full whitespace-nowrap ml-1">
+          TRANSFERRED
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="chat-list overflow-auto">
       {customers.map((customer) => {
@@ -36,10 +54,13 @@ export default function CustomerList({
               />
 
               <div className="flex-1 min-w-0">
-                <div className="flex justify-end mb-1">
-                  <span className="text-[10px] font-semibold text-purple-600 bg-purple-100 px-2 py-[2px] rounded-full whitespace-nowrap">
-                    {customer.department}
-                  </span>
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center">
+                    <span className="text-[10px] font-semibold text-purple-600 bg-purple-100 px-2 py-[2px] rounded-full whitespace-nowrap">
+                      {customer.department}
+                    </span>
+                    {getStatusBadge(customer)}
+                  </div>
                 </div>
                 <p
                   className={`text-sm font-medium truncate ${

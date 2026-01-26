@@ -9,6 +9,33 @@ export default function ChatMessages({
   bottomRef,
   isMobile,
 }) {
+  const getSenderLabel = (message) => {
+    if (message.sender_type === 'client') {
+      return 'Client';
+    } else if (message.sender_type === 'previous_agent') {
+      return message.sender_name || 'Previous Agent';
+    } else if (message.sender_type === 'current_agent') {
+      return 'You';
+    }
+    return 'System';
+  };
+
+  const getMessageStyle = (message) => {
+    if (message.sender === "user") {
+      // Current agent messages (right side)
+      return "bg-[#6237A0] text-white";
+    } else {
+      // Client and previous agent messages (left side)
+      if (message.sender_type === 'client') {
+        return "bg-[#f5f5f5] text-gray-800";
+      } else if (message.sender_type === 'previous_agent') {
+        return "bg-[#e3f2fd] text-gray-800"; // Light blue for previous agents
+      } else {
+        return "bg-[#f5f5f5] text-gray-800"; // Default for system
+      }
+    }
+  };
+
   return (
     <div
       ref={scrollContainerRef}
@@ -42,33 +69,32 @@ export default function ChatMessages({
                 {item.sender !== "user" && (
                   <img
                     src={
-                      item.sender === "system"
-                        ? selectedCustomer.profile ||
-                          "profile_picture/DefaultProfile.jpg"
-                        : "profile_picture/DefaultProfile.jpg"
+                      selectedCustomer.profile ||
+                      "profile_picture/DefaultProfile.jpg"
                     }
-                    alt={item.sender === "system" ? "agent" : "customer"}
+                    alt={getSenderLabel(item)}
                     className="w-8 h-8 rounded-full"
                   />
                 )}
-                <div
-                  className={`${
-                    item.sender === "user"
-                      ? "bg-[#f5f5f5] text-gray-800"
-                      : item.sender === "system"
-                      ? "bg-[#6237A0] text-white"
-                      : "bg-[#f5f5f5] text-gray-800"
-                  } px-4 py-2 rounded-xl max-w-[320px] text-sm break-words whitespace-pre-wrap`}
-                >
-                  {item.content}
+                <div className="flex flex-col">
+                  {item.sender !== "user" && item.sender_type === 'previous_agent' && (
+                    <div className="text-[10px] text-gray-500 mb-1 ml-2">
+                      {getSenderLabel(item)}
+                    </div>
+                  )}
                   <div
-                    className={`text-[10px] text-right mt-1 ${
-                      item.sender === "system"
-                        ? "text-gray-300"
-                        : "text-gray-400"
-                    }`}
+                    className={`${getMessageStyle(item)} px-4 py-2 rounded-xl max-w-[320px] text-sm break-words whitespace-pre-wrap`}
                   >
-                    {item.displayTime}
+                    {item.content}
+                    <div
+                      className={`text-[10px] text-right mt-1 ${
+                        item.sender === "user" || item.sender_type === 'previous_agent'
+                          ? "text-gray-300"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {item.displayTime}
+                    </div>
                   </div>
                 </div>
               </div>

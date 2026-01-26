@@ -178,6 +178,20 @@ export const useChat = () => {
   }, [selectedCustomer]);
 
   /**
+   * Determine frontend sender type for message display
+   */
+  const determineFrontendSender = useCallback((msg) => {
+    // For UI compatibility:
+    // - client and previous_agent messages go to left (system)
+    // - current_agent messages go to right (user)
+    if (msg.sender_type === 'current_agent') {
+      return 'user';
+    } else {
+      return 'system'; // client, previous_agent, system all go to left
+    }
+  }, []);
+
+  /**
    * Load messages for a specific client
    * @param {number} clientId - Client ID
    * @param {string} before - ISO timestamp for pagination
@@ -188,9 +202,11 @@ export const useChat = () => {
       const response = await ChatService.getMessages(clientId, before, 10);
       const newMessages = response.messages.map((msg, index) => ({
         id: msg.chat_id || index,
-        sender: msg.sys_user_id ? 'user' : 'system',
+        sender: determineFrontendSender(msg),
         content: msg.chat_body,
         timestamp: msg.chat_created_at,
+        sender_name: msg.sender_name || 'Unknown',
+        sender_type: msg.sender_type || 'system',
         displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
@@ -224,7 +240,7 @@ export const useChat = () => {
       console.error('Error loading messages:', err);
       toast.error('Failed to load messages');
     }
-  }, []);
+  }, [determineFrontendSender]);
 
   /**
    * Select a customer and load their messages
@@ -322,6 +338,60 @@ export const useChat = () => {
   }, [selectedCustomer, messages, hasPermission]);
 
   /**
+   * Transfer chat to another department
+   * @param {number} deptId - Target department ID
+   */
+  const transferChat = useCallback(async (deptId) => {
+    if (!selectedCustomer) return false;
+
+    try {
+      const response = await ChatService.transferChatGroup(selectedCustomer.chat_group_id, deptId);
+      
+      if (response.success) {
+        // Remove the transferred chat from current user's list
+        setDepartmentCustomers((prevDeptCustomers) => {
+          const updatedDeptCustomers = { ...prevDeptCustomers };
+          
+          // Find and remove the transferred customer from all departments
+          Object.keys(updatedDeptCustomers).forEach((dept) => {
+            updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+              (customer) => customer.chat_group_id !== selectedCustomer.chat_group_id
+            );
+            
+            // Remove empty departments
+            if (updatedDeptCustomers[dept].length === 0) {
+              delete updatedDeptCustomers[dept];
+            }
+          });
+          
+          return updatedDeptCustomers;
+        });
+
+        // Update departments list
+        setDepartments((prevDepartments) => {
+          const activeDepartments = Object.keys(departmentCustomers).filter(
+            (dept) => departmentCustomers[dept] && departmentCustomers[dept].length > 0
+          );
+          return ["All", ...activeDepartments];
+        });
+
+        // Clear selection
+        setSelectedCustomer(null);
+        setMessages([]);
+        setChatEnded(false);
+
+        toast.success("Chat transferred successfully");
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error transferring chat:", err);
+      toast.error("Failed to transfer chat");
+      return false;
+    }
+  }, [selectedCustomer, departmentCustomers]);
+
+  /**
    * Clear selected customer
    */
   const clearSelection = useCallback(() => {
@@ -389,6 +459,7 @@ export const useChat = () => {
     selectCustomer,
     sendMessage,
     endChat,
+    transferChat,
     clearSelection,
     
     // Refs
