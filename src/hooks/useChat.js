@@ -51,15 +51,32 @@ export const useChat = () => {
   const textareaRef = useRef(null);
 
   /**
-   * Connect to Socket.IO on mount
+   * Connect to Socket.IO on mount and handle logout events
    */
   useEffect(() => {
     socket.connect();
     console.log('Socket connected');
 
+    // Listen for logout events to reconnect socket with fresh cookies
+    const handleLogout = () => {
+      console.log('Logout detected - reconnecting socket');
+      socket.disconnect();
+      // Small delay to ensure cookies are cleared
+      setTimeout(() => {
+        socket.connect();
+      }, 100);
+    };
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'logout') {
+        handleLogout();
+      }
+    });
+
     return () => {
       socket.disconnect();
       console.log('Socket disconnected');
+      window.removeEventListener('storage', handleLogout);
     };
   }, []);
 
