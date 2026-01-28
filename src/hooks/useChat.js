@@ -19,8 +19,8 @@ import socket from '../socket';
  * @returns {Object} Chat state and actions
  */
 export const useChat = () => {
-  // Get user permissions
-  const { hasPermission } = useUser();
+  // Get user permissions and ID
+  const { hasPermission, getUserId } = useUser();
   
   // Chat groups and filtering
   const [departmentCustomers, setDepartmentCustomers] = useState({});
@@ -290,10 +290,10 @@ export const useChat = () => {
     socket.emit('sendMessage', {
       chat_body: trimmedMessage,
       chat_group_id: selectedCustomer.chat_group_id,
-      sys_user_id: 1, // TODO: Get from UserContext
+      sys_user_id: getUserId(),
       client_id: null,
     });
-  }, [inputMessage, selectedCustomer, hasPermission]);
+  }, [inputMessage, selectedCustomer, hasPermission, getUserId]);
 
   /**
    * End the current chat
