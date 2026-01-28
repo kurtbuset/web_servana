@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, X, Settings, Users, Shield, MessageSquare, ChevronDown, ChevronRight } from "react-feather";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../components/Sidebar";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useUser } from "../../../src/context/UserContext";
+import { useTheme } from "../../context/ThemeContext";
+import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import { useRoles } from "../../hooks/useRoles";
 import RoleService from "../../services/role.service";
 import { toast } from "react-toastify";
@@ -53,8 +55,18 @@ export default function RolesScreen() {
   const [membersLoading, setMembersLoading] = useState({});
   const [membersError, setMembersError] = useState({});
 
+  // Unsaved changes tracking
+  const [originalPermissions, setOriginalPermissions] = useState([]);
+  const [pendingPermissions, setPendingPermissions] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [shakeBar, setShakeBar] = useState(false);
+
   const { userData, hasPermission } = useUser();
-  const { roles, loading, createRole, toggleRoleActive, togglePermission } = useRoles();
+  const { isDark } = useTheme();
+  const { roles, loading, createRole, toggleRoleActive, updateRole } = useRoles();
+  const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
 
   const canManageRoles = hasPermission("priv_can_manage_role");
 
@@ -64,11 +76,50 @@ export default function RolesScreen() {
 
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
+  const triggerShake = () => {
+    setShakeBar(true);
+    setTimeout(() => setShakeBar(false), 400);
+  };
+
   const handleRoleSelect = (role) => {
+    // Block navigation if there are unsaved changes
+    if (hasUnsavedChanges) {
+      triggerShake();
+      setPendingAction(() => () => {
+        setSelectedRole(role);
+        setOriginalPermissions(role.permissions);
+        setPendingPermissions(role.permissions);
+        setHasUnsavedChanges(false);
+      });
+      return;
+    }
+    
     setSelectedRole(role);
+    setOriginalPermissions(role.permissions);
+    setPendingPermissions(role.permissions);
+    setHasUnsavedChanges(false);
+  };
+
+  const handleDiscardChanges = () => {
+    setPendingPermissions(originalPermissions);
+    setHasUnsavedChanges(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
   };
 
   const handleCreateRole = () => {
+    // Block if there are unsaved changes
+    if (hasUnsavedChanges) {
+      triggerShake();
+      setPendingAction(() => () => {
+        setEditForm({ name: "" });
+        setIsModalOpen(true);
+      });
+      return;
+    }
+
     if (!canManageRoles) {
       console.warn("User does not have permission to manage roles");
       toast.error("You don't have permission to create roles");
@@ -100,6 +151,32 @@ export default function RolesScreen() {
   };
 
   const handleToggleActive = async (role) => {
+    // Block if there are unsaved changes
+    if (hasUnsavedChanges) {
+      triggerShake();
+      setPendingAction(() => async () => {
+        const userId = userData?.sys_user_id;
+        if (!userId) return;
+
+        await toggleRoleActive(
+          role.role_id,
+          role.active,
+          role.name,
+          role.permissions,
+          userId
+        );
+
+        // Update selected role if it's the one being toggled
+        if (selectedRole && selectedRole.role_id === role.role_id) {
+          const updatedRole = { ...role, active: !role.active };
+          setSelectedRole(updatedRole);
+          setOriginalPermissions(updatedRole.permissions);
+          setPendingPermissions(updatedRole.permissions);
+        }
+      });
+      return;
+    }
+
     if (!canManageRoles) {
       console.warn("User does not have permission to manage roles");
       toast.error("You don't have permission to modify roles");
@@ -119,11 +196,14 @@ export default function RolesScreen() {
 
     // Update selected role if it's the one being toggled
     if (selectedRole && selectedRole.role_id === role.role_id) {
-      setSelectedRole({ ...role, active: !role.active });
+      const updatedRole = { ...role, active: !role.active };
+      setSelectedRole(updatedRole);
+      setOriginalPermissions(updatedRole.permissions);
+      setPendingPermissions(updatedRole.permissions);
     }
   };
 
-  const handleTogglePermission = async (permission) => {
+  const handleTogglePermission = (permission) => {
     if (!canManageRoles) {
       console.warn("User does not have permission to manage roles");
       toast.error("You don't have permission to modify role permissions");
@@ -132,29 +212,99 @@ export default function RolesScreen() {
     
     if (!selectedRole) return;
 
+    // Toggle permission in pending state (don't save yet)
+    const hasPermission = pendingPermissions.includes(permission);
+    const updatedPermissions = hasPermission
+      ? pendingPermissions.filter(p => p !== permission)
+      : [...pendingPermissions, permission];
+
+    setPendingPermissions(updatedPermissions);
+    
+    // Check if there are changes
+    const hasChanges = JSON.stringify([...updatedPermissions].sort()) !== 
+                       JSON.stringify([...originalPermissions].sort());
+    setHasUnsavedChanges(hasChanges);
+    setGlobalUnsavedChanges(hasChanges);
+    
+    // Show modal immediately when changes are detected
+    if (hasChanges && !showUnsavedModal) {
+      console.log("Changes detected, showing modal");
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedRole || !canManageRoles) return;
+
     const userId = userData?.sys_user_id;
     if (!userId) return;
 
-    await togglePermission(
-      selectedRole.role_id,
-      permission,
-      selectedRole.permissions,
-      selectedRole.name,
-      selectedRole.active,
-      userId
-    );
+    setIsSaving(true);
+    try {
+      const success = await updateRole(selectedRole.role_id, {
+        name: selectedRole.name,
+        active: selectedRole.active,
+        permissions: pendingPermissions,
+        updated_by: userId,
+      });
 
-    // Update selected role permissions
-    const hasPermission = selectedRole.permissions.includes(permission);
-    const updatedPermissions = hasPermission
-      ? selectedRole.permissions.filter(p => p !== permission)
-      : [...selectedRole.permissions, permission];
-
-    setSelectedRole({ ...selectedRole, permissions: updatedPermissions });
+      if (success) {
+        // Update local state
+        setSelectedRole({ ...selectedRole, permissions: pendingPermissions });
+        setOriginalPermissions(pendingPermissions);
+        setHasUnsavedChanges(false);
+        setGlobalUnsavedChanges(false);
+        
+        // Execute pending action if exists
+        if (pendingAction) {
+          pendingAction();
+          setPendingAction(null);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to save changes:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const handleResetChanges = () => {
+    setPendingPermissions(originalPermissions);
+    setHasUnsavedChanges(false);
+    setGlobalUnsavedChanges(false);
+    
+    // Execute pending action if exists
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  // Set up the navigation blocked callback
+  useEffect(() => {
+    setOnNavigationBlocked(() => triggerShake);
+  }, [setOnNavigationBlocked]);
 
   // Member management functions
   const toggleRoleExpansion = async (roleId) => {
+    // Block if there are unsaved changes
+    if (hasUnsavedChanges) {
+      triggerShake();
+      setPendingAction(() => async () => {
+        const newExpandedRoles = new Set(expandedRoles);
+        
+        if (expandedRoles.has(roleId)) {
+          newExpandedRoles.delete(roleId);
+        } else {
+          newExpandedRoles.add(roleId);
+          // Fetch members when expanding
+          await fetchRoleMembers(roleId);
+        }
+        
+        setExpandedRoles(newExpandedRoles);
+      });
+      return;
+    }
+
     const newExpandedRoles = new Set(expandedRoles);
     
     if (expandedRoles.has(roleId)) {
@@ -233,7 +383,7 @@ export default function RolesScreen() {
           height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -242,6 +392,31 @@ export default function RolesScreen() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #552C8C;
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+          20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+        
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        .shake-animation {
+          animation: shake 0.4s ease-in-out;
+        }
+        
+        .slide-up-animation {
+          animation: slideUp 0.3s ease-out;
         }
       `}</style>
       <div className="flex flex-col h-screen overflow-hidden">
@@ -258,13 +433,13 @@ export default function RolesScreen() {
             toggleDropdown={setOpenDropdown}
             openDropdown={openDropdown}
           />
-          <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
-            <div className="bg-white rounded-lg shadow-sm h-full flex flex-col md:flex-row overflow-hidden">
+          <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+            <div className="rounded-lg shadow-sm h-full flex flex-col md:flex-row overflow-hidden" style={{ backgroundColor: 'var(--card-bg)' }}>
               {/* Left Panel - Roles List */}
-              <div className={`${selectedRole ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex-col`}>
-                <div className="p-2.5 sm:p-3 border-b border-gray-200">
+              <div className={`${selectedRole ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col`} style={{ backgroundColor: 'var(--card-bg)', borderRight: `1px solid var(--border-color)` }}>
+                <div className="p-2.5 sm:p-3" style={{ borderBottom: `1px solid var(--border-color)` }}>
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                       <Users size={18} />
                       Roles
                     </h2>
@@ -282,6 +457,7 @@ export default function RolesScreen() {
                     value={searchQuery}
                     onChange={setSearchQuery}
                     placeholder="Search roles..."
+                    isDark={isDark}
                   />
                 </div>
                 
@@ -289,12 +465,12 @@ export default function RolesScreen() {
                   {loading ? (
                     <div className="flex items-center justify-center h-full py-8">
                       <div className="flex items-center space-x-3">
-                        <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
-                        <span className="text-gray-600 text-sm">Loading roles...</span>
+                        <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading roles...</span>
                       </div>
                     </div>
                   ) : filteredRoles.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500 text-sm">
+                    <div className="p-4 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
                       {searchQuery ? "No roles found matching your search" : "No roles available"}
                     </div>
                   ) : (
@@ -312,6 +488,7 @@ export default function RolesScreen() {
                           membersLoading={membersLoading[role.role_id]}
                           membersError={membersError[role.role_id]}
                           onToggleExpansion={toggleRoleExpansion}
+                          isDark={isDark}
                         />
                       ))}
                     </div>
@@ -323,11 +500,25 @@ export default function RolesScreen() {
               <div className={`${selectedRole ? 'flex' : 'hidden md:flex'} flex-1 flex-col overflow-hidden`}>
                 {selectedRole ? (
                   <>
-                    <div className="p-2.5 sm:p-3 md:p-4 border-b border-gray-200 bg-white">
+                    <div className="p-2.5 sm:p-3 md:p-4" style={{ borderBottom: `1px solid var(--border-color)`, backgroundColor: 'var(--card-bg)' }}>
                       <div className="flex items-center justify-between gap-2 mb-2 md:mb-0">
                         <button
-                          onClick={() => setSelectedRole(null)}
-                          className="md:hidden p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          onClick={() => {
+                            if (hasUnsavedChanges) {
+                              triggerShake();
+                              setPendingAction(() => () => setSelectedRole(null));
+                              return;
+                            }
+                            setSelectedRole(null);
+                          }}
+                          className="md:hidden p-1.5 rounded-lg transition-colors"
+                          style={{ color: 'var(--text-secondary)' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                           title="Back to roles"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,13 +526,13 @@ export default function RolesScreen() {
                           </svg>
                         </button>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">{selectedRole.name}</h3>
-                          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
-                            {selectedRole.permissions.length} permissions enabled
+                          <h3 className="text-base sm:text-lg font-bold truncate" style={{ color: 'var(--text-primary)' }}>{selectedRole.name}</h3>
+                          <p className="text-[10px] sm:text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                            {pendingPermissions.length} permissions enabled
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                          <span className="text-[10px] sm:text-xs text-gray-600 font-medium">Active</span>
+                          <span className="text-[10px] sm:text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Active</span>
                           <ToggleSwitch
                             checked={selectedRole.active}
                             onChange={() => handleToggleActive(selectedRole)}
@@ -358,19 +549,20 @@ export default function RolesScreen() {
                           name={categoryName}
                           icon={category.icon}
                           permissions={category.permissions}
-                          rolePermissions={selectedRole.permissions}
+                          rolePermissions={pendingPermissions}
                           onTogglePermission={handleTogglePermission}
                           canManage={canManageRoles}
+                          isDark={isDark}
                         />
                       ))}
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center bg-gray-50">
+                  <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' }}>
                     <div className="text-center p-4">
-                      <Users size={48} className="text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">Select a role</h3>
-                      <p className="text-xs sm:text-sm text-gray-500 px-4">Choose a role from the list to view and edit its permissions</p>
+                      <Users size={48} className="mx-auto mb-4" style={{ color: isDark ? '#4a4a4a' : '#d1d5db' }} />
+                      <h3 className="text-base sm:text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Select a role</h3>
+                      <p className="text-xs sm:text-sm px-4" style={{ color: 'var(--text-secondary)' }}>Choose a role from the list to view and edit its permissions</p>
                     </div>
                   </div>
                 )}
@@ -383,21 +575,34 @@ export default function RolesScreen() {
                 onFormChange={setEditForm}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveRole}
+                isDark={isDark}
               />
             )}
           </main>
+
+          {/* Render unsaved changes bar at bottom when there are changes */}
+          {hasUnsavedChanges && (
+            <UnsavedChangesModal
+              onSave={handleSaveChanges}
+              onDiscard={handleResetChanges}
+              isSaving={isSaving}
+              isDark={isDark}
+              shake={shakeBar}
+            />
+          )}
         </div>
       </div>
     </>
   );
 }
 
-function SearchInput({ value, onChange, placeholder }) {
+function SearchInput({ value, onChange, placeholder, isDark }) {
   return (
-    <div className="flex items-center bg-gray-100 px-3 py-2 rounded-lg w-full relative">
+    <div className="flex items-center px-3 py-2 rounded-lg w-full relative" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
       <Search
         size={16}
-        className="text-gray-500 mr-2 flex-shrink-0"
+        className="mr-2 flex-shrink-0"
+        style={{ color: 'var(--text-secondary)' }}
       />
       <input
         type="text"
@@ -405,11 +610,13 @@ function SearchInput({ value, onChange, placeholder }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="bg-transparent focus:outline-none text-sm w-full pr-6"
+        style={{ color: 'var(--text-primary)' }}
       />
       {value && (
         <X
           size={16}
-          className="text-gray-500 cursor-pointer absolute right-3 hover:text-gray-700 transition-colors"
+          className="cursor-pointer absolute right-3 transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
           onClick={() => onChange("")}
         />
       )}
@@ -427,7 +634,8 @@ function RoleItem({
   members,
   membersLoading,
   membersError,
-  onToggleExpansion
+  onToggleExpansion,
+  isDark
 }) {
   const handleExpansionClick = (e) => {
     e.stopPropagation();
@@ -437,12 +645,23 @@ function RoleItem({
   return (
     <div className="mb-1">
       <div
-        className={`p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-          isSelected
-            ? "bg-[#6237A0] text-white"
-            : "hover:bg-gray-50 text-gray-700"
-        }`}
+        className="p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all duration-200"
+        style={
+          isSelected 
+            ? { backgroundColor: '#6237A0', color: 'white' }
+            : { color: 'var(--text-primary)' }
+        }
         onClick={onClick}
+        onMouseEnter={(e) => {
+          if (!isSelected) {
+            e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -452,15 +671,26 @@ function RoleItem({
                 className={`p-1 rounded transition-colors flex-shrink-0 ${
                   isSelected
                     ? "hover:bg-purple-600 text-purple-100"
-                    : "hover:bg-gray-200 text-gray-500"
+                    : ""
                 }`}
+                style={!isSelected ? { color: 'var(--text-secondary)' } : {}}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(229, 231, 235, 1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
                 title={isExpanded ? "Collapse members" : "Expand members"}
               >
                 {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </button>
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm truncate">{role.name}</h4>
-                <p className={`text-xs mt-0.5 sm:mt-1 truncate ${isSelected ? "text-purple-100" : "text-gray-500"}`}>
+                <p className={`text-xs mt-0.5 sm:mt-1 truncate ${isSelected ? "text-purple-100" : ""}`} style={!isSelected ? { color: 'var(--text-secondary)' } : {}}>
                   {role.permissions.length} permissions
                   {members && ` • ${members.length} members`}
                 </p>
@@ -483,8 +713,19 @@ function RoleItem({
                 className={`p-1 rounded transition-colors ${
                   isSelected
                     ? "hover:bg-purple-600 text-purple-100"
-                    : "hover:bg-gray-200 text-gray-500"
+                    : ""
                 }`}
+                style={!isSelected ? { color: 'var(--text-secondary)' } : {}}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(229, 231, 235, 1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
                 title="Toggle Active Status"
               >
                 <Settings size={14} />
@@ -496,17 +737,17 @@ function RoleItem({
 
       {/* Member List */}
       {isExpanded && (
-        <div className="ml-3 sm:ml-4 mt-2 bg-gray-50 rounded-lg p-2.5 sm:p-3">
+        <div className="ml-3 sm:ml-4 mt-2 rounded-lg p-2.5 sm:p-3" style={{ backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' }}>
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
-            <Users size={14} className="text-gray-600 flex-shrink-0" />
-            <h5 className="font-medium text-xs sm:text-sm text-gray-800">Role Members</h5>
+            <Users size={14} className="flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
+            <h5 className="font-medium text-xs sm:text-sm" style={{ color: 'var(--text-primary)' }}>Role Members</h5>
           </div>
           
           {membersLoading ? (
             <div className="py-4 flex items-center justify-center">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-200 border-t-[#6237A0]"></div>
-                <span className="text-xs text-gray-600">Loading...</span>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Loading...</span>
               </div>
             </div>
           ) : membersError ? (
@@ -520,13 +761,14 @@ function RoleItem({
               </button>
             </div>
           ) : !members || members.length === 0 ? (
-            <p className="text-xs sm:text-sm text-gray-500 text-center py-4">No members in this role</p>
+            <p className="text-xs sm:text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No members in this role</p>
           ) : (
             <div className="space-y-1.5 sm:space-y-2">
               {members.map((member) => (
                 <MemberListItem
                   key={member.sys_user_id}
                   member={member}
+                  isDark={isDark}
                 />
               ))}
             </div>
@@ -537,7 +779,7 @@ function RoleItem({
   );
 }
 
-function MemberListItem({ member }) {
+function MemberListItem({ member, isDark }) {
   // Generate initials from name or email for profile picture placeholder
   const getInitials = (member) => {
     if (member.profile?.prof_firstname && member.profile?.prof_lastname) {
@@ -561,7 +803,14 @@ function MemberListItem({ member }) {
   const hasProfileImage = member.profile?.profile_image;
 
   return (
-    <div className="flex items-center p-2 sm:p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
+    <div className="flex items-center p-2 sm:p-3 rounded transition-colors" style={{ backgroundColor: 'var(--card-bg)', border: `1px solid var(--border-color)` }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--card-bg)';
+      }}
+    >
       {/* Profile Picture */}
       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3 flex-shrink-0 overflow-hidden">
         {hasProfileImage ? (
@@ -585,10 +834,10 @@ function MemberListItem({ member }) {
       
       {/* User Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
+        <p className="text-xs sm:text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
           {getDisplayName(member)}
         </p>
-        <p className="text-xs text-gray-500 truncate">
+        <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
           {member.profile?.full_name ? member.sys_user_email : (member.sys_user_is_active ? "Active" : "Inactive")}
         </p>
       </div>
@@ -596,12 +845,12 @@ function MemberListItem({ member }) {
   );
 }
 
-function PermissionCategory({ name, icon: Icon, permissions, rolePermissions, onTogglePermission, canManage }) {
+function PermissionCategory({ name, icon: Icon, permissions, rolePermissions, onTogglePermission, canManage, isDark }) {
   return (
     <div className="mb-6 sm:mb-8">
       <div className="flex items-center gap-2 mb-3 sm:mb-4">
-        <Icon size={16} className="text-gray-600 flex-shrink-0" />
-        <h4 className="font-semibold text-gray-800 uppercase text-xs tracking-wide">{name}</h4>
+        <Icon size={16} className="flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
+        <h4 className="font-semibold uppercase text-xs tracking-wide" style={{ color: 'var(--text-primary)' }}>{name}</h4>
       </div>
       <div className="space-y-2 sm:space-y-3">
         {permissions.map((permission) => (
@@ -611,6 +860,7 @@ function PermissionCategory({ name, icon: Icon, permissions, rolePermissions, on
             isEnabled={rolePermissions.includes(permission.key)}
             onToggle={() => onTogglePermission(permission.key)}
             canManage={canManage}
+            isDark={isDark}
           />
         ))}
       </div>
@@ -618,12 +868,19 @@ function PermissionCategory({ name, icon: Icon, permissions, rolePermissions, on
   );
 }
 
-function PermissionItem({ permission, isEnabled, onToggle, canManage }) {
+function PermissionItem({ permission, isEnabled, onToggle, canManage, isDark }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-3 sm:p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-3 sm:p-4 rounded-lg transition-colors gap-3" style={{ backgroundColor: isDark ? '#1e1e1e' : 'var(--card-bg)', border: `1px solid var(--border-color)` }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = isDark ? '#5a5a5a' : '#d1d5db';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border-color)';
+      }}
+    >
       <div className="flex-1 min-w-0">
-        <h5 className="font-medium text-gray-800 text-sm">{permission.key}</h5>
-        <p className="text-xs text-gray-500 mt-1">{permission.description}</p>
+        <h5 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{permission.key}</h5>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{permission.description}</p>
       </div>
       <div className="flex items-center justify-end sm:justify-start gap-2">
         <PermissionToggle
@@ -712,19 +969,24 @@ function ToggleSwitch({ checked, onChange, disabled = false, size = "md" }) {
   );
 }
 
-function CreateRoleModal({ formData, onFormChange, onClose, onSave }) {
+function CreateRoleModal({ formData, onFormChange, onClose, onSave, isDark }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Create New Role</h2>
+      <div className="rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Create New Role</h2>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Role Name</label>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Role Name</label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
+            className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              border: `1px solid var(--border-color)`
+            }}
             placeholder="Enter role name..."
             autoFocus
           />
@@ -733,7 +995,17 @@ function CreateRoleModal({ formData, onFormChange, onClose, onSave }) {
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: isDark ? '#4a4a4a' : '#e5e7eb',
+              color: 'var(--text-primary)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = isDark ? '#5a5a5a' : '#d1d5db';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = isDark ? '#4a4a4a' : '#e5e7eb';
+            }}
           >
             Cancel
           </button>
@@ -743,6 +1015,76 @@ function CreateRoleModal({ formData, onFormChange, onClose, onSave }) {
             className="px-4 py-2 bg-[#6237A0] text-white text-sm rounded-lg hover:bg-[#552C8C] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Create Role
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UnsavedChangesModal({ onSave, onDiscard, isSaving, isDark, shake }) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center px-4 pb-4 pointer-events-none">
+      <div 
+        className={`rounded-lg shadow-2xl px-4 py-3 flex items-center justify-between pointer-events-auto max-w-2xl w-full slide-up-animation ${shake ? 'shake-animation' : ''}`}
+        style={{ 
+          backgroundColor: isDark ? '#111214' : '#2b2d31',
+          border: `1px solid ${isDark ? '#1e1f22' : '#3f4147'}`,
+          boxShadow: '0 8px 16px rgba(0, 0, 0, 0.24)'
+        }}
+      >
+        <span 
+          className="text-sm font-medium"
+          style={{ color: '#f2f3f5' }}
+        >
+          Careful — you have unsaved changes!
+        </span>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onDiscard}
+            disabled={isSaving}
+            className="text-sm font-medium transition-colors"
+            style={{ 
+              color: '#f2f3f5'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSaving) {
+                e.currentTarget.style.textDecoration = 'underline';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSaving) {
+                e.currentTarget.style.textDecoration = 'none';
+              }
+            }}
+          >
+            Reset
+          </button>
+          <button
+            onClick={onSave}
+            disabled={isSaving}
+            className="px-4 py-2 text-sm font-medium rounded transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ backgroundColor: '#248046', minWidth: '120px' }}
+            onMouseEnter={(e) => {
+              if (!isSaving) {
+                e.currentTarget.style.backgroundColor = '#1a5c34';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSaving) {
+                e.currentTarget.style.backgroundColor = '#248046';
+              }
+            }}
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
 import { useChat } from "../../hooks/useChat";
 import { useUser } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext";
 import { ChatService } from "../../services/chat.service";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
 import ConfirmDialog from "../../components/chat/ConfirmDialog";
@@ -12,6 +13,7 @@ import CustomerList from "../../components/chat/CustomerList";
 import ChatHeader from "../../components/chat/ChatHeader";
 import ChatMessages from "../../components/chat/ChatMessages";
 import MessageInput from "../../components/chat/MessageInput";
+import ProfilePanel from "../../components/chat/ProfilePanel";
 import "../../App.css";
 
 /**
@@ -40,11 +42,13 @@ export default function ChatsScreen() {
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [transferDepartment, setTransferDepartment] = useState(null);
   const [allDepartments, setAllDepartments] = useState([]);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
   // Get user permissions
   const { hasPermission } = useUser();
+  const { isDark } = useTheme();
   const canMessage = hasPermission("priv_can_message");
   const canEndChat = hasPermission("priv_can_end_chat");
   const canTransfer = hasPermission("priv_can_transfer");
@@ -68,8 +72,11 @@ export default function ChatsScreen() {
     loadMessages,
     chatEnded,
     endedChats,
+    isTyping,
+    typingUser,
     selectCustomer,
     sendMessage,
+    handleInputChange,
     endChat,
     transferChat,
     bottomRef,
@@ -144,8 +151,9 @@ export default function ChatsScreen() {
     setShowEndChatModal(false);
   };
 
-  const handleInputChange = (e) => {
-    setInputMessage(e.target.value);
+  const handleInputChangeWrapper = (e) => {
+    const value = e.target.value;
+    handleInputChange(value);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
@@ -218,6 +226,14 @@ export default function ChatsScreen() {
     setView("chatList");
   };
 
+  const handleProfileClick = () => {
+    setShowProfilePanel(true);
+  };
+
+  const handleCloseProfile = () => {
+    setShowProfilePanel(false);
+  };
+
   // Handle scroll for pagination
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -247,7 +263,7 @@ export default function ChatsScreen() {
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -271,7 +287,7 @@ export default function ChatsScreen() {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB]">
+      <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <TopNavbar toggleSidebar={toggleSidebar} />
 
       {/* End Chat Modal */}
@@ -320,13 +336,14 @@ export default function ChatsScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-white md:bg-transparent">
+        <main className="flex-1" style={{ backgroundColor: 'transparent' }}>
           <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
             {/* Chat list - Enhanced */}
             <div
               className={`${
                 view === "chatList" ? "block" : "hidden md:block"
-              } w-full md:w-[320px] lg:w-[360px] bg-white md:rounded-xl shadow-sm border-0 md:border md:border-gray-100 overflow-hidden flex flex-col`}
+              } w-full md:w-[320px] lg:w-[360px] md:rounded-xl shadow-sm border-0 md:border overflow-hidden flex flex-col`}
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
             >
               {/* Header Section */}
               <div className="bg-gradient-to-r from-[#6237A0] to-[#7A4ED9] p-3 md:p-4">
@@ -363,7 +380,8 @@ export default function ChatsScreen() {
             <div
               className={`${
                 view === "conversation" ? "block" : "hidden md:flex"
-              } flex-1 flex flex-col bg-white md:rounded-xl shadow-sm border-0 md:border md:border-gray-100 overflow-hidden`}
+              } flex-1 flex flex-col md:rounded-xl shadow-sm border-0 md:border overflow-hidden`}
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
             >
               {selectedCustomer ? (
                 <>
@@ -381,6 +399,7 @@ export default function ChatsScreen() {
                     dropdownRef={dropdownRef}
                     canEndChat={canEndChat}
                     canTransfer={canTransfer}
+                    onProfileClick={handleProfileClick}
                   />
 
                   <ChatMessages
@@ -390,11 +409,13 @@ export default function ChatsScreen() {
                     scrollContainerRef={scrollContainerRef}
                     bottomRef={bottomRef}
                     isMobile={isMobile}
+                    isTyping={isTyping}
+                    typingUser={typingUser}
                   />
 
                   <MessageInput
                     inputMessage={inputMessage}
-                    onInputChange={handleInputChange}
+                    onInputChange={handleInputChangeWrapper}
                     onSendMessage={handleSendMessage}
                     textareaRef={textareaRef}
                     showCannedMessages={showCannedMessages}
@@ -420,8 +441,8 @@ export default function ChatsScreen() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                     </div>
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No Chat Selected</h3>
-                    <p className="text-xs md:text-sm text-gray-500 max-w-xs mx-auto">
+                    <h3 className="text-base md:text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No Chat Selected</h3>
+                    <p className="text-xs md:text-sm max-w-xs mx-auto" style={{ color: 'var(--text-secondary)' }}>
                       {endedChats.length > 0
                         ? "Select a customer to start a new conversation"
                         : "Select a customer to view chat history"}
@@ -432,6 +453,13 @@ export default function ChatsScreen() {
             </div>
           </div>
         </main>
+
+        {/* Profile Panel */}
+        <ProfilePanel
+          customer={selectedCustomer}
+          isOpen={showProfilePanel}
+          onClose={handleCloseProfile}
+        />
       </div>
     </div>
     </>

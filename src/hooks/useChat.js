@@ -45,10 +45,13 @@ export const useChat = () => {
   const [error, setError] = useState(null);
   const [chatEnded, setChatEnded] = useState(false);
   const [endedChats, setEndedChats] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState(null);
   
   // Refs
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   /**
    * Connect to Socket.IO on mount
@@ -150,6 +153,10 @@ export const useChat = () => {
     socket.emit('joinChatGroup', selectedCustomer.chat_group_id);
 
     const handleReceiveMessage = (msg) => {
+      // Clear typing indicator when message is received
+      setIsTyping(false);
+      setTypingUser(null);
+
       setMessages((prev) => {
         const exists = prev.some((m) => m.id === msg.chat_id);
         if (exists) return prev;
@@ -170,10 +177,44 @@ export const useChat = () => {
       });
     };
 
+    const handleUserTyping = (data) => {
+      // Don't show typing indicator for current user
+      if (data.isCurrentUser) return;
+      
+      setIsTyping(true);
+      setTypingUser(data.userName || 'Client');
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Auto-hide typing indicator after 3 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        setTypingUser(null);
+      }, 3000);
+    };
+
+    const handleUserStoppedTyping = () => {
+      setIsTyping(false);
+      setTypingUser(null);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+
     socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('userTyping', handleUserTyping);
+    socket.on('userStoppedTyping', handleUserStoppedTyping);
 
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('userTyping', handleUserTyping);
+      socket.off('userStoppedTyping', handleUserStoppedTyping);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [selectedCustomer]);
 
@@ -271,6 +312,11 @@ export const useChat = () => {
     if (trimmedMessage.trim() === '') return;
     if (!selectedCustomer) return;
 
+    // Stop typing indicator
+    socket.emit('stopTyping', {
+      chat_group_id: selectedCustomer.chat_group_id,
+    });
+
     const now = new Date();
     const newMessage = {
       sender: 'user',
@@ -294,6 +340,21 @@ export const useChat = () => {
       client_id: null,
     });
   }, [inputMessage, selectedCustomer, hasPermission]);
+
+  /**
+   * Handle input change and emit typing event
+   */
+  const handleInputChange = useCallback((value) => {
+    setInputMessage(value);
+
+    if (!selectedCustomer) return;
+
+    // Emit typing event
+    socket.emit('typing', {
+      chat_group_id: selectedCustomer.chat_group_id,
+      userName: 'Agent', // TODO: Get from UserContext
+    });
+  }, [selectedCustomer]);
 
   /**
    * End the current chat
@@ -453,11 +514,14 @@ export const useChat = () => {
     error,
     chatEnded,
     endedChats,
+    isTyping,
+    typingUser,
     
     // Actions
     fetchChatGroups,
     selectCustomer,
     sendMessage,
+    handleInputChange,
     endChat,
     transferChat,
     clearSelection,

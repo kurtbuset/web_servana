@@ -5,6 +5,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
 import { useUser } from "../../../src/context/UserContext";
+import { useTheme } from "../../../src/context/ThemeContext";
 import { toast } from "react-toastify";
 import "../../App.css";
 
@@ -19,6 +20,7 @@ export default function AutoRepliesScreen() {
   const [editingReplyId, setEditingReplyId] = useState(null);
 
   const { userData, hasPermission } = useUser();
+  const { isDark } = useTheme();
   const canEditAutoReplies = hasPermission("priv_can_manage_auto_reply");
   const {
     replies,
@@ -137,7 +139,7 @@ export default function AutoRepliesScreen() {
           height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -164,27 +166,29 @@ export default function AutoRepliesScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
-          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col">
+        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Auto Replies</h1>
+              <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Auto Replies</h1>
               
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 {/* Search Bar */}
-                <div className="flex items-center bg-gray-100 px-2.5 py-1.5 rounded-lg flex-1 sm:flex-initial sm:w-56 md:w-64">
-                  <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
+                <div className="flex items-center px-2.5 py-1.5 rounded-lg flex-1 sm:flex-initial sm:w-56 md:w-64" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                  <Search size={16} className="mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
                   <input
                     type="text"
                     placeholder="Search replies..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-transparent focus:outline-none text-xs w-full pr-6"
+                    style={{ color: 'var(--text-primary)' }}
                   />
                   {searchQuery && (
                     <X
                       size={14}
-                      className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                      className="cursor-pointer hover:text-gray-700 transition-colors"
+                      style={{ color: 'var(--text-secondary)' }}
                       onClick={() => setSearchQuery("")}
                     />
                   )}
@@ -211,8 +215,8 @@ export default function AutoRepliesScreen() {
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex items-center space-x-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
-                    <span className="text-gray-600 text-sm">Loading auto-replies...</span>
+                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading auto-replies...</span>
                   </div>
                 </div>
               ) : error ? (
@@ -222,18 +226,18 @@ export default function AutoRepliesScreen() {
               ) : (
                 <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
                   <table className="w-full text-xs">
-                    <thead className="text-gray-600 bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                    <thead className="sticky top-0 z-10 border-b" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}>
                       <tr>
                         <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Reply Message</th>
                         <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
                         <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-36 sm:w-40 text-xs">Department</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y" style={{ borderColor: isDark ? 'rgba(74, 74, 74, 0.3)' : 'var(--border-color)' }}>
                       {filteredReplies.length === 0 ? (
                         <tr>
                           <td colSpan={3} className="text-center py-12">
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                               {searchQuery ? "No replies found matching your search" : "No auto-replies available"}
                             </p>
                           </td>
@@ -242,11 +246,17 @@ export default function AutoRepliesScreen() {
                       filteredReplies.map((reply) => (
                         <tr
                           key={reply.auto_reply_id}
-                          className="hover:bg-gray-50 transition-colors"
+                          className="transition-colors"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                         >
                           <td className="py-2 px-2.5 sm:px-3">
                             <div className="flex items-start gap-1.5 sm:gap-2">
-                              <p className="text-xs text-gray-800 break-words flex-1 line-clamp-2">
+                              <p className="text-xs break-words flex-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
                                 {reply.auto_reply_message}
                               </p>
                               <button
@@ -254,9 +264,10 @@ export default function AutoRepliesScreen() {
                                 disabled={!canEditAutoReplies}
                                 className={`flex-shrink-0 p-1 rounded transition-colors ${
                                   canEditAutoReplies
-                                    ? "text-gray-500 hover:text-[#6237A0] hover:bg-purple-50"
-                                    : "text-gray-300 cursor-not-allowed"
+                                    ? "hover:text-[#6237A0] hover:bg-purple-50"
+                                    : "cursor-not-allowed"
                                 }`}
+                                style={canEditAutoReplies ? { color: 'var(--text-secondary)' } : { color: isDark ? '#4a4a4a' : '#d1d5db' }}
                                 title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : "Edit"}
                               >
                                 <Edit3 size={14} />
@@ -299,11 +310,20 @@ export default function AutoRepliesScreen() {
                                 )
                               }
                               disabled={!canEditAutoReplies}
-                              className={`rounded-lg px-2 py-1 text-xs border border-gray-200 ${
+                              className={`rounded-lg px-2 py-1 text-xs border ${
                                 canEditAutoReplies
-                                  ? "text-gray-800 cursor-pointer hover:border-[#6237A0] focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
-                                  : "text-gray-400 cursor-not-allowed bg-gray-100"
+                                  ? "cursor-pointer hover:border-[#6237A0] focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+                                  : "cursor-not-allowed"
                               }`}
+                              style={canEditAutoReplies ? {
+                                backgroundColor: 'var(--input-bg)',
+                                borderColor: 'var(--border-color)',
+                                color: 'var(--text-primary)'
+                              } : {
+                                backgroundColor: isDark ? '#2a2a2a' : '#f3f4f6',
+                                borderColor: 'var(--border-color)',
+                                color: 'var(--text-secondary)'
+                              }}
                               title={!canEditAutoReplies ? "You don't have permission to edit auto-replies" : ""}
                             >
                               <option value="">All Departments</option>
@@ -338,24 +358,33 @@ export default function AutoRepliesScreen() {
           {/* Edit Modal */}
           {isEditModalOpen && (
             <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
-                <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
+              <div className="rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md" style={{ backgroundColor: 'var(--card-bg)' }}>
+                <h2 className="text-lg sm:text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
                   Edit Reply
                 </h2>
-                <label className="text-sm text-gray-700 mb-2 block font-medium">
+                <label className="text-sm mb-2 block font-medium" style={{ color: 'var(--text-primary)' }}>
                   Message
                 </label>
                 <textarea
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                   placeholder="Enter reply message"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 sm:p-3 text-sm mb-5 h-24 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none resize-none"
+                  className="w-full border rounded-lg p-2.5 sm:p-3 text-sm mb-5 h-24 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none resize-none"
+                  style={{ 
+                    backgroundColor: 'var(--input-bg)', 
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)'
+                  }}
                   autoFocus
                 />
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     onClick={() => setIsEditModalOpen(false)}
-                    className="w-full sm:w-auto bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--bg-tertiary)', 
+                      color: 'var(--text-primary)'
+                    }}
                   >
                     Cancel
                   </button>
@@ -365,8 +394,12 @@ export default function AutoRepliesScreen() {
                     className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       canEditAutoReplies && editText.trim()
                         ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "cursor-not-allowed"
                     }`}
+                    style={!canEditAutoReplies || !editText.trim() ? {
+                      backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
+                      color: isDark ? '#9ca3af' : '#6b7280'
+                    } : {}}
                   >
                     Save
                   </button>
@@ -378,21 +411,26 @@ export default function AutoRepliesScreen() {
           {/* Add Modal */}
           {isAddModalOpen && (
             <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
-                <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
+              <div className="rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md" style={{ backgroundColor: 'var(--card-bg)' }}>
+                <h2 className="text-lg sm:text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
                   Add New Reply
                 </h2>
-                <label className="text-sm text-gray-700 mb-2 block font-medium">
+                <label className="text-sm mb-2 block font-medium" style={{ color: 'var(--text-primary)' }}>
                   Message
                 </label>
                 <textarea
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                   placeholder="Enter reply message"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 sm:p-3 text-sm mb-4 h-24 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none resize-none"
+                  className="w-full border rounded-lg p-2.5 sm:p-3 text-sm mb-4 h-24 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none resize-none"
+                  style={{ 
+                    backgroundColor: 'var(--input-bg)', 
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)'
+                  }}
                   autoFocus
                 />
-                <label className="text-sm text-gray-700 mb-2 block font-medium">
+                <label className="text-sm mb-2 block font-medium" style={{ color: 'var(--text-primary)' }}>
                   Department
                 </label>
                 <select
@@ -402,7 +440,12 @@ export default function AutoRepliesScreen() {
                       e.target.value ? parseInt(e.target.value) : null
                     )
                   }
-                  className="w-full border border-gray-300 rounded-lg p-2.5 sm:p-3 text-sm mb-5 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                  className="w-full border rounded-lg p-2.5 sm:p-3 text-sm mb-5 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                  style={{ 
+                    backgroundColor: 'var(--input-bg)', 
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)'
+                  }}
                 >
                   <option value="">All Departments</option>
                   {activeDepartments.map((dept) => (
@@ -415,7 +458,11 @@ export default function AutoRepliesScreen() {
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     onClick={() => setIsAddModalOpen(false)}
-                    className="w-full sm:w-auto bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--bg-tertiary)', 
+                      color: 'var(--text-primary)'
+                    }}
                   >
                     Cancel
                   </button>
@@ -425,8 +472,12 @@ export default function AutoRepliesScreen() {
                     className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       canEditAutoReplies && editText.trim()
                         ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "cursor-not-allowed"
                     }`}
+                    style={!canEditAutoReplies || !editText.trim() ? {
+                      backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
+                      color: isDark ? '#9ca3af' : '#6b7280'
+                    } : {}}
                   >
                     Save
                   </button>

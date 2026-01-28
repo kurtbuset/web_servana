@@ -4,18 +4,8 @@ import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar/index";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { Edit3, Search, X, Eye, EyeOff } from "react-feather";
+import { useTheme } from "../../context/ThemeContext";
 import "../../../src/App.css";
-
-/*
-  Refactor notes (July 17, 2025 @ Asia/Manila):
-  -------------------------------------------------
-  • Switched from generic "username" field to explicit "email" across state, props, and table display.
-  • Client-side email syntax validation added before save (simple RFC-style regex; adjust as needed).
-  • Client-side uniqueness check added (case-insensitive) against already-fetched agents before calling API.
-  • Server-side duplicate detection: parse error response; if server indicates unique constraint violation, show specific error.
-  • Reused existing modalError inline alert region — preserves design; no layout changes.
-  • Minimal text updates (labels: "Email" instead of "Username") — considered a copy change, not a layout/design change.
-*/
 
 export default function ManageAgents() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -33,6 +23,8 @@ export default function ManageAgents() {
   const [editActive, setEditActive] = useState(true);
   const [modalError, setModalError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [viewProfileModal, setViewProfileModal] = useState(null);
+  const { isDark } = useTheme();
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // lightweight syntax check; adjust if you need stricter rules
@@ -51,6 +43,7 @@ export default function ManageAgents() {
           email: a.sys_user_email,
           password: a.sys_user_password,
           active: a.sys_user_is_active,
+          profile_picture: a.profile_picture,
         }))
       );
       setCurrentUserId(currentUserId); // ✅
@@ -201,7 +194,7 @@ export default function ManageAgents() {
           height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -229,27 +222,29 @@ export default function ManageAgents() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
-          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col">
+        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Manage Admins</h1>
+              <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Manage Admins</h1>
               
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 {/* Search Bar */}
-                <div className="flex items-center bg-gray-100 px-2.5 py-1.5 rounded-lg flex-1 sm:flex-initial sm:w-56 md:w-64">
-                  <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
+                <div className="flex items-center px-2.5 py-1.5 rounded-lg flex-1 sm:flex-initial sm:w-56 md:w-64" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                  <Search size={16} className="mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
                   <input
                     type="text"
                     placeholder="Search admins..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-transparent focus:outline-none text-xs w-full pr-6"
+                    style={{ color: 'var(--text-primary)' }}
                   />
                   {searchQuery && (
                     <X
                       size={14}
-                      className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                      className="cursor-pointer transition-colors"
+                      style={{ color: 'var(--text-secondary)' }}
                       onClick={() => setSearchQuery("")}
                     />
                   )}
@@ -270,8 +265,8 @@ export default function ManageAgents() {
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex items-center space-x-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
-                    <span className="text-gray-600 text-sm">Loading administrators...</span>
+                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading administrators...</span>
                   </div>
                 </div>
               ) : error ? (
@@ -281,17 +276,17 @@ export default function ManageAgents() {
               ) : (
                 <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
                   <table className="w-full text-xs">
-                    <thead className="text-gray-600 bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                    <thead className="sticky top-0 z-10" style={{ color: 'var(--text-secondary)', backgroundColor: isDark ? '#2a2a2a' : '#f9fafb', borderBottom: `1px solid var(--border-color)` }}>
                       <tr>
                         <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Email</th>
                         <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody style={{ borderColor: 'var(--border-color)' }}>
                       {filteredAgents.length === 0 ? (
                         <tr>
                           <td colSpan={2} className="text-center py-12">
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                               {searchQuery ? "No admins found matching your search" : "No administrators available"}
                             </p>
                           </td>
@@ -303,33 +298,72 @@ export default function ManageAgents() {
                         return (
                           <tr
                             key={agent.sys_user_id}
-                            className="hover:bg-gray-50 transition-colors"
+                            className="transition-colors"
+                            style={{ borderTop: `1px solid ${isDark ? 'rgba(74, 74, 74, 0.3)' : 'var(--border-color)'}` }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
                             <td className="py-2 px-2.5 sm:px-3">
                               <div className="flex items-center gap-1.5 sm:gap-2">
-                                <p className="text-xs text-gray-800 break-words flex-1">
+                                <img
+                                  src={agent.profile_picture || "profile_picture/DefaultProfile.jpg"}
+                                  alt="Profile"
+                                  className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                                />
+                                <p className="text-xs break-words flex-1" style={{ color: 'var(--text-primary)' }}>
                                   {agent.email}
                                   {isSelf && (
                                     <span className="ml-2 text-xs text-purple-600 font-medium">(You)</span>
                                   )}
                                 </p>
-                                <button
-                                  onClick={() => {
-                                    if (!isSelf) {
-                                      openEditModal(agent);
-                                      setError(null);
-                                    }
-                                  }}
-                                  disabled={isSelf}
-                                  className={`flex-shrink-0 p-1 rounded transition-colors ${
-                                    isSelf
-                                      ? "text-gray-300 cursor-not-allowed"
-                                      : "text-gray-500 hover:text-[#6237A0] hover:bg-purple-50"
-                                  }`}
-                                  title={isSelf ? "You cannot edit your own account" : "Edit"}
-                                >
-                                  <Edit3 size={14} />
-                                </button>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <button
+                                    onClick={() => setViewProfileModal(agent)}
+                                    className="p-1 rounded transition-colors hover:text-[#6237A0]"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(243, 232, 255, 1)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                    title="View Profile"
+                                  >
+                                    <Eye size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (!isSelf) {
+                                        openEditModal(agent);
+                                        setError(null);
+                                      }
+                                    }}
+                                    disabled={isSelf}
+                                    className={`p-1 rounded transition-colors ${
+                                      isSelf
+                                        ? "cursor-not-allowed"
+                                        : "hover:text-[#6237A0]"
+                                    }`}
+                                    style={{ color: isSelf ? '#d1d5db' : 'var(--text-secondary)' }}
+                                    onMouseEnter={(e) => {
+                                      if (!isSelf) {
+                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(243, 232, 255, 1)';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isSelf) {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                      }
+                                    }}
+                                    title={isSelf ? "You cannot edit your own account" : "Edit"}
+                                  >
+                                    <Edit3 size={14} />
+                                  </button>
+                                </div>
                               </div>
                             </td>
 
@@ -368,14 +402,21 @@ export default function ManageAgents() {
           {/* Modal */}
           {isModalOpen && (
             <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
+              <div className="rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md" style={{ backgroundColor: 'var(--card-bg)' }}>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
+                  <h3 className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {currentEditId !== null ? "Edit Admin" : "Add Admin"}
                   </h3>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors"
+                    className="p-1 rounded transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
                     <X size={20} />
                   </button>
@@ -388,12 +429,17 @@ export default function ManageAgents() {
                 )}
 
                 <label className="block mb-4">
-                  <span className="block text-sm font-medium text-gray-700 mb-2">
+                  <span className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                     Email
                   </span>
                   <input
                     type="email"
-                    className="w-full rounded-lg border border-gray-300 p-2.5 sm:p-3 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                    className="w-full rounded-lg p-2.5 sm:p-3 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      border: `1px solid var(--border-color)`
+                    }}
                     placeholder="admin@example.com"
                     value={editEmail}
                     onChange={(e) => {
@@ -405,12 +451,17 @@ export default function ManageAgents() {
                 </label>
 
                 <label className="block mb-5 relative">
-                  <span className="block text-sm font-medium text-gray-700 mb-2">
+                  <span className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                     Password
                   </span>
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 sm:p-3 pr-10 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                    className="w-full rounded-lg p-2.5 sm:p-3 pr-10 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      border: `1px solid var(--border-color)`
+                    }}
                     placeholder="Enter password"
                     value={editPassword}
                     onChange={(e) => {
@@ -421,7 +472,8 @@ export default function ManageAgents() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-[38px] transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -434,7 +486,17 @@ export default function ManageAgents() {
                       setIsModalOpen(false);
                       setModalError(null);
                     }}
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-colors"
+                    style={{ 
+                      backgroundColor: isDark ? '#4a4a4a' : '#e5e7eb',
+                      color: 'var(--text-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isDark ? '#5a5a5a' : '#d1d5db';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isDark ? '#4a4a4a' : '#e5e7eb';
+                    }}
                   >
                     Cancel
                   </button>
@@ -444,8 +506,12 @@ export default function ManageAgents() {
                     className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-colors ${
                       editEmail.trim() && editPassword.trim()
                         ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "cursor-not-allowed"
                     }`}
+                    style={!(editEmail.trim() && editPassword.trim()) ? {
+                      backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
+                      color: isDark ? '#9ca3af' : '#6b7280'
+                    } : {}}
                   >
                     Save
                   </button>
@@ -454,8 +520,130 @@ export default function ManageAgents() {
             </div>
           )}
         </main>
+
+        {/* View Profile Modal */}
+        {viewProfileModal && (
+          <ViewProfileModal
+            user={viewProfileModal}
+            onClose={() => setViewProfileModal(null)}
+            isDark={isDark}
+          />
+        )}
       </div>
     </div>
     </>
+  );
+}
+
+function ViewProfileModal({ user, onClose, isDark }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 animate-fadeIn" onClick={onClose}>
+      <div 
+        className="rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-slideUp" 
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Purple Gradient Header */}
+        <div className="relative bg-gradient-to-br from-[#8B5CF6] via-[#7C3AED] to-[#6D28D9] p-5 text-white">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <X size={20} />
+          </button>
+
+          {/* Profile Icon and Title */}
+          <div className="flex items-center gap-2 mb-5">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+            <h3 className="text-xl font-bold">Admin Profile</h3>
+          </div>
+
+          {/* Profile Picture */}
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <img
+                src={user.profile_picture || "profile_picture/DefaultProfile.jpg"}
+                alt="Profile"
+                className="w-28 h-28 rounded-full object-cover ring-4 ring-white/30"
+              />
+              {/* Online Status Indicator */}
+              <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white"></div>
+            </div>
+          </div>
+
+          {/* Email/Username */}
+          <h4 className="text-xl font-bold text-center mb-4">
+            {user.email.split('@')[0]}
+          </h4>
+
+          {/* Three Dots Menu */}
+          <div className="flex justify-center gap-1.5">
+            <div className="w-2 h-2 bg-white/40 rounded-full"></div>
+            <div className="w-2 h-2 bg-white/40 rounded-full"></div>
+            <div className="w-2 h-2 bg-white/40 rounded-full"></div>
+          </div>
+        </div>
+
+        {/* Dark Content Section */}
+        <div className="p-5 bg-[#2b2d31]">
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] font-semibold mb-1.5 uppercase tracking-wider text-gray-400">Email Address</p>
+              <p className="text-sm font-medium text-white">{user.email}</p>
+            </div>
+            
+            <div>
+              <p className="text-[10px] font-semibold mb-1.5 uppercase tracking-wider text-gray-400">Role</p>
+              <p className="text-sm font-medium text-white">Administrator</p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold mb-1.5 uppercase tracking-wider text-gray-400">Status</p>
+              <div className="flex items-center gap-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${user.active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                <p className="text-sm font-medium text-white">
+                  {user.active ? 'Active' : 'Inactive'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full mt-5 px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white text-sm font-semibold rounded-lg hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all shadow-lg"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
+    </div>
   );
 }
