@@ -300,6 +300,9 @@ function AppNavigation() {
 
        
         <Route path="/queues" element={<Navigate to="/queues" replace />} />
+        
+        {/* Fallback route - redirect unknown routes to Dashboard */}
+        <Route path="*" element={<Navigate to="/Dashboard" replace />} />
       </Routes>
     </Router>
   );
