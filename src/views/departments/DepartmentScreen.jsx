@@ -87,8 +87,26 @@ export default function DepartmentScreen() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNavbar toggleSidebar={toggleSidebar} />
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #6237A0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #552C8C;
+        }
+      `}</style>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopNavbar toggleSidebar={toggleSidebar} />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -103,162 +121,187 @@ export default function DepartmentScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-gray-100 p-15 overflow-hidden transition-colors duration-300">
-          <div className="bg-white p-4 rounded-lg min-h-[80vh] transition-all duration-300">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center bg-gray-100 px-3 py-2 rounded-md w-1/3 relative">
-                <Search
-                  size={18}
-                  strokeWidth={1}
-                  className="text-gray-500 mr-2 flex-shrink-0"
-                />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent focus:outline-none text-sm w-full pr-6"
-                />
-                {searchQuery && (
-                  <X
+        <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Departments</h1>
+              
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                {/* Search Bar */}
+                <div className="flex items-center bg-gray-100 px-2.5 py-1.5 rounded-lg flex-1 sm:flex-initial sm:w-56 md:w-64">
+                  <Search
                     size={16}
-                    className="text-gray-500 cursor-pointer absolute right-3 hover:text-gray-700"
-                    onClick={() => setSearchQuery("")}
+                    className="text-gray-500 mr-2 flex-shrink-0"
                   />
-                )}
-              </div>
+                  <input
+                    type="text"
+                    placeholder="Search departments..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent focus:outline-none text-xs w-full pr-6"
+                  />
+                  {searchQuery && (
+                    <X
+                      size={14}
+                      className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                      onClick={() => setSearchQuery("")}
+                    />
+                  )}
+                </div>
 
-              <button
-                onClick={() => {
-                  if (!canEditDepartment) {
-                    console.warn("User does not have permission to edit departments");
-                    return;
-                  }
-                  setEditText("");
-                  setCurrentEditId(null);
-                  setIsModalOpen(true);
-                }}
-                disabled={!canEditDepartment}
-                className={`px-4 py-2 rounded-lg text-sm transition-colors duration-300 ${
-                  canEditDepartment
-                    ? "bg-[#6237A0] text-white hover:bg-purple-800"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-                title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
-              >
-                Add Department
-              </button>
+                {/* Add Button */}
+                <button
+                  onClick={() => {
+                    if (!canEditDepartment) {
+                      console.warn("User does not have permission to edit departments");
+                      return;
+                    }
+                    setEditText("");
+                    setCurrentEditId(null);
+                    setIsModalOpen(true);
+                  }}
+                  disabled={!canEditDepartment}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                    canEditDepartment
+                      ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
+                >
+                  + Add Department
+                </button>
+              </div>
             </div>
 
-            <div className="overflow-y-auto max-h-[65vh] w-full custom-scrollbar">
-              <table className="w-full text-sm text-left">
-                <thead className="text-gray-500 bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_0_#000000]">
-                  <tr>
-                    <th className="py-2 px-3 pl-3">Department</th>
-                    <th className="py-2 px-3 text-center">Active Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDepartments.map((dept) => (
-                    <tr
-                      key={dept.dept_id}
-                      className="transition-colors duration-200 hover:bg-gray-100"
-                    >
-                      <td className="py-2 px-3 align-top">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm break-words max-w-[200px] whitespace-pre-wrap">
-                            {dept.dept_name}
-                          </p>
-                          <Edit3
-                            size={18}
-                            strokeWidth={1}
-                            className={`flex-shrink-0 transition-colors duration-200 ${
-                              canEditDepartment
-                                ? "text-gray-500 cursor-pointer hover:text-purple-700"
-                                : "text-gray-300 cursor-not-allowed"
-                            }`}
-                            onClick={() => {
-                              if (!canEditDepartment) {
-                                console.warn("User does not have permission to edit departments");
-                                return;
-                              }
-                              setCurrentEditId(dept.dept_id);
-                              setEditText(dept.dept_name);
-                              setIsModalOpen(true);
-                            }}
-                            title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
-                          />
-                        </div>
-                      </td>
+            {/* Table Container */}
+            <div className="flex-1 overflow-hidden">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
+                    <span className="text-gray-600 text-sm">Loading departments...</span>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-red-600 text-sm font-semibold">{error}</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
+                  <table className="w-full text-xs">
+                    <thead className="text-gray-600 bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                      <tr>
+                        <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Department Name</th>
+                        <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredDepartments.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="text-center py-12">
+                            <p className="text-gray-500 text-sm">
+                              {searchQuery ? "No departments found matching your search" : "No departments available"}
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredDepartments.map((dept) => (
+                          <tr
+                            key={dept.dept_id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-2 px-2.5 sm:px-3">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <p className="text-xs text-gray-800 break-words flex-1">
+                                  {dept.dept_name}
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    if (!canEditDepartment) {
+                                      console.warn("User does not have permission to edit departments");
+                                      return;
+                                    }
+                                    setCurrentEditId(dept.dept_id);
+                                    setEditText(dept.dept_name);
+                                    setIsModalOpen(true);
+                                  }}
+                                  disabled={!canEditDepartment}
+                                  className={`flex-shrink-0 p-1 rounded transition-colors ${
+                                    canEditDepartment
+                                      ? "text-gray-500 hover:text-[#6237A0] hover:bg-purple-50"
+                                      : "text-gray-300 cursor-not-allowed"
+                                  }`}
+                                  title={!canEditDepartment ? "You don't have permission to edit departments" : "Edit"}
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                              </div>
+                            </td>
 
-                      <td className="py-2 px-3 text-center">
-                        <label className={`inline-flex relative items-center ${
-                          canEditDepartment ? "cursor-pointer" : "cursor-not-allowed"
-                        }`}>
-                          <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={dept.dept_is_active}
-                            onChange={() =>
-                              handleToggle(dept.dept_id, dept.dept_is_active)
-                            }
-                            disabled={!canEditDepartment}
-                            title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
-                          />
-                          <div className={`w-7 h-4 rounded-full peer transition-colors duration-300 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-transform after:duration-300 peer-checked:after:translate-x-3 ${
-                            canEditDepartment
-                              ? "bg-gray-200 peer-checked:bg-[#6237A0]"
-                              : "bg-gray-100 peer-checked:bg-gray-300"
-                          }`} />
-                        </label>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {loading && (
-                <LoadingSpinner variant="table" message="Loading departments..." />
-              )}
-
-              {error && (
-                <p className="pt-15 text-center text-red-600 mb-4 font-semibold">
-                  {error}
-                </p>
+                            <td className="py-2 px-2.5 sm:px-3 text-center">
+                              <label className={`inline-flex relative items-center ${
+                                canEditDepartment ? "cursor-pointer" : "cursor-not-allowed"
+                              }`}>
+                                <input
+                                  type="checkbox"
+                                  className="sr-only peer"
+                                  checked={dept.dept_is_active}
+                                  onChange={() =>
+                                    handleToggle(dept.dept_id, dept.dept_is_active)
+                                  }
+                                  disabled={!canEditDepartment}
+                                  title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
+                                />
+                                <div className={`w-11 h-6 rounded-full peer transition-colors relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-5 ${
+                                  canEditDepartment
+                                    ? "bg-gray-300 peer-checked:bg-[#6237A0]"
+                                    : "bg-gray-200 peer-checked:bg-gray-400"
+                                }`} />
+                              </label>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
 
           {/* Modal for Add/Edit */}
           {isModalOpen && (
-            <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-center z-50 transition-opacity duration-300">
-              <div className="bg-white rounded-lg shadow-xl p-6 w-96 transform scale-95 animate-fadeIn transition-transform duration-300 ease-out">
-                <h2 className="text-md font-semibold mb-2">
+            <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
+                <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
                   {currentEditId ? "Edit Department" : "Add Department"}
                 </h2>
-                <label className="text-sm text-gray-700 mb-1 block">
+                <label className="text-sm text-gray-700 mb-2 block font-medium">
                   Department Name
                 </label>
                 <input
                   type="text"
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm mb-4 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all duration-300"
+                  placeholder="Enter department name"
+                  className="w-full border border-gray-300 rounded-lg p-2.5 sm:p-3 text-sm mb-5 focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+                  autoFocus
                 />
 
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="bg-gray-300 text-gray-800 px-4 py-1 rounded-lg text-sm hover:bg-gray-400 transition-colors duration-200"
+                    className="w-full sm:w-auto bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    disabled={!canEditDepartment}
-                    className={`px-4 py-1 rounded-lg text-sm transition-colors duration-300 ${
-                      canEditDepartment
-                        ? "bg-purple-700 text-white hover:bg-purple-800"
+                    disabled={!canEditDepartment || !editText.trim()}
+                    className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      canEditDepartment && editText.trim()
+                        ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
@@ -271,5 +314,6 @@ export default function DepartmentScreen() {
         </main>
       </div>
     </div>
+    </>
   );
 }

@@ -226,134 +226,169 @@ export default function RolesScreen() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNavbar toggleSidebar={toggleSidebar} />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-        <main className="flex-1 bg-gray-50 overflow-hidden">
-          <div className="flex h-full">
-            {/* Left Panel - Roles List */}
-            <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Users size={20} />
-                    Roles
-                  </h2>
-                  {canManageRoles && (
-                    <button
-                      onClick={handleCreateRole}
-                      className="p-2 text-[#6237A0] hover:bg-purple-50 rounded-lg transition-colors"
-                      title="Create Role"
-                    >
-                      <Plus size={18} />
-                    </button>
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #6237A0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #552C8C;
+        }
+      `}</style>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopNavbar toggleSidebar={toggleSidebar} />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            isMobile={true}
+            isOpen={mobileSidebarOpen}
+            toggleDropdown={setOpenDropdown}
+            openDropdown={openDropdown}
+          />
+          <Sidebar
+            isMobile={false}
+            toggleDropdown={setOpenDropdown}
+            openDropdown={openDropdown}
+          />
+          <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm h-full flex flex-col md:flex-row overflow-hidden">
+              {/* Left Panel - Roles List */}
+              <div className={`${selectedRole ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex-col`}>
+                <div className="p-2.5 sm:p-3 border-b border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <Users size={18} />
+                      Roles
+                    </h2>
+                    {canManageRoles && (
+                      <button
+                        onClick={handleCreateRole}
+                        className="p-1.5 text-[#6237A0] hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Create Role"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search roles..."
+                  />
+                </div>
+                
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  {loading ? (
+                    <div className="flex items-center justify-center h-full py-8">
+                      <div className="flex items-center space-x-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
+                        <span className="text-gray-600 text-sm">Loading roles...</span>
+                      </div>
+                    </div>
+                  ) : filteredRoles.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">
+                      {searchQuery ? "No roles found matching your search" : "No roles available"}
+                    </div>
+                  ) : (
+                    <div className="p-2">
+                      {filteredRoles.map((role) => (
+                        <RoleItem
+                          key={role.role_id}
+                          role={role}
+                          isSelected={selectedRole?.role_id === role.role_id}
+                          onClick={() => handleRoleSelect(role)}
+                          onToggleActive={() => handleToggleActive(role)}
+                          canManage={canManageRoles}
+                          isExpanded={expandedRoles.has(role.role_id)}
+                          members={roleMembers[role.role_id]}
+                          membersLoading={membersLoading[role.role_id]}
+                          membersError={membersError[role.role_id]}
+                          onToggleExpansion={toggleRoleExpansion}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
-                <SearchInput
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search roles..."
-                />
               </div>
-              
-              <div className="flex-1 overflow-y-auto">
-                {loading ? (
-                  <LoadingSpinner message="Loading roles..." />
-                ) : filteredRoles.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No roles found</div>
+
+              {/* Right Panel - Role Permissions */}
+              <div className={`${selectedRole ? 'flex' : 'hidden md:flex'} flex-1 flex-col overflow-hidden`}>
+                {selectedRole ? (
+                  <>
+                    <div className="p-2.5 sm:p-3 md:p-4 border-b border-gray-200 bg-white">
+                      <div className="flex items-center justify-between gap-2 mb-2 md:mb-0">
+                        <button
+                          onClick={() => setSelectedRole(null)}
+                          className="md:hidden p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Back to roles"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">{selectedRole.name}</h3>
+                          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                            {selectedRole.permissions.length} permissions enabled
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                          <span className="text-[10px] sm:text-xs text-gray-600 font-medium">Active</span>
+                          <ToggleSwitch
+                            checked={selectedRole.active}
+                            onChange={() => handleToggleActive(selectedRole)}
+                            disabled={!canManageRoles}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 custom-scrollbar">
+                      {Object.entries(PERMISSION_CATEGORIES).map(([categoryName, category]) => (
+                        <PermissionCategory
+                          key={categoryName}
+                          name={categoryName}
+                          icon={category.icon}
+                          permissions={category.permissions}
+                          rolePermissions={selectedRole.permissions}
+                          onTogglePermission={handleTogglePermission}
+                          canManage={canManageRoles}
+                        />
+                      ))}
+                    </div>
+                  </>
                 ) : (
-                  <div className="p-2">
-                    {filteredRoles.map((role) => (
-                      <RoleItem
-                        key={role.role_id}
-                        role={role}
-                        isSelected={selectedRole?.role_id === role.role_id}
-                        onClick={() => handleRoleSelect(role)}
-                        onToggleActive={() => handleToggleActive(role)}
-                        canManage={canManageRoles}
-                        isExpanded={expandedRoles.has(role.role_id)}
-                        members={roleMembers[role.role_id]}
-                        membersLoading={membersLoading[role.role_id]}
-                        membersError={membersError[role.role_id]}
-                        onToggleExpansion={toggleRoleExpansion}
-                      />
-                    ))}
+                  <div className="flex-1 flex items-center justify-center bg-gray-50">
+                    <div className="text-center p-4">
+                      <Users size={48} className="text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">Select a role</h3>
+                      <p className="text-xs sm:text-sm text-gray-500 px-4">Choose a role from the list to view and edit its permissions</p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Right Panel - Role Permissions */}
-            <div className="flex-1 flex flex-col">
-              {selectedRole ? (
-                <>
-                  <div className="p-6 border-b border-gray-200 bg-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900">{selectedRole.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {selectedRole.permissions.length} permissions enabled
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-600">Active</span>
-                        <ToggleSwitch
-                          checked={selectedRole.active}
-                          onChange={() => handleToggleActive(selectedRole)}
-                          disabled={!canManageRoles}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto p-6">
-                    {Object.entries(PERMISSION_CATEGORIES).map(([categoryName, category]) => (
-                      <PermissionCategory
-                        key={categoryName}
-                        name={categoryName}
-                        icon={category.icon}
-                        permissions={category.permissions}
-                        rolePermissions={selectedRole.permissions}
-                        onTogglePermission={handleTogglePermission}
-                        canManage={canManageRoles}
-                      />
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center bg-gray-50">
-                  <div className="text-center">
-                    <Users size={48} className="text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Select a role</h3>
-                    <p className="text-gray-500">Choose a role from the left to view and edit its permissions</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {isModalOpen && (
-            <CreateRoleModal
-              formData={editForm}
-              onFormChange={setEditForm}
-              onClose={() => setIsModalOpen(false)}
-              onSave={handleSaveRole}
-            />
-          )}
-        </main>
+            {isModalOpen && (
+              <CreateRoleModal
+                formData={editForm}
+                onFormChange={setEditForm}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveRole}
+              />
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -362,8 +397,7 @@ function SearchInput({ value, onChange, placeholder }) {
     <div className="flex items-center bg-gray-100 px-3 py-2 rounded-lg w-full relative">
       <Search
         size={16}
-        strokeWidth={1}
-        className="text-gray-400 mr-2 flex-shrink-0"
+        className="text-gray-500 mr-2 flex-shrink-0"
       />
       <input
         type="text"
@@ -375,8 +409,7 @@ function SearchInput({ value, onChange, placeholder }) {
       {value && (
         <X
           size={16}
-          strokeWidth={1}
-          className="text-gray-400 cursor-pointer absolute right-3 hover:text-gray-600"
+          className="text-gray-500 cursor-pointer absolute right-3 hover:text-gray-700 transition-colors"
           onClick={() => onChange("")}
         />
       )}
@@ -404,19 +437,19 @@ function RoleItem({
   return (
     <div className="mb-1">
       <div
-        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+        className={`p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
           isSelected
             ? "bg-[#6237A0] text-white"
             : "hover:bg-gray-50 text-gray-700"
         }`}
         onClick={onClick}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={handleExpansionClick}
-                className={`p-1 rounded transition-colors ${
+                className={`p-1 rounded transition-colors flex-shrink-0 ${
                   isSelected
                     ? "hover:bg-purple-600 text-purple-100"
                     : "hover:bg-gray-200 text-gray-500"
@@ -427,14 +460,14 @@ function RoleItem({
               </button>
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm truncate">{role.name}</h4>
-                <p className={`text-xs mt-1 ${isSelected ? "text-purple-100" : "text-gray-500"}`}>
+                <p className={`text-xs mt-0.5 sm:mt-1 truncate ${isSelected ? "text-purple-100" : "text-gray-500"}`}>
                   {role.permissions.length} permissions
                   {members && ` • ${members.length} members`}
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <div
               className={`w-2 h-2 rounded-full ${
                 role.active ? "bg-green-400" : "bg-gray-400"
@@ -463,17 +496,22 @@ function RoleItem({
 
       {/* Member List */}
       {isExpanded && (
-        <div className="ml-4 mt-2 bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <Users size={16} className="text-gray-600" />
-            <h5 className="font-medium text-sm text-gray-900">Role Members</h5>
+        <div className="ml-3 sm:ml-4 mt-2 bg-gray-50 rounded-lg p-2.5 sm:p-3">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
+            <Users size={14} className="text-gray-600 flex-shrink-0" />
+            <h5 className="font-medium text-xs sm:text-sm text-gray-800">Role Members</h5>
           </div>
           
           {membersLoading ? (
-            <LoadingSpinner size="sm" message="Loading members..." />
+            <div className="py-4 flex items-center justify-center">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-200 border-t-[#6237A0]"></div>
+                <span className="text-xs text-gray-600">Loading...</span>
+              </div>
+            </div>
           ) : membersError ? (
             <div className="text-center py-4">
-              <p className="text-sm text-red-600 mb-2">{membersError}</p>
+              <p className="text-xs sm:text-sm text-red-600 mb-2">{membersError}</p>
               <button
                 onClick={handleExpansionClick}
                 className="text-xs text-[#6237A0] hover:underline"
@@ -482,9 +520,9 @@ function RoleItem({
               </button>
             </div>
           ) : !members || members.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No members in this role</p>
+            <p className="text-xs sm:text-sm text-gray-500 text-center py-4">No members in this role</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {members.map((member) => (
                 <MemberListItem
                   key={member.sys_user_id}
@@ -523,9 +561,9 @@ function MemberListItem({ member }) {
   const hasProfileImage = member.profile?.profile_image;
 
   return (
-    <div className="flex items-center p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
+    <div className="flex items-center p-2 sm:p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
       {/* Profile Picture */}
-      <div className="w-10 h-10 rounded-full mr-3 flex-shrink-0 overflow-hidden">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3 flex-shrink-0 overflow-hidden">
         {hasProfileImage ? (
           <img
             src={member.profile.profile_image}
@@ -539,7 +577,7 @@ function MemberListItem({ member }) {
           />
         ) : null}
         <div 
-          className={`w-full h-full bg-[#6237A0] rounded-full flex items-center justify-center text-white font-medium text-sm ${hasProfileImage ? 'hidden' : 'flex'}`}
+          className={`w-full h-full bg-[#6237A0] rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm ${hasProfileImage ? 'hidden' : 'flex'}`}
         >
           {getInitials(member)}
         </div>
@@ -547,7 +585,7 @@ function MemberListItem({ member }) {
       
       {/* User Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
+        <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
           {getDisplayName(member)}
         </p>
         <p className="text-xs text-gray-500 truncate">
@@ -560,12 +598,12 @@ function MemberListItem({ member }) {
 
 function PermissionCategory({ name, icon: Icon, permissions, rolePermissions, onTogglePermission, canManage }) {
   return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <Icon size={18} className="text-gray-600" />
-        <h4 className="font-semibold text-gray-900 uppercase text-xs tracking-wide">{name}</h4>
+    <div className="mb-6 sm:mb-8">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4">
+        <Icon size={16} className="text-gray-600 flex-shrink-0" />
+        <h4 className="font-semibold text-gray-800 uppercase text-xs tracking-wide">{name}</h4>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {permissions.map((permission) => (
           <PermissionItem
             key={permission.key}
@@ -582,12 +620,12 @@ function PermissionCategory({ name, icon: Icon, permissions, rolePermissions, on
 
 function PermissionItem({ permission, isEnabled, onToggle, canManage }) {
   return (
-    <div className="flex items-start justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-      <div className="flex-1 min-w-0 mr-4">
-        <h5 className="font-medium text-gray-900 text-sm">{permission.key}</h5>
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-3 sm:p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors gap-3">
+      <div className="flex-1 min-w-0">
+        <h5 className="font-medium text-gray-800 text-sm">{permission.key}</h5>
         <p className="text-xs text-gray-500 mt-1">{permission.description}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-end sm:justify-start gap-2">
         <PermissionToggle
           state={isEnabled ? "enabled" : "disabled"}
           onChange={onToggle}
@@ -676,9 +714,9 @@ function ToggleSwitch({ checked, onChange, disabled = false, size = "md" }) {
 
 function CreateRoleModal({ formData, onFormChange, onClose, onSave }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Create New Role</h2>
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Create New Role</h2>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">Role Name</label>
@@ -686,22 +724,23 @@ function CreateRoleModal({ formData, onFormChange, onClose, onSave }) {
             type="text"
             value={formData.name}
             onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#6237A0] focus:border-transparent outline-none"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
             placeholder="Enter role name..."
+            autoFocus
           />
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={!formData.name.trim()}
-            className="px-4 py-2 bg-[#6237A0] text-white text-sm rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-[#6237A0] text-white text-sm rounded-lg hover:bg-[#552C8C] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Create Role
           </button>
