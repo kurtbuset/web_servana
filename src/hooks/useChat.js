@@ -164,7 +164,23 @@ export const useChat = () => {
   useEffect(() => {
     if (!selectedCustomer) return;
 
-    socket.emit('joinChatGroup', selectedCustomer.chat_group_id);
+    const userId = getUserId();
+    if (!userId) {
+      console.warn('No user ID available, cannot join chat group');
+      return;
+    }
+
+    // Leave previous room if agent was in another room
+    socket.emit('leavePreviousRoom');
+
+    // Join new chat group with user info
+    socket.emit('joinChatGroup', {
+      groupId: selectedCustomer.chat_group_id,
+      userType: 'agent',
+      userId: userId
+    });
+
+    console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
 
     const handleReceiveMessage = (msg) => {
       setMessages((prev) => {
@@ -187,12 +203,30 @@ export const useChat = () => {
       });
     };
 
+    const handleUserJoined = (data) => {
+      console.log(`${data.userType} joined chat_group ${data.chatGroupId}`);
+    };
+
+    const handleUserLeft = (data) => {
+      console.log(`${data.userType} left chat_group ${data.chatGroupId}`);
+    };
+
     socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('userJoined', handleUserJoined);
+    socket.on('userLeft', handleUserLeft);
 
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('userJoined', handleUserJoined);
+      socket.off('userLeft', handleUserLeft);
+      
+      // Leave room when component unmounts or customer changes
+      if (selectedCustomer) {
+        socket.emit('leaveRoom', selectedCustomer.chat_group_id);
+        console.log(`Agent leaving chat_group ${selectedCustomer.chat_group_id}`);
+      }
     };
-  }, [selectedCustomer]);
+  }, [selectedCustomer, getUserId]);
 
   /**
    * Determine frontend sender type for message display
@@ -288,21 +322,10 @@ export const useChat = () => {
     if (trimmedMessage.trim() === '') return;
     if (!selectedCustomer) return;
 
-    const now = new Date();
-    const newMessage = {
-      sender: 'user',
-      content: trimmedMessage,
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
+    // Clear input immediately for better UX
     setInputMessage('');
 
-    // Emit via socket
+    // Emit via socket - message will be added to UI when we receive it back
     console.log('Sending to group:', selectedCustomer.chat_group_id);
     socket.emit('sendMessage', {
       chat_body: trimmedMessage,
