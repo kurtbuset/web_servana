@@ -102,7 +102,7 @@ export default function DashboardScreen() {
             </h2>
             <div className="grid grid-cols-1 gap-2 sm:gap-3">
                 <button 
-                    onClick={() => navigate('/chats')}
+                    onClick={() => navigate('/Chats')}
                     className="flex items-center gap-3 p-3 sm:p-3.5 rounded-lg border-2 border-gray-200 hover:border-[#6237A0] hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all text-left group"
                 >
                     <div className="p-2 rounded-lg bg-purple-100 group-hover:bg-[#6237A0] transition-colors">
@@ -146,7 +146,7 @@ export default function DashboardScreen() {
                         value={stats.activeChats}
                         trend="+12% from yesterday"
                         color="bg-gradient-to-br from-[#6237A0] to-[#7A4ED9]"
-                        onClick={() => navigate('/chats')}
+                        onClick={() => navigate('/Chats')}
                     />
                     <StatCard
                         icon={Clock}
@@ -193,7 +193,7 @@ export default function DashboardScreen() {
                         label="My Active Chats"
                         value={stats.myActiveChats}
                         color="bg-gradient-to-br from-[#6237A0] to-[#7A4ED9]"
-                        onClick={() => navigate('/chats')}
+                        onClick={() => navigate('/Chats')}
                     />
                     <StatCard
                         icon={CheckCircle}

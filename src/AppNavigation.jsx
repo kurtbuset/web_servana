@@ -180,7 +180,7 @@ function AppNavigation() {
           }
         />
         <Route
-          path="/chats"
+          path="/Chats"
           element={
             <ProtectedRoute>
               <PermissionRoute permission="priv_can_view_message">
@@ -300,6 +300,8 @@ function AppNavigation() {
 
        
         <Route path="/queues" element={<Navigate to="/queues" replace />} />
+
+        <Route path="/chats" element={<Navigate to="/chats" replace />} />
         
         {/* Fallback route - redirect unknown routes to Dashboard */}
         <Route path="*" element={<Navigate to="/Dashboard" replace />} />

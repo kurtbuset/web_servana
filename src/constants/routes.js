@@ -12,7 +12,7 @@ export const ROUTES = {
   DASHBOARD: '/Dashboard',
   
   // Chat
-  CHATS: '/chats',
+  CHATS: '/Chats',
   QUEUES: '/Queues',
   
   // Management
