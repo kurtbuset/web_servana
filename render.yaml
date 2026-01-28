@@ -5,11 +5,9 @@ services:
   - type: web
     name: servana-web-frontend
     runtime: static
-    buildCommand: npm ci --include=dev && npm run build
+    buildCommand: npm install --include=dev && npm run build
     staticPublishPath: ./dist
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: VITE_BACKEND_URL
         value: https://backend-servana.onrender.com # Update this!
       - key: VITE_SOCKET_URL
