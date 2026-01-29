@@ -229,8 +229,16 @@ export const useChat = () => {
       
       // Leave room when component unmounts or customer changes
       if (selectedCustomer) {
-        socket.emit('leaveRoom', selectedCustomer.chat_group_id);
-        console.log(`Agent leaving chat_group ${selectedCustomer.chat_group_id}`);
+        const userId = getUserId();
+        
+        // Emit leave with proper user info to avoid "undefined undefined"
+        socket.emit('leaveRoom', {
+          roomId: selectedCustomer.chat_group_id,
+          userType: 'agent',
+          userId: userId
+        });
+        
+        console.log(`Agent ${userId || 'unknown'} leaving chat_group ${selectedCustomer.chat_group_id}`);
       }
     };
   }, [selectedCustomer, getUserId]);

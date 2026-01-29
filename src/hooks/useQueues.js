@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import QueueService from "../services/queue.service";
-import SocketService from "../services/socket.service";
+import socket from "../socket";
 import { useUser } from "../context/UserContext";
 import { toast } from "react-toastify";
 
@@ -9,8 +9,8 @@ import { toast } from "react-toastify";
  * Manages queue data with Socket.IO real-time updates
  */
 export const useQueues = () => {
-  // Get user permissions
-  const { hasPermission } = useUser();
+  // Get user permissions and ID
+  const { hasPermission, getUserId } = useUser();
   
   const [departmentCustomers, setDepartmentCustomers] = useState({});
   const [departments, setDepartments] = useState([]);
@@ -169,7 +169,7 @@ export const useQueues = () => {
 
       if (response.success) {
         // Emit socket event to update all clients
-        SocketService.emit("acceptChat", {
+        socket.emit("acceptChat", {
           chatGroupId: selectedCustomer.chat_group_id,
           agentId: response.data.sys_user_id,
         });
@@ -247,28 +247,16 @@ export const useQueues = () => {
 
       if (!selectedCustomer || !messageContent.trim()) return;
 
-      const now = new Date();
-      const newMessage = {
-        sender: "user",
-        content: messageContent,
-        timestamp: now.toISOString(),
-        displayTime: now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-
-      setMessages((prev) => [...prev, newMessage]);
-
-      // Emit via socket
-      SocketService.emit("sendMessage", {
+      // Emit via socket - message will be added to UI when we receive it back
+      console.log('Sending to group:', selectedCustomer.chat_group_id);
+      socket.emit("sendMessage", {
         chat_body: messageContent,
         chat_group_id: selectedCustomer.chat_group_id,
-        sys_user_id: 1, // TODO: Get from auth context
+        sys_user_id: getUserId(),
         client_id: null,
       });
     },
-    [selectedCustomer, hasPermission]
+    [selectedCustomer, hasPermission, getUserId]
   );
 
   /**
@@ -315,12 +303,12 @@ export const useQueues = () => {
 
   // Initialize: Connect socket and fetch initial data
   useEffect(() => {
-    SocketService.connect(import.meta.env.VITE_BACKEND_URL);
+    socket.connect();
     fetchChatGroups();
     fetchCannedMessages();
 
     return () => {
-      SocketService.disconnect();
+      socket.disconnect();
     };
   }, [fetchChatGroups, fetchCannedMessages]);
 
@@ -331,10 +319,10 @@ export const useQueues = () => {
       fetchChatGroups();
     };
 
-    SocketService.on("updateChatGroups", handleUpdateChatGroups);
+    socket.on("updateChatGroups", handleUpdateChatGroups);
 
     return () => {
-      SocketService.off("updateChatGroups");
+      socket.off("updateChatGroups", handleUpdateChatGroups);
     };
   }, [fetchChatGroups]);
 
@@ -342,7 +330,23 @@ export const useQueues = () => {
   useEffect(() => {
     if (!selectedCustomer) return;
 
-    SocketService.emit("joinChatGroup", selectedCustomer.chat_group_id);
+    const userId = getUserId();
+    if (!userId) {
+      console.warn('No user ID available, cannot join chat group');
+      return;
+    }
+
+    // Leave previous room if agent was in another room
+    socket.emit('leavePreviousRoom');
+
+    // Join new chat group with user info
+    socket.emit('joinChatGroup', {
+      groupId: selectedCustomer.chat_group_id,
+      userType: 'agent',
+      userId: userId
+    });
+
+    console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
 
     const handleReceiveMessage = (msg) => {
       setMessages((prev) => {
@@ -365,12 +369,38 @@ export const useQueues = () => {
       });
     };
 
-    SocketService.on("receiveMessage", handleReceiveMessage);
+    const handleUserJoined = (data) => {
+      console.log(`${data.userType} joined chat_group ${data.chatGroupId}`);
+    };
+
+    const handleUserLeft = (data) => {
+      console.log(`${data.userType} left chat_group ${data.chatGroupId}`);
+    };
+
+    socket.on("receiveMessage", handleReceiveMessage);
+    socket.on('userJoined', handleUserJoined);
+    socket.on('userLeft', handleUserLeft);
 
     return () => {
-      SocketService.off("receiveMessage");
+      socket.off("receiveMessage", handleReceiveMessage);
+      socket.off('userJoined', handleUserJoined);
+      socket.off('userLeft', handleUserLeft);
+      
+      // Leave room when component unmounts or customer changes
+      if (selectedCustomer) {
+        const userId = getUserId();
+        
+        // Emit leave with proper user info to avoid "undefined undefined"
+        socket.emit('leaveRoom', {
+          roomId: selectedCustomer.chat_group_id,
+          userType: 'agent',
+          userId: userId
+        });
+        
+        console.log(`Agent ${userId || 'unknown'} leaving chat_group ${selectedCustomer.chat_group_id}`);
+      }
     };
-  }, [selectedCustomer]);
+  }, [selectedCustomer, getUserId]);
 
   // Get filtered customers based on selected department
   const allCustomers = Object.values(departmentCustomers).flat();
