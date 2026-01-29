@@ -1,72 +1,71 @@
 import { useState, useEffect } from "react";
 import { useUser } from "../context/UserContext";
 import { useTheme } from "../context/ThemeContext";
+import api from "../api";
 
 /**
- * DepartmentUsersPanel - Shows all users in the current user's department
+ * DepartmentUsersPanel - Shows all users in the current user's departments
+ * If user has multiple departments, shows them as sections
  * Slide-in panel with blur overlay
  */
 export default function DepartmentUsersPanel({ isOpen, onClose }) {
   const { userData } = useUser();
   const { isDark } = useTheme();
-  const [users, setUsers] = useState([]);
+  const [departmentsData, setDepartmentsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentDeptIndex, setCurrentDeptIndex] = useState(0);
 
-  const departmentName = userData?.department?.dept_name || "Unknown Department";
+  const departments = userData?.departments || [];
+  const currentDepartment = departmentsData[currentDeptIndex];
 
   useEffect(() => {
-    if (isOpen && userData?.department?.dept_id) {
-      fetchDepartmentUsers();
+    if (isOpen && departments.length > 0) {
+      fetchAllDepartmentsUsers();
     }
   }, [isOpen, userData]);
 
-  const fetchDepartmentUsers = async () => {
+  const fetchAllDepartmentsUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Replace with actual API endpoint
-      const response = await fetch(`/api/departments/${userData.department.dept_id}/users`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch users');
-      
-      const data = await response.json();
-      setUsers(data.users || []);
+      // Fetch users for all departments
+      const promises = departments.map(dept => 
+        api.get(`/departments/${dept.dept_id}/members`, { withCredentials: true })
+          .then(res => ({
+            ...dept,
+            members: res.data.members || [],
+            totalMembers: res.data.members?.length || 0,
+            onlineMembers: res.data.members?.filter(m => m.sys_user_is_active).length || 0
+          }))
+          .catch(err => {
+            console.error(`Error fetching members for ${dept.dept_name}:`, err);
+            return {
+              ...dept,
+              members: [],
+              totalMembers: 0,
+              onlineMembers: 0,
+              error: true
+            };
+          })
+      );
+
+      const results = await Promise.all(promises);
+      setDepartmentsData(results);
     } catch (err) {
       console.error('Error fetching department users:', err);
       setError('Failed to load department users');
-      // Mock data for development
-      setUsers([
-        {
-          id: 1,
-          name: "John Doe",
-          email: "john@example.com",
-          role: "Agent",
-          status: "online",
-          avatar: null
-        },
-        {
-          id: 2,
-          name: "Jane Smith",
-          email: "jane@example.com",
-          role: "Supervisor",
-          status: "online",
-          avatar: null
-        },
-        {
-          id: 3,
-          name: "Mike Johnson",
-          email: "mike@example.com",
-          role: "Agent",
-          status: "offline",
-          avatar: null
-        }
-      ]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNextDepartment = () => {
+    setCurrentDeptIndex((prev) => (prev + 1) % departmentsData.length);
+  };
+
+  const handlePrevDepartment = () => {
+    setCurrentDeptIndex((prev) => (prev - 1 + departmentsData.length) % departmentsData.length);
   };
 
   return (
@@ -93,14 +92,16 @@ export default function DepartmentUsersPanel({ isOpen, onClose }) {
           <div className="absolute bottom-5 left-5 w-16 h-16 bg-white/10 rounded-full blur-xl animate-float"></div>
           
           <div className="flex items-center justify-between mb-4 relative z-10">
-            <div>
+            <div className="flex-1">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Department Team
               </h2>
-              <p className="text-purple-100 text-sm mt-1">{departmentName}</p>
+              <p className="text-purple-100 text-sm mt-1">
+                {loading ? "Loading..." : currentDepartment?.dept_name || "No Department"}
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -113,30 +114,63 @@ export default function DepartmentUsersPanel({ isOpen, onClose }) {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-4 relative z-10">
-            <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
-              <p className="text-xs text-purple-100">Total Members</p>
-              <p className="text-2xl font-bold">{users.length}</p>
+          {!loading && currentDepartment && (
+            <div className="flex gap-4 relative z-10">
+              <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
+                <p className="text-xs text-purple-100">Total Members</p>
+                <p className="text-2xl font-bold">{currentDepartment.totalMembers}</p>
+              </div>
+              <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
+                <p className="text-xs text-purple-100">Online</p>
+                <p className="text-2xl font-bold">{currentDepartment.onlineMembers}</p>
+              </div>
             </div>
-            <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
-              <p className="text-xs text-purple-100">Online</p>
-              <p className="text-2xl font-bold">{users.filter(u => u.status === 'online').length}</p>
-            </div>
-          </div>
+          )}
 
-          {/* Decorative dots */}
-          <div className="mt-4 flex justify-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-white/40"></div>
-            <div className="w-2 h-2 rounded-full bg-white/60"></div>
-            <div className="w-2 h-2 rounded-full bg-white/80"></div>
-          </div>
+          {/* Department Navigation Dots */}
+          {departmentsData.length > 1 && (
+            <div className="mt-4 flex justify-center items-center gap-3 relative z-10">
+              <button
+                onClick={handlePrevDepartment}
+                className="p-1 hover:bg-white/20 rounded-full transition-all"
+                disabled={loading}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div className="flex gap-2">
+                {departmentsData.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentDeptIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentDeptIndex ? 'bg-white w-6' : 'bg-white/40'
+                    }`}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={handleNextDepartment}
+                className="p-1 hover:bg-white/20 rounded-full transition-all"
+                disabled={loading}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Users List */}
-        <div className="p-6 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)', background: isDark ? 'linear-gradient(to bottom, #1e1e1e, #2a2a2a)' : 'linear-gradient(to bottom, #f9fafb, #ffffff)' }}>
+        <div className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)', background: isDark ? 'linear-gradient(to bottom, #1e1e1e, #2a2a2a)' : 'linear-gradient(to bottom, #f9fafb, #ffffff)' }}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#6237A0]"></div>
+              <div className="flex items-center space-x-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading members...</span>
+              </div>
             </div>
           ) : error ? (
             <div className="text-center py-12">
@@ -145,7 +179,15 @@ export default function DepartmentUsersPanel({ isOpen, onClose }) {
               </svg>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{error}</p>
             </div>
-          ) : users.length === 0 ? (
+          ) : !currentDepartment ? (
+            <div className="text-center py-12">
+              <svg className="w-12 h-12 mx-auto mb-3" style={{ color: isDark ? '#6b7280' : '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>No departments assigned</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>You are not assigned to any department</p>
+            </div>
+          ) : currentDepartment.members.length === 0 ? (
             <div className="text-center py-12">
               <svg className="w-12 h-12 mx-auto mb-3" style={{ color: isDark ? '#6b7280' : '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -153,17 +195,17 @@ export default function DepartmentUsersPanel({ isOpen, onClose }) {
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No team members found</p>
             </div>
           ) : (
-            users.map((user) => (
-              <UserCard key={user.id} user={user} isDark={isDark} />
+            currentDepartment.members.map((member) => (
+              <UserCard key={member.sys_user_id} user={member} isDark={isDark} />
             ))
           )}
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-6" style={{ background: isDark ? 'linear-gradient(to top, #1e1e1e, #2a2a2a)' : 'linear-gradient(to top, #f3f4f6, #f9fafb)', borderTop: `1px solid var(--border-color)` }}>
+        <div className="absolute bottom-0 left-0 right-0 p-4" style={{ background: isDark ? 'linear-gradient(to top, #1e1e1e, #2a2a2a)' : 'linear-gradient(to top, #f3f4f6, #f9fafb)', borderTop: `1px solid var(--border-color)` }}>
           <button
             onClick={onClose}
-            className="w-full py-3 rounded-lg font-semibold transition-all hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 group"
+            className="w-full py-2.5 rounded-lg font-semibold transition-all hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 group"
             style={{
               background: isDark ? 'linear-gradient(to right, #4a4a4a, #5a5a5a)' : 'linear-gradient(to right, #e5e7eb, #d1d5db)',
               color: 'var(--text-primary)'
@@ -194,58 +236,45 @@ export default function DepartmentUsersPanel({ isOpen, onClose }) {
 }
 
 /**
- * UserCard - Individual user card component
+ * UserCard - Individual user card component (compact version)
  */
 function UserCard({ user, isDark }) {
-  const isOnline = user.status === 'online';
+  const isOnline = user.sys_user_is_active;
+  const fullName = [
+    user.profile?.prof_firstname,
+    user.profile?.prof_middlename,
+    user.profile?.prof_lastname
+  ].filter(Boolean).join(" ") || user.sys_user_email;
+  
+  const avatarUrl = user.image?.img_location || "profile_picture/DefaultProfile.jpg";
   
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl transition-all group shadow-sm hover:shadow-md relative overflow-hidden" style={{
+    <div className="flex items-center gap-2.5 p-2.5 rounded-lg transition-all group" style={{
       backgroundColor: 'var(--card-bg)',
       border: `1px solid ${isDark ? '#4a4a4a' : '#f3f4f6'}`
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.borderColor = isDark ? '#6237A0' : '#c4b5fd';
-      e.currentTarget.style.background = isDark ? 'linear-gradient(to right, rgba(98, 55, 160, 0.05), transparent)' : 'linear-gradient(to right, rgba(243, 232, 255, 1), transparent)';
+      e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.05)' : 'rgba(243, 232, 255, 0.3)';
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.borderColor = isDark ? '#4a4a4a' : '#f3f4f6';
       e.currentTarget.style.backgroundColor = 'var(--card-bg)';
     }}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-[#6237A0]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      
       {/* Avatar */}
-      <div className="relative flex-shrink-0 z-10">
+      <div className="relative flex-shrink-0">
         <img
-          src={user.avatar || "profile_picture/DefaultProfile.jpg"}
-          alt={user.name}
-          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md group-hover:scale-105 transition-transform"
+          src={avatarUrl}
+          alt={fullName}
+          className="w-10 h-10 rounded-full object-cover border-2 border-[#6237A0] group-hover:scale-105 transition-transform"
         />
-        <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 border-white rounded-full ${isOnline ? 'animate-pulse' : ''}`}></div>
+        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 rounded-full`} style={{ borderColor: 'var(--card-bg)' }}></div>
       </div>
 
       {/* User Info */}
-      <div className="flex-1 min-w-0 z-10">
-        <h4 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user.name}</h4>
-        <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{user.email}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-            {user.role}
-          </span>
-          <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-gray-400'}`}>
-            {isOnline ? 'Online' : 'Offline'}
-          </span>
-        </div>
-      </div>
-
-      {/* Action Icon */}
-      <div className="flex-shrink-0 z-10">
-        <button className="p-2 hover:text-[#6237A0] hover:bg-purple-50 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{fullName}</h4>
       </div>
     </div>
   );
