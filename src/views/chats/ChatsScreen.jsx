@@ -76,7 +76,6 @@ export default function ChatsScreen() {
     typingUser,
     selectCustomer,
     sendMessage,
-    handleInputChange,
     endChat,
     transferChat,
     bottomRef,
@@ -151,9 +150,8 @@ export default function ChatsScreen() {
     setShowEndChatModal(false);
   };
 
-  const handleInputChangeWrapper = (e) => {
-    const value = e.target.value;
-    handleInputChange(value);
+  const handleInputChange = (e) => {
+    setInputMessage(e.target.value);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
@@ -415,7 +413,7 @@ export default function ChatsScreen() {
 
                   <MessageInput
                     inputMessage={inputMessage}
-                    onInputChange={handleInputChangeWrapper}
+                    onInputChange={handleInputChange}
                     onSendMessage={handleSendMessage}
                     textareaRef={textareaRef}
                     showCannedMessages={showCannedMessages}

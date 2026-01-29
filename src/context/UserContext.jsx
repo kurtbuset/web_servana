@@ -109,6 +109,10 @@ export const UserProvider = ({ children }) => {
       localStorage.removeItem('userData');
       sessionStorage.removeItem('userData');
       
+      // Trigger storage event to notify other components (like socket)
+      localStorage.setItem('logout', Date.now().toString());
+      localStorage.removeItem('logout');
+      
       console.log("🔄 Logout complete - cleared all user data and cache");
       
       return { success: true };
