@@ -45,10 +45,13 @@ export const useChat = () => {
   const [error, setError] = useState(null);
   const [chatEnded, setChatEnded] = useState(false);
   const [endedChats, setEndedChats] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState(null);
   
   // Refs
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   /**
    * Connect to Socket.IO on mount and handle logout events
@@ -183,6 +186,10 @@ export const useChat = () => {
     console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
 
     const handleReceiveMessage = (msg) => {
+      // Clear typing indicator when message is received
+      setIsTyping(false);
+      setTypingUser(null);
+
       setMessages((prev) => {
         const exists = prev.some((m) => m.id === msg.chat_id);
         if (exists) return prev;
@@ -493,11 +500,14 @@ export const useChat = () => {
     error,
     chatEnded,
     endedChats,
+    isTyping,
+    typingUser,
     
     // Actions
     fetchChatGroups,
     selectCustomer,
     sendMessage,
+    
     endChat,
     transferChat,
     clearSelection,

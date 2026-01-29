@@ -1,14 +1,19 @@
 // src/App.js
-import React from 'react';
 import './App.css';
-import AppNavigation from './AppNavigation.jsx'; // ✅ import the navigation component
+import AppNavigation from './AppNavigation.jsx';
 import { UserProvider } from "../src/context/UserContext.jsx";
+import { ThemeProvider } from "../src/context/ThemeContext.jsx";
+import { UnsavedChangesProvider } from "../src/context/UnsavedChangesContext.jsx";
 
 function App() {
     return (
-    <UserProvider>
-      <AppNavigation /> {/* Your routes/screens */}
-    </UserProvider>
+      <ThemeProvider>
+        <UserProvider>
+          <UnsavedChangesProvider>
+            <AppNavigation />
+          </UnsavedChangesProvider>
+        </UserProvider>
+      </ThemeProvider>
     );
 }
 

@@ -1,5 +1,4 @@
 export default {
-  darkMode: ["class"],
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
     "./*.{js,jsx,ts,tsx}",
@@ -11,9 +10,10 @@ export default {
       fontFamily: {
         inter: ["Inter", "sans-serif"],
         baloo: ['"Baloo 2"', 'cursive'],
+        montserrat: ['Montserrat', 'sans-serif'],
+        raleway: ['Raleway', 'sans-serif'],
       },
 
-      // ✅ CORRECT: define colors here
       colors: {
         black: {
           50: "#5F666C",

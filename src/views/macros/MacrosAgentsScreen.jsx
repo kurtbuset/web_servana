@@ -6,6 +6,7 @@ import { Edit3, Search, X } from 'react-feather';
 import useMacros from '../../hooks/useMacros';
 import useRoleId from '../../hooks/useRoleId';
 import { useUser } from '../../context/UserContext';
+import { useTheme } from '../../context/ThemeContext';
 import '../../App.css';
 
 export default function MacrosAgentsScreen() {
@@ -20,6 +21,7 @@ export default function MacrosAgentsScreen() {
   // Get user ID from UserContext
   const { getUserId } = useUser();
   const currentUserId = getUserId();
+  const { isDark } = useTheme();
 
   // Get Agent role ID dynamically
   const { roleId: agentRoleId, loading: roleLoading, error: roleError } = useRoleId('Agent');
@@ -104,7 +106,7 @@ export default function MacrosAgentsScreen() {
           height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -132,27 +134,29 @@ export default function MacrosAgentsScreen() {
             openDropdown={openDropdown}
           />
 
-          <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
-            <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col">
+          <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+            <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
               {/* Header Section */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-800">Agent Macros</h1>
+                <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Agent Macros</h1>
                 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   {/* Search Bar */}
-                  <div className="flex items-center bg-gray-100 px-2.5 py-1.5 rounded-lg w-full sm:w-56 md:w-64">
-                    <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
+                  <div className="flex items-center px-2.5 py-1.5 rounded-lg w-full sm:w-56 md:w-64" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    <Search size={16} className="mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
                     <input
                       type="text"
                       placeholder="Search macros..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="bg-transparent focus:outline-none text-xs w-full pr-6"
+                      style={{ color: 'var(--text-primary)' }}
                     />
                     {searchQuery && (
                       <X
                         size={14}
-                        className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                        className="cursor-pointer transition-colors"
+                        style={{ color: 'var(--text-secondary)' }}
                         onClick={() => setSearchQuery('')}
                       />
                     )}
@@ -178,8 +182,8 @@ export default function MacrosAgentsScreen() {
                 {loading || roleLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="flex items-center space-x-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
-                      <span className="text-gray-600 text-sm">Loading agent macros...</span>
+                      <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading agent macros...</span>
                     </div>
                   </div>
                 ) : error || roleError ? (
@@ -191,18 +195,18 @@ export default function MacrosAgentsScreen() {
                 ) : (
                   <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
                     <table className="w-full text-xs">
-                      <thead className="text-gray-600 bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                      <thead className="sticky top-0 z-10" style={{ color: 'var(--text-secondary)', backgroundColor: isDark ? '#2a2a2a' : '#f9fafb', borderBottom: `1px solid var(--border-color)` }}>
                         <tr>
                           <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Message</th>
                           <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
                           <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-36 sm:w-40 text-xs">Department</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody style={{ borderColor: 'var(--border-color)' }}>
                         {filteredReplies.length === 0 ? (
                           <tr>
                             <td colSpan={3} className="text-center py-12">
-                              <p className="text-gray-500 text-sm">
+                              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 {searchQuery ? "No macros found matching your search" : "No agent macros available"}
                               </p>
                             </td>
@@ -211,17 +215,25 @@ export default function MacrosAgentsScreen() {
                           filteredReplies.map((reply) => (
                             <tr
                               key={reply.id}
-                              className="hover:bg-gray-50 transition-colors"
+                              className="transition-colors"
+                              style={{ borderTop: `1px solid ${isDark ? 'rgba(74, 74, 74, 0.3)' : 'var(--border-color)'}` }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                             >
                               <td className="py-2 px-2.5 sm:px-3">
                                 <div className="flex items-start gap-1.5">
-                                  <span className="text-xs text-gray-800 break-words flex-1 line-clamp-2">
+                                  <span className="text-xs break-words flex-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
                                     {reply.text}
                                   </span>
                                   <Edit3
                                     size={14}
                                     strokeWidth={1.5}
-                                    className="text-gray-400 cursor-pointer hover:text-[#6237A0] transition-colors flex-shrink-0 mt-0.5"
+                                    className="cursor-pointer hover:text-[#6237A0] transition-colors flex-shrink-0 mt-0.5"
+                                    style={{ color: 'var(--text-secondary)' }}
                                     onClick={() => {
                                       setCurrentEditId(reply.id);
                                       setEditText(reply.text);
@@ -245,7 +257,12 @@ export default function MacrosAgentsScreen() {
 
                               <td className="py-2 px-2.5 sm:px-3 text-center">
                                 <select
-                                  className="rounded-lg px-2 py-1 text-xs text-gray-800 border border-gray-200 cursor-pointer hover:border-[#6237A0] focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+                                  className="rounded-lg px-2 py-1 text-xs cursor-pointer hover:border-[#6237A0] focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+                                  style={{
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)',
+                                    border: `1px solid var(--border-color)`
+                                  }}
                                   value={reply.dept_id ?? ''}
                                   onChange={(e) =>
                                     handleChangeDepartment(
@@ -286,28 +303,38 @@ export default function MacrosAgentsScreen() {
             {/* Modal */}
             {isModalOpen && (
               <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md sm:max-w-lg">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-800">
+                <div className="rounded-lg shadow-xl p-5 sm:p-6 w-full max-w-md sm:max-w-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+                  <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
                     {currentEditId ? 'Edit Macro' : 'Add Macro'}
                   </h2>
 
-                  <label className="text-sm text-gray-700 mb-1.5 block font-medium">
+                  <label className="text-sm mb-1.5 block font-medium" style={{ color: 'var(--text-secondary)' }}>
                     Message
                   </label>
                   <textarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg p-3 text-sm mb-4 h-32 focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
+                    className="w-full rounded-lg p-3 text-sm mb-4 h-32 focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      border: `1px solid var(--border-color)`
+                    }}
                     placeholder="Enter macro message..."
                   />
 
                   {!currentEditId && (
                     <div className="mb-4">
-                      <label className="text-sm text-gray-700 mb-1.5 block font-medium">
+                      <label className="text-sm mb-1.5 block font-medium" style={{ color: 'var(--text-secondary)' }}>
                         Department
                       </label>
                       <select
-                        className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
+                        className="w-full rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 focus:border-[#6237A0]"
+                        style={{
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-primary)',
+                          border: `1px solid var(--border-color)`
+                        }}
                         value={selectedDepartment}
                         onChange={(e) => setSelectedDepartment(e.target.value)}
                       >
@@ -330,7 +357,17 @@ export default function MacrosAgentsScreen() {
                   <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                     <button
                       onClick={() => setIsModalOpen(false)}
-                      className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                      className="px-4 py-2 rounded-lg text-sm transition-colors"
+                      style={{ 
+                        backgroundColor: isDark ? '#4a4a4a' : '#e5e7eb',
+                        color: 'var(--text-primary)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = isDark ? '#5a5a5a' : '#d1d5db';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = isDark ? '#4a4a4a' : '#e5e7eb';
+                      }}
                     >
                       Cancel
                     </button>

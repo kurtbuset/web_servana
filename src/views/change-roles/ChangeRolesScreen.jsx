@@ -5,6 +5,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { Search, X } from "react-feather";
 import { useUserRoles } from "../../hooks/useRoles";
 import { useUser } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext";
 import { toast } from "react-toastify";
 import "../../App.css";
 
@@ -15,6 +16,7 @@ export default function ChangeRolesScreen() {
 
   // Get user permissions
   const { hasPermission } = useUser();
+  const { isDark } = useTheme();
   const canAssignRoles = hasPermission("priv_can_assign_role");
 
   const { users, availableRoles, loading, changeUserRole, toggleUserActive } = useUserRoles();
@@ -51,7 +53,7 @@ export default function ChangeRolesScreen() {
           height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -77,26 +79,28 @@ export default function ChangeRolesScreen() {
           openDropdown={openDropdown}
         />
 
-        <main className="flex-1 bg-gradient-to-br from-[#F7F5FB] via-[#F0EBFF] to-[#F7F5FB] p-2 sm:p-3 md:p-4 overflow-hidden">
-          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col">
+        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Change Roles</h1>
+              <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Change Roles</h1>
               
               {/* Search Bar */}
-              <div className="flex items-center bg-gray-100 px-2.5 py-1.5 rounded-lg w-full sm:w-56 md:w-64">
-                <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
+              <div className="flex items-center px-2.5 py-1.5 rounded-lg w-full sm:w-56 md:w-64" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                <Search size={16} className="mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
                 <input
                   type="text"
                   placeholder="Search users..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-transparent focus:outline-none text-xs w-full pr-6"
+                  style={{ color: 'var(--text-primary)' }}
                 />
                 {searchQuery && (
                   <X
                     size={14}
-                    className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                    className="cursor-pointer transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
                     onClick={() => setSearchQuery("")}
                   />
                 )}
@@ -108,25 +112,25 @@ export default function ChangeRolesScreen() {
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex items-center space-x-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-[#6237A0]"></div>
-                    <span className="text-gray-600 text-sm">Loading users...</span>
+                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading users...</span>
                   </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
                   <table className="w-full text-xs">
-                    <thead className="text-gray-600 bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                    <thead className="sticky top-0 z-10" style={{ color: 'var(--text-secondary)', backgroundColor: isDark ? '#2a2a2a' : '#f9fafb', borderBottom: `1px solid var(--border-color)` }}>
                       <tr>
                         <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Email</th>
                         <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
                         <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-36 sm:w-40 text-xs">Role</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody style={{ borderColor: 'var(--border-color)' }}>
                       {filteredUsers.length === 0 ? (
                         <tr>
                           <td colSpan={3} className="text-center py-12">
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                               {searchQuery ? "No users found matching your search" : "No users available"}
                             </p>
                           </td>
@@ -135,12 +139,26 @@ export default function ChangeRolesScreen() {
                         filteredUsers.map((user) => (
                         <tr
                           key={user.sys_user_id}
-                          className="hover:bg-gray-50 transition-colors"
+                          className="transition-colors"
+                          style={{ borderTop: `1px solid ${isDark ? 'rgba(74, 74, 74, 0.3)' : 'var(--border-color)'}` }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                         >
                           <td className="py-2 px-2.5 sm:px-3">
-                            <span className="text-xs text-gray-800 break-words">
-                              {user.sys_user_email}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={user.profile_picture || "profile_picture/DefaultProfile.jpg"}
+                                alt={user.sys_user_email}
+                                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm flex-shrink-0"
+                              />
+                              <span className="text-xs break-words" style={{ color: 'var(--text-primary)' }}>
+                                {user.sys_user_email}
+                              </span>
+                            </div>
                           </td>
 
                           <td className="py-2 px-2.5 sm:px-3 text-center">
@@ -173,11 +191,16 @@ export default function ChangeRolesScreen() {
                                 )
                               }
                               disabled={!canAssignRoles}
-                              className={`rounded-lg px-2 py-1 text-xs border border-gray-200 ${
+                              className={`rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30 ${
                                 canAssignRoles
-                                  ? "text-gray-800 cursor-pointer hover:border-[#6237A0] focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
-                                  : "text-gray-400 cursor-not-allowed bg-gray-100"
+                                  ? "cursor-pointer hover:border-[#6237A0]"
+                                  : "cursor-not-allowed"
                               }`}
+                              style={{
+                                backgroundColor: canAssignRoles ? 'var(--input-bg)' : (isDark ? '#2a2a2a' : '#f3f4f6'),
+                                color: canAssignRoles ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                border: `1px solid var(--border-color)`
+                              }}
                               title={!canAssignRoles ? "You don't have permission to change user roles" : ""}
                             >
                               {availableRoles.map((role) => (
