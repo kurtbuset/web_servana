@@ -61,7 +61,7 @@ export default function RolesScreen() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [shakeBar, setShakeBar] = useState(false);
+  const [shakeBar, setShakeBar] = useState(0);
 
   const { userData, hasPermission } = useUser();
   const { isDark } = useTheme();
@@ -77,8 +77,7 @@ export default function RolesScreen() {
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const triggerShake = () => {
-    setShakeBar(true);
-    setTimeout(() => setShakeBar(false), 400);
+    setShakeBar(prev => prev + 1);
   };
 
   const handleRoleSelect = (role) => {
@@ -396,8 +395,8 @@ export default function RolesScreen() {
         
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-          20%, 40%, 60%, 80% { transform: translateX(8px); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+          20%, 40%, 60%, 80% { transform: translateX(10px); }
         }
         
         @keyframes slideUp {
@@ -412,7 +411,7 @@ export default function RolesScreen() {
         }
         
         .shake-animation {
-          animation: shake 0.4s ease-in-out;
+          animation: shake 0.5s ease-in-out;
         }
         
         .slide-up-animation {
@@ -1024,9 +1023,10 @@ function CreateRoleModal({ formData, onFormChange, onClose, onSave, isDark }) {
 
 function UnsavedChangesModal({ onSave, onDiscard, isSaving, isDark, shake }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center px-4 pb-4 pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center px-2 sm:px-4 pb-2 sm:pb-4 pointer-events-none slide-up-animation">
       <div 
-        className={`rounded-lg shadow-2xl px-4 py-3 flex items-center justify-between pointer-events-auto max-w-2xl w-full slide-up-animation ${shake ? 'shake-animation' : ''}`}
+        key={shake}
+        className="rounded-lg shadow-2xl px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pointer-events-auto max-w-2xl w-full shake-animation"
         style={{ 
           backgroundColor: isDark ? '#111214' : '#2b2d31',
           border: `1px solid ${isDark ? '#1e1f22' : '#3f4147'}`,
@@ -1034,17 +1034,17 @@ function UnsavedChangesModal({ onSave, onDiscard, isSaving, isDark, shake }) {
         }}
       >
         <span 
-          className="text-sm font-medium"
+          className="text-xs sm:text-sm font-medium"
           style={{ color: '#f2f3f5' }}
         >
           Careful — you have unsaved changes!
         </span>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={onDiscard}
             disabled={isSaving}
-            className="text-sm font-medium transition-colors"
+            className="text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none py-2 sm:py-0"
             style={{ 
               color: '#f2f3f5'
             }}
@@ -1064,8 +1064,8 @@ function UnsavedChangesModal({ onSave, onDiscard, isSaving, isDark, shake }) {
           <button
             onClick={onSave}
             disabled={isSaving}
-            className="px-4 py-2 text-sm font-medium rounded transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            style={{ backgroundColor: '#248046', minWidth: '120px' }}
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 flex-1 sm:flex-none"
+            style={{ backgroundColor: '#248046', minWidth: '100px', maxWidth: '100%' }}
             onMouseEnter={(e) => {
               if (!isSaving) {
                 e.currentTarget.style.backgroundColor = '#1a5c34';
@@ -1079,11 +1079,15 @@ function UnsavedChangesModal({ onSave, onDiscard, isSaving, isDark, shake }) {
           >
             {isSaving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Saving...
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                <span className="hidden sm:inline">Saving...</span>
+                <span className="sm:hidden">Save...</span>
               </>
             ) : (
-              'Save Changes'
+              <>
+                <span className="hidden sm:inline">Save Changes</span>
+                <span className="sm:hidden">Save</span>
+              </>
             )}
           </button>
         </div>
