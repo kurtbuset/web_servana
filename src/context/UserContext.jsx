@@ -19,10 +19,10 @@ export const UserProvider = ({ children }) => {
       const data = await ProfileService.getProfile();
       
       // Debug logging to see what data we're receiving
-      console.log("🔍 UserContext - Full profile response:", data);
-      console.log("🔍 UserContext - User role:", data?.role_name);
-      console.log("🔍 UserContext - User privileges:", data?.privilege);
-      console.log("🔍 UserContext - Role ID:", data?.role_id);
+      // console.log("🔍 UserContext - Full profile response:", data);
+      // console.log("🔍 UserContext - User role:", data?.role_name);
+      // console.log("🔍 UserContext - User privileges:", data?.privilege);
+      // console.log("🔍 UserContext - Role ID:", data?.role_id);
       
       // Validate role data
       if (!data?.role_name) {
