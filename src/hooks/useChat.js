@@ -39,6 +39,7 @@ export const useChat = () => {
   // Pagination
   const [earliestMessageTime, setEarliestMessageTime] = useState(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // UI state
   const [loading, setLoading] = useState(false);
@@ -264,6 +265,10 @@ export const useChat = () => {
    * @param {boolean} append - Whether to append to existing messages (for pagination)
    */
   const loadMessages = useCallback(async (clientId, before = null, append = false) => {
+    if (append) {
+      setIsLoadingMore(true);
+    }
+    
     try {
       const response = await ChatService.getMessages(clientId, before, 10);
       const newMessages = response.messages.map((msg, index) => ({
@@ -305,6 +310,10 @@ export const useChat = () => {
     } catch (err) {
       console.error('Error loading messages:', err);
       toast.error('Failed to load messages');
+    } finally {
+      if (append) {
+        setIsLoadingMore(false);
+      }
     }
   }, [determineFrontendSender]);
 
@@ -501,6 +510,7 @@ export const useChat = () => {
     // Pagination
     earliestMessageTime,
     hasMoreMessages,
+    isLoadingMore,
     loadMessages,
     
     // UI state

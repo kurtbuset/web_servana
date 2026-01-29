@@ -14,6 +14,8 @@ export default function ChatMessages({
   isMobile,
   isTyping = false,
   typingUser = null,
+  hasMoreMessages = true,
+  isLoadingMore = false,
 }) {
   const { isDark } = useTheme();
   const getSenderLabel = (message) => {
@@ -75,16 +77,55 @@ export default function ChatMessages({
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 sm:px-3 md:px-4 pb-2 custom-scrollbar"
+      className="flex-1 overflow-y-scroll overflow-x-hidden px-2.5 sm:px-3 md:px-4 pb-2 custom-scrollbar"
       style={{
-        maxHeight: isMobile ? "calc(100vh - 200px)" : "none",
-        height: isMobile ? "auto" : "100%",
+        maxHeight: isMobile ? "calc(100vh - 200px)" : "calc(100vh - 300px)",
+        height: "100%",
         background: isDark 
           ? 'linear-gradient(to bottom, rgba(42, 42, 42, 0.5), transparent)' 
           : 'linear-gradient(to bottom, rgba(249, 250, 251, 0.5), transparent)'
       }}
     >
       <div className="flex flex-col justify-end min-h-full gap-2 sm:gap-2.5 pt-3">
+        {/* Loading indicator for pagination */}
+        {isLoadingMore && (
+          <div className="flex justify-center py-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-full" style={{
+              backgroundColor: 'var(--card-bg)',
+              border: `1px solid var(--border-color)`
+            }}>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#6237A0] border-t-transparent"></div>
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Loading messages...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Load more indicator */}
+        {hasMoreMessages && !isLoadingMore && groupedMessages.length > 0 && (
+          <div className="flex justify-center py-2">
+            <div className="text-xs px-3 py-1 rounded-full cursor-pointer hover:bg-opacity-80 transition-colors" style={{
+              backgroundColor: isDark ? 'rgba(98, 55, 160, 0.1)' : 'rgba(98, 55, 160, 0.05)',
+              border: `1px solid ${isDark ? 'rgba(98, 55, 160, 0.3)' : 'rgba(98, 55, 160, 0.2)'}`,
+              color: '#6237A0'
+            }}>
+              Scroll up to load more messages
+            </div>
+          </div>
+        )}
+
+        {/* No more messages indicator */}
+        {!hasMoreMessages && groupedMessages.length > 0 && (
+          <div className="flex justify-center py-2">
+            <div className="text-xs px-3 py-1 rounded-full" style={{
+              backgroundColor: isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)',
+              border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(107, 114, 128, 0.2)'}`,
+              color: isDark ? '#9CA3AF' : '#6B7280'
+            }}>
+              No more messages
+            </div>
+          </div>
+        )}
+
         {groupedMessages.map((item, index) => {
           if (item.type === "date") {
             return (

@@ -69,6 +69,7 @@ export default function ChatsScreen() {
     setShowCannedMessages,
     earliestMessageTime,
     hasMoreMessages,
+    isLoadingMore,
     loadMessages,
     chatEnded,
     endedChats,
@@ -237,22 +238,43 @@ export default function ChatsScreen() {
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    let isThrottled = false;
+    const throttleDelay = 300; // 300ms throttle
+
     const handleScroll = async () => {
-      if (container.scrollTop === 0 && hasMoreMessages && selectedCustomer) {
+      if (isThrottled || isLoadingMore) return;
+      
+      // Check if scrolled to top (with small buffer for better UX)
+      if (container.scrollTop <= 50 && hasMoreMessages && selectedCustomer) {
+        isThrottled = true;
         const prevHeight = container.scrollHeight;
+        const prevScrollTop = container.scrollTop;
 
-        await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+        try {
+          await loadMessages(selectedCustomer.id, earliestMessageTime, true);
 
-        // Maintain scroll position
+          // Maintain scroll position after loading
+          setTimeout(() => {
+            if (container) {
+              const newHeight = container.scrollHeight;
+              const heightDiff = newHeight - prevHeight;
+              container.scrollTop = prevScrollTop + heightDiff;
+            }
+          }, 50);
+        } catch (error) {
+          console.error('Error loading more messages:', error);
+        }
+
+        // Reset throttle after delay
         setTimeout(() => {
-          container.scrollTop = container.scrollHeight - prevHeight;
-        }, 50);
+          isThrottled = false;
+        }, throttleDelay);
       }
     };
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages]);
+  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages, isLoadingMore]);
 
   return (
     <>
@@ -409,6 +431,8 @@ export default function ChatsScreen() {
                     isMobile={isMobile}
                     isTyping={isTyping}
                     typingUser={typingUser}
+                    hasMoreMessages={hasMoreMessages}
+                    isLoadingMore={isLoadingMore}
                   />
 
                   <MessageInput
