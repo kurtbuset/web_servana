@@ -22,6 +22,7 @@ export const useQueues = () => {
   const [error, setError] = useState(null);
   const [earliestMessageTime, setEarliestMessageTime] = useState(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [chatEnded, setChatEnded] = useState(false);
   const [endedChats, setEndedChats] = useState([]);
 
@@ -94,6 +95,10 @@ export const useQueues = () => {
    */
   const loadMessages = useCallback(
     async (clientId, before = null, append = false) => {
+      if (append) {
+        setIsLoadingMore(true);
+      }
+      
       try {
         const response = await QueueService.getMessages(clientId, before, 10);
         const newMessages = response.messages.map((msg, index) => ({
@@ -134,6 +139,11 @@ export const useQueues = () => {
         }
       } catch (err) {
         console.error("Error loading messages:", err);
+        toast.error('Failed to load messages');
+      } finally {
+        if (append) {
+          setIsLoadingMore(false);
+        }
       }
     },
     [determineFrontendSender]
@@ -421,6 +431,7 @@ export const useQueues = () => {
     error,
     earliestMessageTime,
     hasMoreMessages,
+    isLoadingMore,
     chatEnded,
     endedChats,
     filteredCustomers,

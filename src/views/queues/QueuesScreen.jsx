@@ -49,6 +49,7 @@ export default function QueuesScreen() {
     cannedMessages,
     earliestMessageTime,
     hasMoreMessages,
+    isLoadingMore,
     chatEnded,
     filteredCustomers,
     selectCustomer,
@@ -157,19 +158,43 @@ export default function QueuesScreen() {
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    let isThrottled = false;
+    const throttleDelay = 300; // 300ms throttle
+
     const handleScroll = async () => {
-      if (container.scrollTop === 0 && hasMoreMessages && selectedCustomer) {
+      if (isThrottled || isLoadingMore) return;
+      
+      // Check if scrolled to top (with small buffer for better UX)
+      if (container.scrollTop <= 50 && hasMoreMessages && selectedCustomer) {
+        isThrottled = true;
         const prevHeight = container.scrollHeight;
-        await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+        const prevScrollTop = container.scrollTop;
+
+        try {
+          await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+
+          // Maintain scroll position after loading
+          setTimeout(() => {
+            if (container) {
+              const newHeight = container.scrollHeight;
+              const heightDiff = newHeight - prevHeight;
+              container.scrollTop = prevScrollTop + heightDiff;
+            }
+          }, 50);
+        } catch (error) {
+          console.error('Error loading more messages:', error);
+        }
+
+        // Reset throttle after delay
         setTimeout(() => {
-          container.scrollTop = container.scrollHeight - prevHeight;
-        }, 50);
+          isThrottled = false;
+        }, throttleDelay);
       }
     };
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages]);
+  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages, isLoadingMore]);
 
   // Handle window resize
   useEffect(() => {
@@ -220,19 +245,24 @@ export default function QueuesScreen() {
   return (
     <>
       <style>{`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #d1d5db transparent;
+        }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
-          border-radius: 10px;
+          background: rgba(229, 231, 235, 0.3);
+          border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #6237A0;
-          border-radius: 10px;
+          background-color: #d1d5db;
+          border-radius: 4px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #7A4ED9;
+          background-color: #a1a1aa;
         }
         @keyframes slideIn {
           from {
@@ -373,6 +403,8 @@ export default function QueuesScreen() {
                     scrollContainerRef={scrollContainerRef}
                     bottomRef={bottomRef}
                     isMobile={isMobile}
+                    hasMoreMessages={hasMoreMessages}
+                    isLoadingMore={isLoadingMore}
                   />
 
                   <MessageInput
