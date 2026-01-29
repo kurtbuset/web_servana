@@ -19,8 +19,8 @@ import socket from '../socket';
  * @returns {Object} Chat state and actions
  */
 export const useChat = () => {
-  // Get user permissions
-  const { hasPermission } = useUser();
+  // Get user permissions and ID
+  const { hasPermission, getUserId } = useUser();
   
   // Chat groups and filtering
   const [departmentCustomers, setDepartmentCustomers] = useState({});
@@ -54,15 +54,32 @@ export const useChat = () => {
   const typingTimeoutRef = useRef(null);
 
   /**
-   * Connect to Socket.IO on mount
+   * Connect to Socket.IO on mount and handle logout events
    */
   useEffect(() => {
     socket.connect();
     console.log('Socket connected');
 
+    // Listen for logout events to reconnect socket with fresh cookies
+    const handleLogout = () => {
+      console.log('Logout detected - reconnecting socket');
+      socket.disconnect();
+      // Small delay to ensure cookies are cleared
+      setTimeout(() => {
+        socket.connect();
+      }, 100);
+    };
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'logout') {
+        handleLogout();
+      }
+    });
+
     return () => {
       socket.disconnect();
       console.log('Socket disconnected');
+      window.removeEventListener('storage', handleLogout);
     };
   }, []);
 
@@ -150,7 +167,23 @@ export const useChat = () => {
   useEffect(() => {
     if (!selectedCustomer) return;
 
-    socket.emit('joinChatGroup', selectedCustomer.chat_group_id);
+    const userId = getUserId();
+    if (!userId) {
+      console.warn('No user ID available, cannot join chat group');
+      return;
+    }
+
+    // Leave previous room if agent was in another room
+    socket.emit('leavePreviousRoom');
+
+    // Join new chat group with user info
+    socket.emit('joinChatGroup', {
+      groupId: selectedCustomer.chat_group_id,
+      userType: 'agent',
+      userId: userId
+    });
+
+    console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
 
     const handleReceiveMessage = (msg) => {
       // Clear typing indicator when message is received
@@ -177,46 +210,38 @@ export const useChat = () => {
       });
     };
 
-    const handleUserTyping = (data) => {
-      // Don't show typing indicator for current user
-      if (data.isCurrentUser) return;
-      
-      setIsTyping(true);
-      setTypingUser(data.userName || 'Client');
-
-      // Clear existing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      // Auto-hide typing indicator after 3 seconds
-      typingTimeoutRef.current = setTimeout(() => {
-        setIsTyping(false);
-        setTypingUser(null);
-      }, 3000);
+    const handleUserJoined = (data) => {
+      console.log(`${data.userType} joined chat_group ${data.chatGroupId}`);
     };
 
-    const handleUserStoppedTyping = () => {
-      setIsTyping(false);
-      setTypingUser(null);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+    const handleUserLeft = (data) => {
+      console.log(`${data.userType} left chat_group ${data.chatGroupId}`);
     };
 
     socket.on('receiveMessage', handleReceiveMessage);
-    socket.on('userTyping', handleUserTyping);
-    socket.on('userStoppedTyping', handleUserStoppedTyping);
+    socket.on('userJoined', handleUserJoined);
+    socket.on('userLeft', handleUserLeft);
 
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
-      socket.off('userTyping', handleUserTyping);
-      socket.off('userStoppedTyping', handleUserStoppedTyping);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
+      socket.off('userJoined', handleUserJoined);
+      socket.off('userLeft', handleUserLeft);
+      
+      // Leave room when component unmounts or customer changes
+      if (selectedCustomer) {
+        const userId = getUserId();
+        
+        // Emit leave with proper user info to avoid "undefined undefined"
+        socket.emit('leaveRoom', {
+          roomId: selectedCustomer.chat_group_id,
+          userType: 'agent',
+          userId: userId
+        });
+        
+        console.log(`Agent ${userId || 'unknown'} leaving chat_group ${selectedCustomer.chat_group_id}`);
       }
     };
-  }, [selectedCustomer]);
+  }, [selectedCustomer, getUserId]);
 
   /**
    * Determine frontend sender type for message display
@@ -312,49 +337,18 @@ export const useChat = () => {
     if (trimmedMessage.trim() === '') return;
     if (!selectedCustomer) return;
 
-    // Stop typing indicator
-    socket.emit('stopTyping', {
-      chat_group_id: selectedCustomer.chat_group_id,
-    });
-
-    const now = new Date();
-    const newMessage = {
-      sender: 'user',
-      content: trimmedMessage,
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
+    // Clear input immediately for better UX
     setInputMessage('');
 
-    // Emit via socket
+    // Emit via socket - message will be added to UI when we receive it back
     console.log('Sending to group:', selectedCustomer.chat_group_id);
     socket.emit('sendMessage', {
       chat_body: trimmedMessage,
       chat_group_id: selectedCustomer.chat_group_id,
-      sys_user_id: 1, // TODO: Get from UserContext
+      sys_user_id: getUserId(),
       client_id: null,
     });
-  }, [inputMessage, selectedCustomer, hasPermission]);
-
-  /**
-   * Handle input change and emit typing event
-   */
-  const handleInputChange = useCallback((value) => {
-    setInputMessage(value);
-
-    if (!selectedCustomer) return;
-
-    // Emit typing event
-    socket.emit('typing', {
-      chat_group_id: selectedCustomer.chat_group_id,
-      userName: 'Agent', // TODO: Get from UserContext
-    });
-  }, [selectedCustomer]);
+  }, [inputMessage, selectedCustomer, hasPermission, getUserId]);
 
   /**
    * End the current chat
@@ -521,7 +515,7 @@ export const useChat = () => {
     fetchChatGroups,
     selectCustomer,
     sendMessage,
-    handleInputChange,
+    
     endChat,
     transferChat,
     clearSelection,

@@ -32,10 +32,8 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const departments = userData.departments || [];
   
   // Debug log to see userData structure
-  console.log("UserProfilePanel - userData:", userData);
-  console.log("UserProfilePanel - departments:", departments);
-  console.log("UserProfilePanel - departments type:", typeof departments);
-  console.log("UserProfilePanel - departments length:", departments?.length);
+  // console.log("UserProfilePanel - userData:", userData);
+  // console.log("UserProfilePanel - departments:", departments);
 
   const handleViewFullProfile = () => {
     onClose();
