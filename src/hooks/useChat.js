@@ -191,6 +191,12 @@ export const useChat = () => {
       setIsTyping(false);
       setTypingUser(null);
 
+      // Skip own messages to prevent duplicates (optimistic updates handle them)
+      const currentUserId = getUserId();
+      if (msg.sys_user_id === currentUserId) {
+        return;
+      }
+
       setMessages((prev) => {
         const exists = prev.some((m) => m.id === msg.chat_id);
         if (exists) return prev;
@@ -223,8 +229,20 @@ export const useChat = () => {
     socket.on('userJoined', handleUserJoined);
     socket.on('userLeft', handleUserLeft);
 
+    // Listen for message delivery confirmation
+    socket.on('messageDelivered', (data) => {
+      console.log('✅ Message delivered:', data.chat_id);
+    });
+
+    // Listen for message errors
+    socket.on('messageError', (error) => {
+      console.error('❌ Message error:', error);
+    });
+
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('messageDelivered');
+      socket.off('messageError');
       socket.off('userJoined', handleUserJoined);
       socket.off('userLeft', handleUserLeft);
       
@@ -332,7 +350,7 @@ export const useChat = () => {
   }, [endedChats, loadMessages]);
 
   /**
-   * Send a message via Socket.IO
+   * Send a message via Socket.IO with optimistic updates
    */
   const sendMessage = useCallback(() => {
     // Check permission first
@@ -346,17 +364,70 @@ export const useChat = () => {
     if (trimmedMessage.trim() === '') return;
     if (!selectedCustomer) return;
 
+    const userId = getUserId();
+    const tempId = `temp_${Date.now()}_${Math.random()}`;
+    const now = new Date();
+
+    // Optimistic update - add message immediately to UI
+    const optimisticMessage = {
+      id: tempId,
+      sender: 'user', // Agent messages appear on right
+      content: trimmedMessage,
+      timestamp: now.toISOString(),
+      displayTime: now.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      isPending: true, // Mark as pending
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
     // Clear input immediately for better UX
     setInputMessage('');
 
-    // Emit via socket - message will be added to UI when we receive it back
+    // Send via socket
     console.log('Sending to group:', selectedCustomer.chat_group_id);
     socket.emit('sendMessage', {
       chat_body: trimmedMessage,
       chat_group_id: selectedCustomer.chat_group_id,
-      sys_user_id: getUserId(),
+      sys_user_id: userId,
       client_id: null,
+      tempId: tempId, // Include temp ID for confirmation
     });
+
+    // Handle delivery confirmation
+    const handleMessageDelivered = (data) => {
+      if (data.tempId === tempId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === tempId
+              ? { ...msg, id: data.chat_id, isPending: false }
+              : msg
+          )
+        );
+        socket.off('messageDelivered', handleMessageDelivered);
+      }
+    };
+
+    // Handle message error
+    const handleMessageError = (error) => {
+      if (error.tempId === tempId) {
+        // Remove failed message from UI
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+        toast.error('Failed to send message');
+        socket.off('messageError', handleMessageError);
+      }
+    };
+
+    socket.on('messageDelivered', handleMessageDelivered);
+    socket.on('messageError', handleMessageError);
+
+    // Cleanup listeners after timeout
+    setTimeout(() => {
+      socket.off('messageDelivered', handleMessageDelivered);
+      socket.off('messageError', handleMessageError);
+    }, 10000);
   }, [inputMessage, selectedCustomer, hasPermission, getUserId]);
 
   /**

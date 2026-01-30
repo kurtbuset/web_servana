@@ -12,6 +12,7 @@ import CustomerList from "../../components/chat/CustomerList";
 import ChatHeader from "../../components/chat/ChatHeader";
 import ChatMessages from "../../components/chat/ChatMessages";
 import MessageInput from "../../components/chat/MessageInput";
+import { toast } from "react-toastify";
 import "../../App.css";
 
 export default function QueuesScreen() {
@@ -52,6 +53,7 @@ export default function QueuesScreen() {
     isLoadingMore,
     chatEnded,
     filteredCustomers,
+    loading,
     selectCustomer,
     acceptChat,
     sendMessage: sendMessageAction,
@@ -143,9 +145,9 @@ export default function QueuesScreen() {
   const handleAcceptChat = async () => {
     const success = await acceptChat();
     if (success) {
-      alert("Chat accepted! You can now communicate with the client.");
+      toast.success("Chat accepted! You can now communicate with the client.");
     } else {
-      alert("Failed to accept chat. Please try again.");
+      toast.error("Failed to accept chat. Please try again.");
     }
   };
 
@@ -358,11 +360,43 @@ export default function QueuesScreen() {
               />
 
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <CustomerList
-                  customers={filteredCustomers}
-                  selectedCustomer={selectedCustomer}
-                  onCustomerClick={handleChatClick}
-                />
+                {loading ? (
+                  <div className="flex-1 flex items-center justify-center p-6">
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#6237A0] border-t-transparent"></div>
+                      </div>
+                      <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                        Loading Queue
+                      </h3>
+                      <p className="text-xs max-w-xs mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        Fetching customers waiting in queue...
+                      </p>
+                    </div>
+                  </div>
+                ) : filteredCustomers.length > 0 ? (
+                  <CustomerList
+                    customers={filteredCustomers}
+                    selectedCustomer={selectedCustomer}
+                    onCustomerClick={handleChatClick}
+                  />
+                ) : (
+                  <div className="flex-1 flex items-center justify-center p-6">
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-[#6237A0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                        Queue is Empty
+                      </h3>
+                      <p className="text-xs max-w-xs mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        No customers are waiting in the queue right now.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
