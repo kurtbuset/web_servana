@@ -176,6 +176,10 @@ export default function Profile() {
   // ---------------- LOGOUT ----------------
   const handleLogout = async () => {
     try {
+      // Clear socket first
+      const { clearSocket } = await import('../../socket');
+      clearSocket();
+      
       await api.post("/auth/logout", {}, { withCredentials: true });
       localStorage.removeItem("token");
       localStorage.removeItem("userData");
