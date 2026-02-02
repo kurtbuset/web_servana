@@ -248,6 +248,24 @@ export const UserProvider = ({ children }) => {
   // Logout user
   const logout = async () => {
     try {
+      // Emit userOffline BEFORE logout to ensure it's sent
+      if (userData?.sys_user_id && socket.connected) {
+        console.log('📤 Emitting userOffline for user:', userData.sys_user_id);
+        console.log('🔌 Socket connected:', socket.connected);
+        console.log('🆔 Socket ID:', socket.id);
+        socket.emit('userOffline', { userId: userData.sys_user_id });
+        
+        // Wait a bit to ensure the event is sent
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('✅ userOffline event sent, waiting 100ms for delivery');
+      } else {
+        console.warn('⚠️ Cannot emit userOffline:', {
+          hasUserId: !!userData?.sys_user_id,
+          socketConnected: socket.connected,
+          socketId: socket.id
+        });
+      }
+      
       await AuthService.logout();
       
       // Clear all user data and force fresh fetch on next login

@@ -14,13 +14,13 @@ export const formatLastSeen = (lastSeenDate) => {
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
   
-  // Online if last seen within 2 minutes (120 seconds)
-  if (diffSeconds < 120) {
+  // Online if last seen within 45 seconds (matches backend threshold)
+  if (diffSeconds < 45) {
     return 'online';
   }
   
-  // "offline just now" if within 30 seconds after going offline (2-2.5 min range)
-  if (diffSeconds >= 120 && diffSeconds < 150) {
+  // "offline just now" if within 2 minutes after going offline (45s - 2min range)
+  if (diffSeconds >= 45 && diffSeconds < 120) {
     return 'offline just now';
   }
   
@@ -66,13 +66,13 @@ export const getStatusColor = (lastSeenDate) => {
   const lastSeen = new Date(lastSeenDate);
   const diffSeconds = Math.floor((now - lastSeen) / 1000);
   
-  // Online (green) - within 2 minutes
-  if (diffSeconds < 120) {
+  // Online (green) - within 45 seconds (matches backend threshold)
+  if (diffSeconds < 45) {
     return '#10b981'; // green-500
   }
   
-  // Recently active (yellow/orange) - within 5 minutes
-  if (diffSeconds < 300) {
+  // Recently active (yellow/orange) - within 2 minutes
+  if (diffSeconds < 120) {
     return '#f59e0b'; // amber-500
   }
   
@@ -92,6 +92,6 @@ export const isUserOnline = (lastSeenDate) => {
   const lastSeen = new Date(lastSeenDate);
   const diffSeconds = Math.floor((now - lastSeen) / 1000);
   
-  // Online if last seen within 2 minutes (120 seconds)
-  return diffSeconds < 120;
+  // Online if last seen within 45 seconds (matches backend threshold)
+  return diffSeconds < 45;
 };

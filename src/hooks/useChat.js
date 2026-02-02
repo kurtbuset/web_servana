@@ -53,6 +53,10 @@ export const useChat = () => {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const fetchInProgressRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const loadMessagesInProgressRef = useRef(false);
+  const FETCH_COOLDOWN = 1000; // 1 second cooldown between fetches
 
   /**
    * Connect to Socket.IO on mount and handle logout events
@@ -85,11 +89,27 @@ export const useChat = () => {
   }, []);
 
   /**
-   * Fetch chat groups from API
+   * Fetch chat groups from API with debouncing
    */
   const fetchChatGroups = useCallback(async () => {
+    // Prevent simultaneous requests
+    if (fetchInProgressRef.current) {
+      console.log('⏳ Fetch already in progress, skipping...');
+      return;
+    }
+
+    // Cooldown check - prevent rapid successive calls
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < FETCH_COOLDOWN) {
+      console.log('⏳ Fetch cooldown active, skipping...');
+      return;
+    }
+
+    fetchInProgressRef.current = true;
+    lastFetchTimeRef.current = now;
     setLoading(true);
     setError(null);
+    
     try {
       const chatGroups = await ChatService.getChatGroups();
       const deptMap = {};
@@ -114,6 +134,7 @@ export const useChat = () => {
       throw err;
     } finally {
       setLoading(false);
+      fetchInProgressRef.current = false;
     }
   }, []);
 
@@ -174,17 +195,20 @@ export const useChat = () => {
       return;
     }
 
+    // Track current room to prevent duplicate joins
+    const currentRoomId = selectedCustomer.chat_group_id;
+
     // Leave previous room if agent was in another room
     socket.emit('leavePreviousRoom');
 
     // Join new chat group with user info
     socket.emit('joinChatGroup', {
-      groupId: selectedCustomer.chat_group_id,
+      groupId: currentRoomId,
       userType: 'agent',
       userId: userId
     });
 
-    console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
+    console.log(`Agent ${userId} switching to chat_group ${currentRoomId}`);
 
     const handleReceiveMessage = (msg) => {
       // Clear typing indicator when message is received
@@ -229,20 +253,15 @@ export const useChat = () => {
       socket.off('userLeft', handleUserLeft);
       
       // Leave room when component unmounts or customer changes
-      if (selectedCustomer) {
-        const userId = getUserId();
-        
-        // Emit leave with proper user info to avoid "undefined undefined"
-        socket.emit('leaveRoom', {
-          roomId: selectedCustomer.chat_group_id,
-          userType: 'agent',
-          userId: userId
-        });
-        
-        console.log(`Agent ${userId || 'unknown'} leaving chat_group ${selectedCustomer.chat_group_id}`);
-      }
+      socket.emit('leaveRoom', {
+        roomId: currentRoomId,
+        userType: 'agent',
+        userId: userId
+      });
+      
+      console.log(`Agent ${userId} leaving chat_group ${currentRoomId}`);
     };
-  }, [selectedCustomer, getUserId]);
+  }, [selectedCustomer?.chat_group_id]); // Only depend on chat_group_id, not the whole object or getUserId
 
   /**
    * Determine frontend sender type for message display
@@ -259,12 +278,20 @@ export const useChat = () => {
   }, []);
 
   /**
-   * Load messages for a specific client
+   * Load messages for a specific client with debouncing
    * @param {number} clientId - Client ID
    * @param {string} before - ISO timestamp for pagination
    * @param {boolean} append - Whether to append to existing messages (for pagination)
    */
   const loadMessages = useCallback(async (clientId, before = null, append = false) => {
+    // Prevent simultaneous message loads (except for pagination)
+    if (!append && loadMessagesInProgressRef.current) {
+      console.log('⏳ Message load already in progress, skipping...');
+      return;
+    }
+
+    loadMessagesInProgressRef.current = true;
+    
     if (append) {
       setIsLoadingMore(true);
     }
@@ -314,6 +341,7 @@ export const useChat = () => {
       if (append) {
         setIsLoadingMore(false);
       }
+      loadMessagesInProgressRef.current = false;
     }
   }, [determineFrontendSender]);
 

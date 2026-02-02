@@ -39,25 +39,23 @@ const DepartmentUsersPanel = React.memo(() => {
     const onlineCount = members.filter(member => {
       const status = getUserStatus(member.sys_user_id);
       
-      // Use last_seen from database if not in userStatuses Map (e.g., after page refresh)
-      const lastSeenDate = status.lastSeen || (member.last_seen ? new Date(member.last_seen) : null);
+      // Trust the socket status if available, otherwise calculate from lastSeen
+      const socketStatus = status.status;
+      const lastSeenDate = status.lastSeen;
       
-      // Debug log
-      console.log(`Checking user ${member.sys_user_id}:`, {
-        hasStatus: !!status,
-        lastSeen: lastSeenDate,
-        isOnline: lastSeenDate ? (Date.now() - new Date(lastSeenDate).getTime()) < 120000 : false
-      });
-      
-      if (!lastSeenDate) return false;
-      
-      const diffMs = Date.now() - new Date(lastSeenDate).getTime();
-      const isOnline = diffMs < 120000; // Online if last seen within 2 minutes
+      let isOnline;
+      if (socketStatus) {
+        isOnline = socketStatus === 'online';
+      } else if (lastSeenDate) {
+        const diffMs = Date.now() - new Date(lastSeenDate).getTime();
+        isOnline = diffMs < 45000;
+      } else {
+        isOnline = false;
+      }
       
       return isOnline;
     }).length;
     
-    console.log(`Online members count: ${onlineCount} out of ${members.length}`);
     return onlineCount;
   };
   
@@ -69,12 +67,10 @@ const DepartmentUsersPanel = React.memo(() => {
 
   // Force re-render when userStatuses changes
   React.useEffect(() => {
-    if (currentDepartment && userStatusesArray.length > 0) {
-      console.log('🔄 DepartmentUsersPanel: userStatuses changed, forcing re-render');
-      console.log('📊 Current statuses:', userStatusesArray.map(([id, status]) => ({ id, status: status.status })));
+    if (currentDepartment && userStatuses.size > 0) {
       forceUpdate();
     }
-  }, [userStatusesArray.length, currentDepartment]);
+  }, [userStatuses, currentDepartment]);
 
   useEffect(() => {
     const now = Date.now();
@@ -363,11 +359,21 @@ function UserListWithSections({ members, isDark, onUserClick }) {
     members.forEach(member => {
       const status = getUserStatus(member.sys_user_id);
       
-      // Use last_seen from database if not in userStatuses Map (e.g., after page refresh)
-      const lastSeenDate = status.lastSeen || (member.last_seen ? new Date(member.last_seen) : null);
+      // Trust the socket status if available, otherwise calculate from lastSeen
+      const socketStatus = status.status; // 'online' or 'offline' from socket
+      const lastSeenDate = status.lastSeen;
       
-      const isOnline = lastSeenDate && 
-        (Date.now() - new Date(lastSeenDate).getTime()) < 120000; // 2 minutes
+      let isOnline;
+      if (socketStatus) {
+        isOnline = socketStatus === 'online';
+      } else if (lastSeenDate) {
+        const now = Date.now();
+        const lastSeenTime = new Date(lastSeenDate).getTime();
+        const diffMs = now - lastSeenTime;
+        isOnline = diffMs < 45000;
+      } else {
+        isOnline = false;
+      }
       
       if (isOnline) {
         online.push(member);
@@ -445,14 +451,30 @@ function UserCard({ user, isDark, onClick }) {
     return () => clearInterval(interval);
   }, []);
   
-  const userStatus = getUserStatus(user.sys_user_id);
+  // Get fresh status on every render and when userStatuses changes
+  const userStatus = React.useMemo(() => {
+    return getUserStatus(user.sys_user_id);
+  }, [getUserStatus, user.sys_user_id, userStatuses]);
   
-  // Use last_seen from database if not in userStatuses Map (e.g., after page refresh)
-  const lastSeenDate = userStatus.lastSeen || (user.last_seen ? new Date(user.last_seen) : null);
+  // Trust the socket status if available, otherwise calculate from lastSeen
+  const socketStatus = userStatus.status; // 'online' or 'offline' from socket
+  const socketLastSeen = userStatus.lastSeen;
   
-  // Check if user is online (last seen within 2 minutes)
-  const isOnline = lastSeenDate && 
-    (Date.now() - new Date(lastSeenDate).getTime()) < 120000;
+  // If socket provides explicit status, use it. Otherwise calculate from timestamp.
+  let isOnline;
+  if (socketStatus) {
+    isOnline = socketStatus === 'online';
+  } else if (socketLastSeen) {
+    const now = Date.now();
+    const socketTime = new Date(socketLastSeen).getTime();
+    const diffMs = now - socketTime;
+    isOnline = diffMs < 45000;
+  } else {
+    isOnline = false;
+  }
+  
+  // For display text: Use socket data if available, otherwise fall back to database
+  const displayLastSeen = socketLastSeen || (user.last_seen ? new Date(user.last_seen) : null);
   
   // Construct full name from profile data
   const fullName = [
@@ -500,7 +522,7 @@ function UserCard({ user, isDark, onClick }) {
           {displayName}
         </h4>
         <p className="text-xs truncate" style={{ color: isOnline ? '#10b981' : 'var(--text-secondary)' }}>
-          {lastSeenDate ? formatLastSeen(lastSeenDate) : 'Offline'}
+          {isOnline ? 'online' : (displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline')}
         </p>
       </div>
     </div>
@@ -518,8 +540,23 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
   const [isMobile, setIsMobile] = React.useState(false);
   
   const userStatus = getUserStatus(user.sys_user_id);
-  const lastSeenDate = userStatus.lastSeen || (user.last_seen ? new Date(user.last_seen) : null);
-  const isOnline = lastSeenDate && (Date.now() - new Date(lastSeenDate).getTime()) < 120000;
+  
+  // Trust the socket status if available, otherwise calculate from lastSeen
+  const socketStatus = userStatus.status;
+  const socketLastSeen = userStatus.lastSeen;
+  
+  let isOnline;
+  if (socketStatus) {
+    isOnline = socketStatus === 'online';
+  } else if (socketLastSeen) {
+    const diffMs = Date.now() - new Date(socketLastSeen).getTime();
+    isOnline = diffMs < 45000;
+  } else {
+    isOnline = false;
+  }
+  
+  // For display text: Use socket data if available, otherwise fall back to database
+  const displayLastSeen = socketLastSeen || (user.last_seen ? new Date(user.last_seen) : null);
   
   const fullName = [
     user.profile?.prof_firstname,
@@ -636,7 +673,7 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
             {displayName}
           </h3>
           <p className="text-xs mt-0.5" style={{ color: isOnline ? '#10b981' : 'var(--text-secondary)' }}>
-            {lastSeenDate ? formatLastSeen(lastSeenDate) : 'Offline'}
+            {isOnline ? 'online' : (displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline')}
           </p>
         </div>
         

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import QueueService from "../services/queue.service";
 import socket from "../socket";
 import { useUser } from "../context/UserContext";
@@ -26,12 +26,34 @@ export const useQueues = () => {
   const [chatEnded, setChatEnded] = useState(false);
   const [endedChats, setEndedChats] = useState([]);
 
+  // Refs for debouncing
+  const fetchInProgressRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const loadMessagesInProgressRef = useRef(false);
+  const FETCH_COOLDOWN = 1000; // 1 second cooldown between fetches
+
   /**
-   * Fetch all queued chat groups
+   * Fetch all queued chat groups with debouncing
    */
   const fetchChatGroups = useCallback(async () => {
+    // Prevent simultaneous requests
+    if (fetchInProgressRef.current) {
+      console.log('⏳ Fetch already in progress, skipping...');
+      return;
+    }
+
+    // Cooldown check - prevent rapid successive calls
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < FETCH_COOLDOWN) {
+      console.log('⏳ Fetch cooldown active, skipping...');
+      return;
+    }
+
+    fetchInProgressRef.current = true;
+    lastFetchTimeRef.current = now;
     setLoading(true);
     setError(null);
+    
     try {
       const chatGroups = await QueueService.getQueuedChats();
       const deptMap = {};
@@ -52,11 +74,12 @@ export const useQueues = () => {
       setError(err.message || "Failed to load chat groups");
     } finally {
       setLoading(false);
+      fetchInProgressRef.current = false;
     }
   }, []);
 
   /**
-   * Fetch canned messages
+   * Fetch canned messages with error handling
    */
   const fetchCannedMessages = useCallback(async () => {
     // Check permission before fetching
@@ -72,7 +95,11 @@ export const useQueues = () => {
         setCannedMessages(data.map((msg) => msg.canned_message));
       }
     } catch (err) {
-      console.error("Failed to load canned messages:", err);
+      // Don't log error if it's just a permission issue or 404
+      if (err.response?.status !== 403 && err.response?.status !== 404) {
+        console.error("Failed to load canned messages:", err.message);
+      }
+      setCannedMessages([]);
     }
   }, [hasPermission]);
 
@@ -91,10 +118,18 @@ export const useQueues = () => {
   }, []);
 
   /**
-   * Load messages for a specific client
+   * Load messages for a specific client with debouncing
    */
   const loadMessages = useCallback(
     async (clientId, before = null, append = false) => {
+      // Prevent simultaneous message loads (except for pagination)
+      if (!append && loadMessagesInProgressRef.current) {
+        console.log('⏳ Message load already in progress, skipping...');
+        return;
+      }
+
+      loadMessagesInProgressRef.current = true;
+      
       if (append) {
         setIsLoadingMore(true);
       }
@@ -144,6 +179,7 @@ export const useQueues = () => {
         if (append) {
           setIsLoadingMore(false);
         }
+        loadMessagesInProgressRef.current = false;
       }
     },
     [determineFrontendSender]
@@ -311,30 +347,50 @@ export const useQueues = () => {
     setMessages([]);
   }, [selectedCustomer, messages, hasPermission]);
 
-  // Initialize: Connect socket and fetch initial data
+  // Initialize: Connect socket and fetch initial data ONCE
   useEffect(() => {
-    socket.connect();
+    // Only connect if not already connected
+    if (!socket.connected) {
+      socket.connect();
+    }
+    
+    // Fetch initial data only once
     fetchChatGroups();
     fetchCannedMessages();
 
+    // Don't disconnect socket on unmount - it's shared across the app
+    // The socket should stay connected for real-time updates
     return () => {
-      socket.disconnect();
+      // Cleanup is handled by socket itself
     };
-  }, [fetchChatGroups, fetchCannedMessages]);
+  }, []); // Empty dependency array - run only once on mount
 
-  // Listen for chat group updates
+  // Listen for chat group updates with debouncing
   useEffect(() => {
+    let updateTimeout = null;
+    
     const handleUpdateChatGroups = () => {
       console.log("Received updateChatGroups from server");
-      fetchChatGroups();
+      
+      // Debounce the fetch call - wait 500ms before fetching
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
+      }
+      
+      updateTimeout = setTimeout(() => {
+        fetchChatGroups();
+      }, 500);
     };
 
     socket.on("updateChatGroups", handleUpdateChatGroups);
 
     return () => {
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
+      }
       socket.off("updateChatGroups", handleUpdateChatGroups);
     };
-  }, [fetchChatGroups]);
+  }, []); // Empty dependency - fetchChatGroups is stable with useCallback
 
   // Join chat group and listen for messages when customer is selected
   useEffect(() => {
@@ -346,17 +402,20 @@ export const useQueues = () => {
       return;
     }
 
+    // Track current room to prevent duplicate joins
+    const currentRoomId = selectedCustomer.chat_group_id;
+
     // Leave previous room if agent was in another room
     socket.emit('leavePreviousRoom');
 
     // Join new chat group with user info
     socket.emit('joinChatGroup', {
-      groupId: selectedCustomer.chat_group_id,
+      groupId: currentRoomId,
       userType: 'agent',
       userId: userId
     });
 
-    console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
+    console.log(`Agent ${userId} switching to chat_group ${currentRoomId}`);
 
     const handleReceiveMessage = (msg) => {
       setMessages((prev) => {
@@ -397,20 +456,15 @@ export const useQueues = () => {
       socket.off('userLeft', handleUserLeft);
       
       // Leave room when component unmounts or customer changes
-      if (selectedCustomer) {
-        const userId = getUserId();
-        
-        // Emit leave with proper user info to avoid "undefined undefined"
-        socket.emit('leaveRoom', {
-          roomId: selectedCustomer.chat_group_id,
-          userType: 'agent',
-          userId: userId
-        });
-        
-        console.log(`Agent ${userId || 'unknown'} leaving chat_group ${selectedCustomer.chat_group_id}`);
-      }
+      socket.emit('leaveRoom', {
+        roomId: currentRoomId,
+        userType: 'agent',
+        userId: userId
+      });
+      
+      console.log(`Agent ${userId} leaving chat_group ${currentRoomId}`);
     };
-  }, [selectedCustomer, getUserId]);
+  }, [selectedCustomer?.chat_group_id]); // Only depend on chat_group_id, not the whole object or getUserId
 
   // Get filtered customers based on selected department
   const allCustomers = Object.values(departmentCustomers).flat();
