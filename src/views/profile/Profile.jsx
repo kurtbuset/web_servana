@@ -717,18 +717,7 @@ export default function Profile() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {departmentMembers.map((member) => {
-                    // Construct full name from profile data
-                    const fullName = [
-                      member.profile?.prof_firstname,
-                      member.profile?.prof_middlename,
-                      member.profile?.prof_lastname
-                    ].filter(Boolean).join(" ").trim();
-                    
-                    const displayName = fullName || member.sys_user_email;
-                    const avatarUrl = member.image?.img_location || "/profile_picture/DefaultProfile.jpg";
-                    
-                    return (
+                  {departmentMembers.map((member) => (
                     <div
                       key={member.sys_user_id}
                       className="flex items-center gap-3 p-3 rounded-lg transition-all group"
@@ -745,8 +734,8 @@ export default function Profile() {
                     >
                       <div className="relative">
                         <img
-                          src={avatarUrl}
-                          alt={displayName}
+                          src={member.image?.img_location || "profile_picture/DefaultProfile.jpg"}
+                          alt={member.profile?.full_name || member.sys_user_email}
                           className="w-12 h-12 rounded-full object-cover border-2 border-[#6237A0]"
                         />
                         <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 ${
@@ -755,7 +744,7 @@ export default function Profile() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                          {displayName}
+                          {member.profile?.full_name || member.sys_user_email}
                         </p>
                         <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
                           {member.role?.role_name || 'No role'}
@@ -769,8 +758,7 @@ export default function Profile() {
                         {member.sys_user_is_active ? 'Online' : 'Offline'}
                       </div>
                     </div>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
             </div>

@@ -1,4 +1,4 @@
-  @import "tailwindcss";
+@import "tailwindcss";
 
 /* Theme Variables */
 :root[data-theme="light"] {
@@ -10,8 +10,6 @@
   --border-color: #e5e7eb;
   --card-bg: #ffffff;
   --input-bg: #ffffff;
-  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
-  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
 }
 
 :root[data-theme="dark"] {
@@ -23,8 +21,6 @@
   --border-color: #4a4a4a;
   --card-bg: #2a2a2a;
   --input-bg: #3a3a3a;
-  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
 }
 
 /* Apply theme variables */
@@ -66,39 +62,3 @@ button {
     opacity: 1;
   }
 }
-
-/* Account for Discord-style right sidebar (240px width) */
-@media (min-width: 1024px) {
-  /* When department panel is open, add padding to the content area only (not TopNavbar) */
-  /* Target the flex container that holds sidebar + main content */
-  body.department-panel-open .flex.flex-col.h-screen.overflow-hidden > .flex.flex-1.overflow-hidden {
-    padding-right: 304px; /* 240px panel + 64px gap for full scrollbar visibility */
-    transition: padding-right 0.3s ease;
-  }
-}
-
-/* Mobile/Tablet: Prevent body scroll when panel is open */
-@media (max-width: 1023px) {
-  body.department-panel-open {
-    overflow: hidden;
-  }
-}
-
-/* Department Panel Scrollbar - Theme-aware */
-.department-panel-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.department-panel-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.department-panel-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-}
-
-.department-panel-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-
