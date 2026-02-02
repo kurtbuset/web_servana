@@ -1,8 +1,6 @@
 import { useRef } from "react";
 import { MoreVertical, ArrowLeft, CheckCircle, Clock } from "react-feather";
 import { useTheme } from "../../context/ThemeContext";
-import { useUser } from "../../context/UserContext";
-import UserStatus from "../UserStatus";
 
 /**
  * ChatHeader - Header for chat conversation with customer info and actions
@@ -26,10 +24,6 @@ export default function ChatHeader({
   onProfileClick,
 }) {
   const { isDark } = useTheme();
-  const { getUserStatus } = useUser();
-  
-  // Get user status if customer has a sys_user_id
-  const userStatus = customer?.sys_user_id ? getUserStatus(customer.sys_user_id) : null;
 
   return (
     <div className="sticky top-0 z-10 border-b-2 shadow-sm" style={{ 
@@ -97,21 +91,10 @@ export default function ChatHeader({
             )}
             {(customer.isAccepted || customer.sys_user_id) && (
               <div className="flex items-center gap-1.5 mt-0.5">
-                {userStatus?.lastSeen ? (
-                  <UserStatus 
-                    lastSeen={userStatus.lastSeen}
-                    showDot={true}
-                    showText={true}
-                    size="sm"
-                  />
-                ) : (
-                  <>
-                    <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
-                    <span className="text-[10px] sm:text-xs text-green-600 font-medium">
-                      Active Chat
-                    </span>
-                  </>
-                )}
+                <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
+                <span className="text-[10px] sm:text-xs text-green-600 font-medium">
+                  Active Chat
+                </span>
               </div>
             )}
           </div>

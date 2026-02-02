@@ -1,23 +1,17 @@
 import { Menu } from "react-feather";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUser } from "../../src/context/UserContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../src/context/UnsavedChangesContext";
 import UserProfilePanel from "./UserProfilePanel";
 import DepartmentUsersPanel from "./DepartmentUsersPanel";
-import React from "react";
 
 export default function TopNavbar({ toggleSidebar }) {
   const { userData, loading } = useUser();
   const { isDark } = useTheme();
   const { blockNavigation } = useUnsavedChanges();
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  
-  // Initialize from localStorage, default to true if not set
-  const [showDepartmentPanel, setShowDepartmentPanel] = useState(() => {
-    const saved = localStorage.getItem('showDepartmentPanel');
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [showDepartmentPanel, setShowDepartmentPanel] = useState(false);
 
   // Build full name
   const fullName = userData
@@ -40,46 +34,16 @@ export default function TopNavbar({ toggleSidebar }) {
     setShowProfilePanel(false);
   };
 
-  const handleToggleDepartmentPanel = () => {
+  const handleDepartmentClick = () => {
     if (blockNavigation()) {
-      return;
+      return; // Blocked by unsaved changes
     }
-    const newState = !showDepartmentPanel;
-    setShowDepartmentPanel(newState);
-    
-    // Save to localStorage
-    localStorage.setItem('showDepartmentPanel', newState.toString());
-    
-    // Add/remove class to body for global styling
-    if (newState) {
-      document.body.classList.add('department-panel-open');
-    } else {
-      document.body.classList.remove('department-panel-open');
-    }
+    setShowDepartmentPanel(true);
   };
 
-  // Listen for close event from mobile overlay
-  React.useEffect(() => {
-    const handleClose = () => {
-      setShowDepartmentPanel(false);
-      localStorage.setItem('showDepartmentPanel', 'false');
-      document.body.classList.remove('department-panel-open');
-    };
-    window.addEventListener('closeDepartmentPanel', handleClose);
-    return () => window.removeEventListener('closeDepartmentPanel', handleClose);
-  }, []);
-
-  // Set initial state on mount based on saved preference
-  React.useEffect(() => {
-    if (showDepartmentPanel) {
-      document.body.classList.add('department-panel-open');
-    } else {
-      document.body.classList.remove('department-panel-open');
-    }
-    return () => {
-      document.body.classList.remove('department-panel-open');
-    };
-  }, [showDepartmentPanel]);
+  const handleCloseDepartmentPanel = () => {
+    setShowDepartmentPanel(false);
+  };
 
   return (
     <>
@@ -113,31 +77,34 @@ export default function TopNavbar({ toggleSidebar }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Department Users Toggle Button - Visible on all devices */}
+          {/* Department Users Icon */}
           <button
-            onClick={handleToggleDepartmentPanel}
-            className="flex p-2 rounded-lg transition-all group relative"
+            onClick={handleDepartmentClick}
+            className="p-2 rounded-lg transition-all group relative"
             style={{ 
-              color: showDepartmentPanel ? '#6237A0' : (isDark ? 'var(--text-secondary)' : '#6b7280'),
-              backgroundColor: showDepartmentPanel ? (isDark ? 'rgba(98, 55, 160, 0.1)' : '#f5f3ff') : 'transparent'
+              color: isDark ? 'var(--text-secondary)' : '#6b7280',
+              backgroundColor: isDark ? 'transparent' : 'transparent'
             }}
             onMouseEnter={(e) => {
-              if (!showDepartmentPanel) {
-                e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff';
-                e.currentTarget.style.color = '#6237A0';
-              }
+              e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff';
+              e.currentTarget.style.color = '#6237A0';
             }}
             onMouseLeave={(e) => {
-              if (!showDepartmentPanel) {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#6b7280';
-              }
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#6b7280';
             }}
-            title={showDepartmentPanel ? "Hide Team Panel" : "Show Team Panel"}
+            title="View Department Team"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
+            {/* Badge for online count */}
+            <span 
+              className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2"
+              style={{ borderColor: 'var(--card-bg)' }}
+            >
+              3
+            </span>
           </button>
 
           {/* Profile Button */}
@@ -173,8 +140,11 @@ export default function TopNavbar({ toggleSidebar }) {
         onClose={handleCloseProfilePanel}
       />
 
-      {/* Department Users Panel - Toggleable */}
-      {showDepartmentPanel && <DepartmentUsersPanel />}
+      {/* Department Users Panel */}
+      <DepartmentUsersPanel
+        isOpen={showDepartmentPanel}
+        onClose={handleCloseDepartmentPanel}
+      />
     </>
   );
 }
