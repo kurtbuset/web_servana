@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -11,22 +11,24 @@ import { useUser } from "./context/UserContext";
 import { useTheme } from "./context/ThemeContext";
 import LoadingSpinner from "./components/LoadingSpinner";
 
-// New refactored screens
+// Critical path - load immediately
 import LoginScreen from "./views/login/LoginScreen.jsx";
-import DashboardScreen from "./views/dashboard/DashboardScreen.jsx";
-import ChatsScreen from "./views/chats/ChatsScreen.jsx";
-import DepartmentScreen from "./views/departments/DepartmentScreen.jsx";
-import ManageAgentsScreen from "./views/agents/ManageAgentsScreen.jsx";
-import RolesScreen from "./views/roles/RolesScreen.jsx";
-import ChangeRolesScreen from "./views/change-roles/ChangeRolesScreen.jsx";
-import QueuesScreen from "./views/queues/QueuesScreen.jsx";
-import AutoRepliesScreen from "./views/auto-replies/AutoRepliesScreen.jsx";
-import MacrosAgentsScreen from "./views/macros/MacrosAgentsScreen.jsx";
-import MacrosClientsScreen from "./views/macros/MacrosClientsScreen.jsx";
-import Profile from "./views/profile/Profile.jsx";
-import ManageAdmin from "./views/manage-admin/ManageAdmin.jsx"
 
-// Legacy screens (not yet migrated)
+// Lazy load all other screens
+const DashboardScreen = lazy(() => import("./views/dashboard/DashboardScreen.jsx"));
+const ChatsScreen = lazy(() => import("./views/chats/ChatsScreen.jsx"));
+const DepartmentScreen = lazy(() => import("./views/departments/DepartmentScreen.jsx"));
+const ManageAgentsScreen = lazy(() => import("./views/agents/ManageAgentsScreen.jsx"));
+const RolesScreen = lazy(() => import("./views/roles/RolesScreen.jsx"));
+const ChangeRolesScreen = lazy(() => import("./views/change-roles/ChangeRolesScreen.jsx"));
+const QueuesScreen = lazy(() => import("./views/queues/QueuesScreen.jsx"));
+const AutoRepliesScreen = lazy(() => import("./views/auto-replies/AutoRepliesScreen.jsx"));
+const MacrosAgentsScreen = lazy(() => import("./views/macros/MacrosAgentsScreen.jsx"));
+const MacrosClientsScreen = lazy(() => import("./views/macros/MacrosClientsScreen.jsx"));
+const Profile = lazy(() => import("./views/profile/Profile.jsx"));
+const ManageAdmin = lazy(() => import("./views/manage-admin/ManageAdmin.jsx"));
+const AnalyticsScreen = lazy(() => import("./views/analytics/AnalyticsScreen.jsx"));
+
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast } from "react-toastify";
 
@@ -149,7 +151,8 @@ function AppNavigation() {
 
   return (
     <Router>
-      <ToastContainer 
+      <Suspense fallback={<LoadingSpinner variant="page" message="Loading..." />}>
+        <ToastContainer 
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -322,6 +325,14 @@ function AppNavigation() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <AnalyticsScreen />
+            </ProtectedRoute>
+          }
+        />
 
        
         <Route path="/queues" element={<Navigate to="/queues" replace />} />
@@ -331,6 +342,7 @@ function AppNavigation() {
         {/* Fallback route - redirect unknown routes to Dashboard */}
         <Route path="*" element={<Navigate to="/Dashboard" replace />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 }
