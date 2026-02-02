@@ -174,17 +174,20 @@ export const useChat = () => {
       return;
     }
 
-    // Leave previous room if agent was in another room
-    socket.emit('leavePreviousRoom');
+    // Debounce to prevent rapid successive joins
+    const joinTimeout = setTimeout(() => {
+      // Leave previous room if agent was in another room
+      socket.emit('leavePreviousRoom');
 
-    // Join new chat group with user info
-    socket.emit('joinChatGroup', {
-      groupId: selectedCustomer.chat_group_id,
-      userType: 'agent',
-      userId: userId
-    });
+      // Join new chat group with user info
+      socket.emit('joinChatGroup', {
+        groupId: selectedCustomer.chat_group_id,
+        userType: 'agent',
+        userId: userId
+      });
 
-    console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
+      console.log(`Agent ${userId} switching to chat_group ${selectedCustomer.chat_group_id}`);
+    }, 100); // 100ms debounce
 
     const handleReceiveMessage = (msg) => {
       // Clear typing indicator when message is received
@@ -240,6 +243,7 @@ export const useChat = () => {
     });
 
     return () => {
+      clearTimeout(joinTimeout); // Clear timeout on cleanup
       socket.off('receiveMessage', handleReceiveMessage);
       socket.off('messageDelivered');
       socket.off('messageError');
@@ -260,7 +264,7 @@ export const useChat = () => {
         console.log(`Agent ${userId || 'unknown'} leaving chat_group ${selectedCustomer.chat_group_id}`);
       }
     };
-  }, [selectedCustomer, getUserId]);
+  }, [selectedCustomer]); // Removed getUserId from dependencies
 
   /**
    * Determine frontend sender type for message display

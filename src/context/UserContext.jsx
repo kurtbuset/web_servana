@@ -100,6 +100,10 @@ export const UserProvider = ({ children }) => {
   // Logout user
   const logout = async () => {
     try {
+      // Clear socket first
+      const { clearSocket } = await import('../socket');
+      clearSocket();
+      
       await AuthService.logout();
       
       // Clear all user data and force fresh fetch on next login
