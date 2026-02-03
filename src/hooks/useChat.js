@@ -149,10 +149,50 @@ export const useChat = () => {
       fetchChatGroups();
     });
 
+    // Listen for real-time customer list updates
+    socket.on('customerListUpdate', (updateData) => {
+      console.log('Received customerListUpdate:', updateData);
+      handleCustomerListUpdate(updateData);
+    });
+
     return () => {
       socket.off('updateChatGroups');
+      socket.off('customerListUpdate');
     };
   }, [fetchChatGroups]);
+
+  /**
+   * Handle real-time customer list updates
+   */
+  const handleCustomerListUpdate = useCallback((updateData) => {
+    if (updateData.type === 'move_to_top') {
+      const { customer, department_id } = updateData.data;
+      
+      setDepartmentCustomers((prevDeptCustomers) => {
+        const updatedDeptCustomers = { ...prevDeptCustomers };
+        
+        // Find the customer in all departments and remove them
+        Object.keys(updatedDeptCustomers).forEach((dept) => {
+          updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+            (existingCustomer) => existingCustomer.chat_group_id !== customer.chat_group_id
+          );
+        });
+        
+        // Find the department name for this customer
+        const departmentName = customer.department || 'Unknown';
+        
+        // Add the customer to the top of their department
+        if (!updatedDeptCustomers[departmentName]) {
+          updatedDeptCustomers[departmentName] = [];
+        }
+        
+        // Add customer to the beginning of the array (top of list)
+        updatedDeptCustomers[departmentName].unshift(customer);
+        
+        return updatedDeptCustomers;
+      });
+    }
+  }, []);
 
   /**
    * Fetch canned messages for current user's role

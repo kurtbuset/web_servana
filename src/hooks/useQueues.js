@@ -382,13 +382,47 @@ export const useQueues = () => {
       }, 500);
     };
 
+    // Listen for real-time customer list updates
+    const handleCustomerListUpdate = (updateData) => {
+      console.log('Received customerListUpdate:', updateData);
+      if (updateData.type === 'move_to_top') {
+        const { customer } = updateData.data;
+        
+        setDepartmentCustomers((prevDeptCustomers) => {
+          const updatedDeptCustomers = { ...prevDeptCustomers };
+          
+          // Find the customer in all departments and remove them
+          Object.keys(updatedDeptCustomers).forEach((dept) => {
+            updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+              (existingCustomer) => existingCustomer.chat_group_id !== customer.chat_group_id
+            );
+          });
+          
+          // Find the department name for this customer
+          const departmentName = customer.department || 'Unknown';
+          
+          // Add the customer to the top of their department
+          if (!updatedDeptCustomers[departmentName]) {
+            updatedDeptCustomers[departmentName] = [];
+          }
+          
+          // Add customer to the beginning of the array (top of list)
+          updatedDeptCustomers[departmentName].unshift(customer);
+          
+          return updatedDeptCustomers;
+        });
+      }
+    };
+
     socket.on("updateChatGroups", handleUpdateChatGroups);
+    socket.on('customerListUpdate', handleCustomerListUpdate);
 
     return () => {
       if (updateTimeout) {
         clearTimeout(updateTimeout);
       }
       socket.off("updateChatGroups", handleUpdateChatGroups);
+      socket.off('customerListUpdate', handleCustomerListUpdate);
     };
   }, []); // Empty dependency - fetchChatGroups is stable with useCallback
 

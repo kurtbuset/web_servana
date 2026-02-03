@@ -107,6 +107,21 @@ class SocketService {
   }
 
   /**
+   * Listen for customer list updates
+   * @param {Function} callback - Callback function to handle updates
+   */
+  onCustomerListUpdate(callback) {
+    this.on('customerListUpdate', callback);
+  }
+
+  /**
+   * Stop listening for customer list updates
+   */
+  offCustomerListUpdate() {
+    this.off('customerListUpdate');
+  }
+
+  /**
    * Get the socket instance
    * @returns {Socket|null} Socket.IO client instance
    */
