@@ -12,8 +12,24 @@ const CACHE_DURATION = 60000; // 1 minute cache
 /**
  * DepartmentUsersPanel - Discord-style right sidebar showing department team members
  * Collapsible, responsive, with theme-matching colors
+ * 
+ * Usage:
+ * ```jsx
+ * const [isDepartmentPanelOpen, setIsDepartmentPanelOpen] = useState(false);
+ * 
+ * // Toggle button
+ * <button onClick={() => setIsDepartmentPanelOpen(!isDepartmentPanelOpen)}>
+ *   Toggle Department Panel
+ * </button>
+ * 
+ * // Panel component
+ * <DepartmentUsersPanel 
+ *   isOpen={isDepartmentPanelOpen} 
+ *   onClose={() => setIsDepartmentPanelOpen(false)} 
+ * />
+ * ```
  */
-const DepartmentUsersPanel = React.memo(() => {
+const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose }) => {
   const { userData, getUserStatus, userStatuses } = useUser();
   const { isDark } = useTheme();
   const [departmentsData, setDepartmentsData] = useState(departmentDataCache);
@@ -72,7 +88,10 @@ const DepartmentUsersPanel = React.memo(() => {
     }
   }, [userStatuses, currentDepartment]);
 
+  // Only fetch data when panel is open
   useEffect(() => {
+    if (!isOpen) return; // Don't fetch if panel is closed
+    
     const now = Date.now();
     const shouldFetch = departments.length > 0 && 
                        (departmentsData.length === 0 || now - lastFetchTime > CACHE_DURATION);
@@ -80,7 +99,7 @@ const DepartmentUsersPanel = React.memo(() => {
     if (shouldFetch) {
       fetchAllDepartmentsUsers();
     }
-  }, [userData, departments.length]);
+  }, [isOpen, userData, departments.length]);
 
   const fetchAllDepartmentsUsers = async () => {
     setLoading(true);
@@ -135,24 +154,30 @@ const DepartmentUsersPanel = React.memo(() => {
 
   return (
     <>
-      {/* Mobile/Tablet Overlay (< 1024px) */}
-      <div
-        className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
-        onClick={() => {
-          document.body.classList.remove('department-panel-open');
-          // Trigger parent to close panel
-          window.dispatchEvent(new CustomEvent('closeDepartmentPanel'));
-        }}
-      />
-      
-      {/* Panel - Slide-in on mobile, fixed on desktop */}
-      <div
-        className="fixed top-14 sm:top-16 right-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-60 sm:w-72 lg:w-60 shadow-lg border-l overflow-hidden flex flex-col transition-all duration-300 z-50"
-        style={{ 
-          backgroundColor: 'var(--card-bg)',
-          borderColor: 'var(--border-color)'
-        }}
-      >
+      {/* Only render if isOpen is true */}
+      {isOpen && (
+        <>
+          {/* Mobile/Tablet Overlay (< 1024px) */}
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
+            onClick={() => {
+              document.body.classList.remove('department-panel-open');
+              // Trigger parent to close panel
+              if (onClose) onClose();
+              window.dispatchEvent(new CustomEvent('closeDepartmentPanel'));
+            }}
+          />
+          
+          {/* Panel - Slide-in on mobile, fixed on desktop */}
+          <div
+            className={`fixed top-14 sm:top-16 right-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-60 sm:w-72 lg:w-60 shadow-lg border-l overflow-hidden flex flex-col transition-all duration-300 z-50 ${
+              isOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+            style={{ 
+              backgroundColor: 'var(--card-bg)',
+              borderColor: 'var(--border-color)'
+            }}
+          >
       {/* Header */}
       <div className="p-4" style={{ 
         background: isDark 
@@ -164,9 +189,10 @@ const DepartmentUsersPanel = React.memo(() => {
           <button
             onClick={() => {
               document.body.classList.remove('department-panel-open');
+              if (onClose) onClose();
               window.dispatchEvent(new CustomEvent('closeDepartmentPanel'));
             }}
-            className="lg:hidden absolute top-4 right-4 p-1 hover:bg-white/20 rounded-md transition-all"
+            className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-md transition-all"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -331,6 +357,8 @@ const DepartmentUsersPanel = React.memo(() => {
           }}
           skipAnimation={previousUserId === selectedUser.sys_user_id}
         />
+      )}
+        </>
       )}
     </>
   );

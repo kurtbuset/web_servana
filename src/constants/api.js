@@ -165,9 +165,9 @@ export const SOCKET_EVENTS = {
   // Chat
   JOIN_CHAT: 'joinChatGroup',
   LEAVE_CHAT: 'leaveChatGroup',
-  NEW_MESSAGE: 'newMessage',
+  RECEIVE_MESSAGE: 'receiveMessage',
   SEND_MESSAGE: 'sendMessage',
-  MESSAGE_SENT: 'messageSent',
+  MESSAGE_DELIVERED: 'messageDelivered',
   MESSAGE_ERROR: 'messageError',
   
   // Queue
