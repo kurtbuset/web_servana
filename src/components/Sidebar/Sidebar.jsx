@@ -1,23 +1,21 @@
 import {
   Layers,
   MessageSquare,
-  Users,
   UserCheck,
-  ChevronDown,
   Activity,
   Shield,
   MessageCircle,
-  Zap,
   Key,
   FileText,
   Headphones,
   Cpu,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  BarChart2
 } from "react-feather";
 import { HiOfficeBuilding } from "react-icons/hi";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
@@ -33,6 +31,11 @@ const navSections = [
         to: ROUTES.DASHBOARD, 
         icon: Activity, 
         label: "Dashboard"
+      },
+      { 
+        to: "/analytics", 
+        icon: BarChart2, 
+        label: "Analytics"
       }
     ]
   },
@@ -217,7 +220,7 @@ const SectionHeader = ({ title, isCollapsed }) => {
 
 
 
-const Sidebar = ({ isMobile, isOpen, toggleDropdown, openDropdown }) => {
+const Sidebar = ({ isMobile, isOpen }) => {
   const location = useLocation();
   const { userData, hasPermission } = useUser();
   const { isDark } = useTheme();
