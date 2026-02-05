@@ -263,9 +263,12 @@ export const useChat = () => {
           ...prev,
           {
             id: msg.chat_id,
-            sender: msg.sys_user_id ? 'user' : 'system',
+            sender: msg.sender_type === 'agent' && msg.sender_id === userId ? 'user' : 'system',
             content: msg.chat_body,
             timestamp: msg.chat_created_at,
+            sender_name: msg.sender_name || 'Unknown',
+            sender_type: msg.sender_type || 'system',
+            sender_image: msg.sender_image || null,
             displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -345,6 +348,7 @@ export const useChat = () => {
         timestamp: msg.chat_created_at,
         sender_name: msg.sender_name || 'Unknown',
         sender_type: msg.sender_type || 'system',
+        sender_image: msg.sender_image || null,
         displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',

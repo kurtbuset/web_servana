@@ -163,6 +163,7 @@ export default function ChatMessages({
                 {item.sender !== "user" && (
                   <img
                     src={
+                      item.sender_image ||
                       selectedCustomer.profile ||
                       "profile_picture/DefaultProfile.jpg"
                     }
