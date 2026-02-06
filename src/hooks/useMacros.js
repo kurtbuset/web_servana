@@ -4,31 +4,37 @@ import MacroService from '../services/macro.service';
 
 /**
  * Custom hook for managing macros (agent or client)
- * @param {number} roleId - Role ID (2 for client, 3 for agent)
+ * @param {string} roleType - Role type ("agent" or "client")
  * @returns {Object} Macro state and operations
  */
-const useMacros = (roleId) => {
+const useMacros = (roleType) => {
   const [macros, setMacros] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch macros on mount
+  // Fetch macros on mount or when roleType changes
   useEffect(() => {
-    fetchMacros();
-  }, [roleId]);
+    if (roleType) {
+      fetchMacros();
+    }
+  }, [roleType]);
 
   /**
-   * Fetch all macros for the specified role
+   * Fetch all macros for the specified role type
    */
   const fetchMacros = async () => {
+    if (!roleType) {
+      setError('Role type is required');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const data = roleId === 12
-        ? await MacroService.getAgentMacros()
-        : await MacroService.getClientMacros();
+      const data = await MacroService.getMacrosByRoleType(roleType);
 
       const mappedMacros = (data.macros || []).map((macro) => ({
         id: macro.canned_id,
@@ -41,10 +47,8 @@ const useMacros = (roleId) => {
       setMacros(mappedMacros);
       setDepartments(data.departments || []);
     } catch (err) {
-      console.error('Failed to fetch macros:', err);
-      const errorMessage = roleId === 12
-        ? "Failed to fetch Agent's canned messages."
-        : "Failed to fetch Client's canned messages.";
+      console.error(`Failed to fetch ${roleType} macros:`, err);
+      const errorMessage = `Failed to fetch ${roleType} macros.`;
       setError(errorMessage);
       toast.error('Failed to load macros. Please refresh the page.', {
         position: 'top-right',
@@ -92,7 +96,7 @@ const useMacros = (roleId) => {
           active: true,
           created_by,
         },
-        roleId
+        roleType
       );
 
       const mappedMacro = {
@@ -160,7 +164,7 @@ const useMacros = (roleId) => {
           dept_id,
           updated_by,
         },
-        roleId
+        roleType
       );
 
       const mappedMacro = {
@@ -208,7 +212,7 @@ const useMacros = (roleId) => {
           dept_id: macro.dept_id,
           updated_by,
         },
-        roleId
+        roleType
       );
 
       setMacros((prev) =>
@@ -250,7 +254,7 @@ const useMacros = (roleId) => {
           dept_id,
           updated_by,
         },
-        roleId
+        roleType
       );
 
       const department = departments.find((d) => d.dept_id === dept_id);

@@ -29,9 +29,13 @@ export const ROUTES = {
   MACROS_AGENTS: '/macros-agents',
   MACROS_CLIENTS: '/macros-clients',
   
-  // Legacy routes (being phased out)
+  // Legacy routes (being phased out - use dynamic macro endpoints instead)
   AGENTS: '/agents',
   CLIENTS: '/clients',
+  
+  // New dynamic macro routes
+  MACRO_AGENT: '/macros/agent',
+  MACRO_CLIENT: '/macros/client',
   
   // Profile
   PROFILE: '/profile',

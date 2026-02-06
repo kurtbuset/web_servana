@@ -17,7 +17,7 @@ export const useQueues = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("All");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [cannedMessages, setCannedMessages] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [earliestMessageTime, setEarliestMessageTime] = useState(null);
@@ -78,30 +78,7 @@ export const useQueues = () => {
     }
   }, []);
 
-  /**
-   * Fetch canned messages with error handling
-   */
-  const fetchCannedMessages = useCallback(async () => {
-    // Check permission before fetching
-    if (!hasPermission("priv_can_use_canned_mess")) {
-      console.log("User does not have permission to use canned messages");
-      setCannedMessages([]);
-      return;
-    }
 
-    try {
-      const data = await QueueService.getCannedMessages();
-      if (Array.isArray(data)) {
-        setCannedMessages(data.map((msg) => msg.canned_message));
-      }
-    } catch (err) {
-      // Don't log error if it's just a permission issue or 404
-      if (err.response?.status !== 403 && err.response?.status !== 404) {
-        console.error("Failed to load canned messages:", err.message);
-      }
-      setCannedMessages([]);
-    }
-  }, [hasPermission]);
 
   /**
    * Determine frontend sender type for message display
@@ -357,7 +334,6 @@ export const useQueues = () => {
     
     // Fetch initial data only once
     fetchChatGroups();
-    fetchCannedMessages();
 
     // Don't disconnect socket on unmount - it's shared across the app
     // The socket should stay connected for real-time updates
@@ -518,7 +494,6 @@ export const useQueues = () => {
     setSelectedDepartment,
     selectedCustomer,
     messages,
-    cannedMessages,
     loading,
     error,
     earliestMessageTime,
