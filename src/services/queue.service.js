@@ -41,15 +41,6 @@ class QueueService {
     const response = await api.post(`/queues/${chatGroupId}/accept`);
     return response.data;
   }
-
-  /**
-   * Get canned messages for quick replies
-   * @returns {Promise<Array>} Array of canned message strings
-   */
-  static async getCannedMessages() {
-    const response = await api.get("/chat/canned-messages");
-    return response.data;
-  }
 }
 
 export default QueueService;

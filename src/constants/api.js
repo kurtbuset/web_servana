@@ -105,6 +105,18 @@ export const API_ENDPOINTS = {
   
   // Macros
   MACRO: {
+    // New dynamic endpoints
+    AGENT: {
+      LIST: '/macros/agent',
+      CREATE: '/macros/agent',
+      UPDATE: (id) => `/macros/agent/${id}`,
+    },
+    CLIENT: {
+      LIST: '/macros/client',
+      CREATE: '/macros/client',
+      UPDATE: (id) => `/macros/client/${id}`,
+    },
+    // Legacy endpoints (deprecated)
     AGENTS: {
       LIST: '/agents',
       CREATE: '/agents',

@@ -43,6 +43,7 @@ export class ChatService {
    * @returns {Promise<Array>} Array of canned message objects
    */
   static async getCannedMessages() {
+    console.log('spam getting cannedd messages')
     const response = await api.get('/chat/canned-messages');
     return response.data;
   }

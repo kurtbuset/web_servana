@@ -4,7 +4,6 @@ import Sidebar from '../../../src/components/Sidebar';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Edit3, Search, X } from 'react-feather';
 import useMacros from '../../hooks/useMacros';
-import useRoleId from '../../hooks/useRoleId';
 import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../context/ThemeContext';
 import '../../App.css';
@@ -16,17 +15,15 @@ export default function MacrosAgentsScreen() {
   const [currentEditId, setCurrentEditId] = useState(null);
   const [editText, setEditText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [selectedDepartment, setSelectedDepartment] = useState('All'); // For filtering the main table
+  const [modalSelectedDepartment, setModalSelectedDepartment] = useState('All'); // For the modal department selection
   
   // Get user ID from UserContext
   const { getUserId } = useUser();
   const currentUserId = getUserId();
   const { isDark } = useTheme();
 
-  // Get Agent role ID dynamically
-  const { roleId: agentRoleId, loading: roleLoading, error: roleError } = useRoleId('Agent');
-
-  // Use the macros hook with dynamic Agent role ID
+  // Use the macros hook with "agent" role type
   const {
     macros,
     departments,
@@ -36,7 +33,7 @@ export default function MacrosAgentsScreen() {
     updateMacro,
     toggleActive,
     changeDepartment,
-  } = useMacros(agentRoleId);
+  } = useMacros('agent');
 
   // Filter macros based on search and department
   const filteredReplies = macros.filter((reply) => {
@@ -70,9 +67,9 @@ export default function MacrosAgentsScreen() {
     } else {
       // Create new macro
       const selectedDept = departments.find(
-        (dept) => dept.dept_name === selectedDepartment
+        (dept) => dept.dept_name === modalSelectedDepartment
       );
-      const dept_id = selectedDepartment === 'All' ? null : selectedDept?.dept_id;
+      const dept_id = modalSelectedDepartment === 'All' ? null : selectedDept?.dept_id;
 
       const success = await createMacro(editText, dept_id, currentUserId);
 
@@ -166,7 +163,7 @@ export default function MacrosAgentsScreen() {
                   <button
                     onClick={() => {
                       setEditText('');
-                      setSelectedDepartment('All');
+                      setModalSelectedDepartment('All'); // Reset modal department selection
                       setCurrentEditId(null);
                       setIsModalOpen(true);
                     }}
@@ -179,17 +176,17 @@ export default function MacrosAgentsScreen() {
 
               {/* Table Container */}
               <div className="flex-1 overflow-hidden">
-                {loading || roleLoading ? (
+                {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="flex items-center space-x-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-[#6237A0]" style={{ borderColor: 'var(--border-color)', borderTopColor: '#6237A0' }}></div>
                       <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading agent macros...</span>
                     </div>
                   </div>
-                ) : error || roleError ? (
+                ) : error ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-red-600 text-sm font-semibold">
-                      {error || roleError}
+                      {error}
                     </p>
                   </div>
                 ) : (
@@ -335,8 +332,8 @@ export default function MacrosAgentsScreen() {
                           color: 'var(--text-primary)',
                           border: `1px solid var(--border-color)`
                         }}
-                        value={selectedDepartment}
-                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                        value={modalSelectedDepartment}
+                        onChange={(e) => setModalSelectedDepartment(e.target.value)}
                       >
                         <option value="All">All</option>
                         {departments.map((dept) => (

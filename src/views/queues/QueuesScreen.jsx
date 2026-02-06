@@ -21,7 +21,7 @@ export default function QueuesScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
-  const [showCannedMessages, setShowCannedMessages] = useState(false);
+
   const [inputMessage, setInputMessage] = useState("");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
@@ -47,7 +47,6 @@ export default function QueuesScreen() {
     setSelectedDepartment,
     selectedCustomer,
     messages,
-    cannedMessages,
     earliestMessageTime,
     hasMoreMessages,
     isLoadingMore,
@@ -218,16 +217,7 @@ export default function QueuesScreen() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle click outside canned messages
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (!e.target.closest(".canned-dropdown")) {
-        setShowCannedMessages(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -446,15 +436,10 @@ export default function QueuesScreen() {
                     onInputChange={handleInputChange}
                     onSendMessage={sendMessage}
                     textareaRef={textareaRef}
-                    showCannedMessages={showCannedMessages}
-                    onToggleCannedMessages={() =>
-                      setShowCannedMessages((prev) => !prev)
-                    }
-                    cannedMessages={cannedMessages}
-                    onSelectCannedMessage={(msg) => {
-                      setInputMessage(msg);
-                      setShowCannedMessages(false);
-                    }}
+                    showCannedMessages={false}
+                    onToggleCannedMessages={() => {}}
+                    cannedMessages={[]}
+                    onSelectCannedMessage={() => {}}
                     disabled={
                       !canMessage || 
                       (!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id)
@@ -466,7 +451,7 @@ export default function QueuesScreen() {
                       !selectedCustomer.sys_user_id &&
                       !chatEnded
                     }
-                    canUseCannedMessages={canUseCannedMessages}
+                    canUseCannedMessages={false}
                   />
                 </>
               ) : (

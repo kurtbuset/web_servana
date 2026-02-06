@@ -22,9 +22,9 @@ export const useDepartments = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { userData } = useUser();
+  const { getUserId } = useUser();
 
-  const CURRENT_USER_ID = userData?.user_id;
+  const CURRENT_USER_ID = getUserId();
 
   /**
    * Fetch all departments
@@ -64,6 +64,16 @@ export const useDepartments = () => {
       return;
     }
 
+    // Check if user ID is available
+    if (!CURRENT_USER_ID) {
+      console.error('❌ No user ID available for department creation');
+      toast.error('Unable to create department: User not authenticated', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
     // Check for duplicate department name
     const isDuplicate = departments.some(
       (dept) => dept.dept_name.toLowerCase().trim() === deptName.toLowerCase().trim()
@@ -80,6 +90,7 @@ export const useDepartments = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('🏢 Creating department with user ID:', CURRENT_USER_ID);
       const result = await DepartmentService.createDepartment({
         dept_name: deptName.trim(),
         dept_created_by: CURRENT_USER_ID,
@@ -94,6 +105,7 @@ export const useDepartments = () => {
       return result;
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to save department';
+      console.error('❌ Failed to create department:', err);
       setError(errorMessage);
       toast.error(errorMessage, {
         position: 'top-right',
@@ -120,6 +132,16 @@ export const useDepartments = () => {
       return;
     }
 
+    // Check if user ID is available
+    if (!CURRENT_USER_ID) {
+      console.error('❌ No user ID available for department update');
+      toast.error('Unable to update department: User not authenticated', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
     // Check for duplicate department name (excluding current department)
     const isDuplicate = departments.some(
       (dept) => 
@@ -138,6 +160,7 @@ export const useDepartments = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('🏢 Updating department with user ID:', CURRENT_USER_ID);
       const result = await DepartmentService.updateDepartment(deptId, {
         dept_name: deptName.trim(),
         dept_updated_by: CURRENT_USER_ID,
@@ -152,6 +175,7 @@ export const useDepartments = () => {
       return result;
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to save department';
+      console.error('❌ Failed to update department:', err);
       setError(errorMessage);
       toast.error(errorMessage, {
         position: 'top-right',
@@ -170,7 +194,18 @@ export const useDepartments = () => {
    * @returns {Promise<Object>} Updated department
    */
   const toggleDepartment = useCallback(async (deptId, currentStatus) => {
+    // Check if user ID is available
+    if (!CURRENT_USER_ID) {
+      console.error('❌ No user ID available for department toggle');
+      toast.error('Unable to toggle department: User not authenticated', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
     try {
+      console.log('🏢 Toggling department with user ID:', CURRENT_USER_ID);
       await DepartmentService.toggleDepartment(deptId, {
         dept_is_active: !currentStatus,
         dept_updated_by: CURRENT_USER_ID,
@@ -194,6 +229,7 @@ export const useDepartments = () => {
       );
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to toggle active status';
+      console.error('❌ Failed to toggle department:', err);
       toast.error(errorMessage, {
         position: 'top-right',
         autoClose: 3000,

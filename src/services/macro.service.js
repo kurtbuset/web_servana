@@ -6,20 +6,12 @@ import api from '../api';
  */
 class MacroService {
   /**
-   * Get all agent macros (role_id = 3)
+   * Get all macros for a specific role type
+   * @param {string} roleType - "agent" or "client"
    * @returns {Promise<{macros: Array, departments: Array}>}
    */
-  static async getAgentMacros() {
-    const response = await api.get('/agents');
-    return response.data;
-  }
-
-  /**
-   * Get all client macros (role_id = 2)
-   * @returns {Promise<{macros: Array, departments: Array}>}
-   */
-  static async getClientMacros() {
-    const response = await api.get('/clients');
+  static async getMacrosByRoleType(roleType) {
+    const response = await api.get(`/macros/${roleType}`);
     return response.data;
   }
 
@@ -30,12 +22,11 @@ class MacroService {
    * @param {number|null} data.dept_id - Department ID (null for "All")
    * @param {boolean} data.active - Active status
    * @param {number} data.created_by - User ID who created the macro
-   * @param {number} roleId - Role ID (2 for client, 3 for agent)
+   * @param {string} roleType - Role type ("agent" or "client")
    * @returns {Promise<Object>} Created macro
    */
-  static async createMacro(data, roleId) {
-    const endpoint = roleId === 12 ? '/agents' : '/clients';
-    const response = await api.post(endpoint, data);
+  static async createMacro(data, roleType) {
+    const response = await api.post(`/macros/${roleType}`, data);
     return response.data;
   }
 
@@ -47,12 +38,11 @@ class MacroService {
    * @param {boolean} data.active - Active status
    * @param {number|null} data.dept_id - Department ID
    * @param {number} data.updated_by - User ID who updated the macro
-   * @param {number} roleId - Role ID (2 for client, 3 for agent)
+   * @param {string} roleType - Role type ("agent" or "client")
    * @returns {Promise<Object>} Updated macro
    */
-  static async updateMacro(id, data, roleId) {
-    const endpoint = roleId === 12 ? `/agents/${id}` : `/clients/${id}`;
-    const response = await api.put(endpoint, data);
+  static async updateMacro(id, data, roleType) {
+    const response = await api.put(`/macros/${roleType}/${id}`, data);
     return response.data;
   }
 
@@ -61,8 +51,23 @@ class MacroService {
    * @returns {Promise<Array>} List of departments
    */
   static async getDepartments() {
-    const response = await api.get('/department');
+    const response = await api.get('/departments');
     return response.data;
+  }
+
+  // Legacy methods for backward compatibility (can be removed later)
+  /**
+   * @deprecated Use getMacrosByRoleType('agent') instead
+   */
+  static async getAgentMacros() {
+    return this.getMacrosByRoleType('agent');
+  }
+
+  /**
+   * @deprecated Use getMacrosByRoleType('client') instead
+   */
+  static async getClientMacros() {
+    return this.getMacrosByRoleType('client');
   }
 }
 

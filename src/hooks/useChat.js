@@ -214,14 +214,19 @@ export const useChat = () => {
       console.error('Failed to load canned messages:', err);
       // Don't show error toast for canned messages - not critical
     }
-  }, [hasPermission]);
+  }, []); // Remove hasPermission dependency to prevent spam
 
   /**
-   * Load canned messages on mount
+   * Load canned messages on mount only
    */
   useEffect(() => {
-    fetchCannedMessages();
-  }, [fetchCannedMessages]);
+    // Only fetch if user has permission
+    if (hasPermission("priv_can_use_canned_mess")) {
+      fetchCannedMessages();
+    } else {
+      setCannedMessages([]);
+    }
+  }, []); // Empty dependency array - only run once on mount
 
   /**
    * Join chat group and listen for messages when customer is selected

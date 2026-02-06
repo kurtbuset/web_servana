@@ -53,7 +53,7 @@ export const UserProvider = ({ children }) => {
       };
       
       setUserData(userDataWithMeta);
-      console.log(`✅ UserContext - User data updated successfully (session: ${userDataWithMeta._sessionId})`);
+      // console.log(`✅ UserContext - User data updated successfully (session: ${userDataWithMeta._sessionId})`);
       
     } catch (err) {
       console.error("❌ Failed to fetch user data:", err);
@@ -109,7 +109,7 @@ export const UserProvider = ({ children }) => {
       // If user was inactive for more than 30 seconds, send immediate heartbeat
       // This ensures status updates immediately when user returns
       if (timeSinceLastActivity > 30000 && socket.connected) {
-        console.log('🔥 User active after idle period, sending immediate heartbeat');
+        // console.log('🔥 User active after idle period, sending immediate heartbeat');
         socket.emit('userHeartbeat', { userId });
       }
     };
@@ -122,7 +122,7 @@ export const UserProvider = ({ children }) => {
 
     // Wait for socket to connect, then emit userOnline
     const handleConnect = () => {
-      console.log('✅ Socket connected, emitting userOnline for user:', userId);
+      // console.log('✅ Socket connected, emitting userOnline for user:', userId);
       
       // Emit that current user is online
       socket.emit('userOnline', {
@@ -137,7 +137,7 @@ export const UserProvider = ({ children }) => {
 
     // Listen for online users list
     const handleOnlineUsersList = (users) => {
-      console.log('📋 Received online users list:', users);
+      // console.log('📋 Received online users list:', users);
       const statusMap = new Map();
       users.forEach(user => {
         statusMap.set(user.userId, {
@@ -150,7 +150,7 @@ export const UserProvider = ({ children }) => {
 
     // Listen for user status changes
     const handleUserStatusChanged = ({ userId, status, lastSeen }) => {
-      console.log('🔄 User status changed:', { userId, status, lastSeen });
+      // console.log('🔄 User status changed:', { userId, status, lastSeen });
       setUserStatuses(prev => {
         const newMap = new Map(prev);
         newMap.set(userId, { status, lastSeen: new Date(lastSeen) });
@@ -189,7 +189,7 @@ export const UserProvider = ({ children }) => {
       const idleThreshold = 20 * 60 * 1000; // 20 minutes
 
       if (idleTime >= idleThreshold) {
-        console.log(`😴 User has been idle for ${Math.floor(idleTime / 60000)} minutes`);
+        // console.log(`😴 User has been idle for ${Math.floor(idleTime / 60000)} minutes`);
       }
     }, 60000); // Check every minute
 
@@ -214,7 +214,7 @@ export const UserProvider = ({ children }) => {
       
       // Emit that user is going offline
       if (socket.connected) {
-        console.log('❌ User going offline:', userId);
+        // console.log('❌ User going offline:', userId);
         socket.emit('userOffline', { userId });
       }
     };
@@ -250,14 +250,14 @@ export const UserProvider = ({ children }) => {
     try {
       // Emit userOffline BEFORE logout to ensure it's sent
       if (userData?.sys_user_id && socket.connected) {
-        console.log('📤 Emitting userOffline for user:', userData.sys_user_id);
-        console.log('🔌 Socket connected:', socket.connected);
-        console.log('🆔 Socket ID:', socket.id);
+        // console.log('📤 Emitting userOffline for user:', userData.sys_user_id);
+        // console.log('🔌 Socket connected:', socket.connected);
+        // console.log('🆔 Socket ID:', socket.id);
         socket.emit('userOffline', { userId: userData.sys_user_id });
         
         // Wait a bit to ensure the event is sent
         await new Promise(resolve => setTimeout(resolve, 100));
-        console.log('✅ userOffline event sent, waiting 100ms for delivery');
+        // console.log('✅ userOffline event sent, waiting 100ms for delivery');
       } else {
         console.warn('⚠️ Cannot emit userOffline:', {
           hasUserId: !!userData?.sys_user_id,
@@ -279,7 +279,7 @@ export const UserProvider = ({ children }) => {
       localStorage.setItem('logout', Date.now().toString());
       localStorage.removeItem('logout');
       
-      console.log("🔄 Logout complete - cleared all user data and cache");
+      // console.log("🔄 Logout complete - cleared all user data and cache"); 
       
       return { success: true };
     } catch (err) {
