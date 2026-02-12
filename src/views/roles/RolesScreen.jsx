@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, X, Settings, Users, Shield, MessageSquare, ChevronDown, ChevronRight } from "react-feather";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../components/Sidebar";
+import Layout from "../../components/Layout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -375,7 +374,7 @@ export default function RolesScreen() {
   };
 
   return (
-    <>
+    <Layout>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -418,21 +417,9 @@ export default function RolesScreen() {
           animation: slideUp 0.3s ease-out;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden">
-        <TopNavbar toggleSidebar={toggleSidebar} />
+      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar
-            isMobile={true}
-            isOpen={mobileSidebarOpen}
-            toggleDropdown={setOpenDropdown}
-            openDropdown={openDropdown}
-          />
-          <Sidebar
-            isMobile={false}
-            toggleDropdown={setOpenDropdown}
-            openDropdown={openDropdown}
-          />
-          <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden">
             <div className="rounded-lg shadow-sm h-full flex flex-col md:flex-row overflow-hidden" style={{ backgroundColor: 'var(--card-bg)' }}>
               {/* Left Panel - Roles List */}
               <div className={`${selectedRole ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col`} style={{ backgroundColor: 'var(--card-bg)', borderRight: `1px solid var(--border-color)` }}>
@@ -577,7 +564,7 @@ export default function RolesScreen() {
                 isDark={isDark}
               />
             )}
-          </main>
+          </div>
 
           {/* Render unsaved changes bar at bottom when there are changes */}
           {hasUnsavedChanges && (
@@ -591,7 +578,7 @@ export default function RolesScreen() {
           )}
         </div>
       </div>
-    </>
+    </Layout>
   );
 }
 

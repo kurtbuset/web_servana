@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar";
+import Layout from "../../components/Layout";
 import { useQueues } from "../../hooks/useQueues";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -235,7 +234,7 @@ export default function QueuesScreen() {
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <>
+    <Layout>
       <style>{`
         .custom-scrollbar {
           scrollbar-width: thin;
@@ -270,8 +269,7 @@ export default function QueuesScreen() {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <TopNavbar toggleSidebar={toggleSidebar} />
+      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
 
       {/* End Chat Modal */}
       <ConfirmDialog
@@ -305,27 +303,12 @@ export default function QueuesScreen() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-          onClose={() => setMobileSidebarOpen(false)}
-        />
-
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <main className="flex-1 bg-transparent">
-          <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
+        <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3 flex-1">
             {/* Queues list - Enhanced */}
             <div
               className={`${
                 view === "chatList" ? "block" : "hidden md:block"
-              } w-full md:w-[320px] lg:w-[360px] md:rounded-xl shadow-sm border overflow-hidden flex flex-col`}
+              } w-full md:w-[320px] lg:w-[360px] h-full md:rounded-xl shadow-sm border overflow-hidden flex flex-col`}
               style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
             >
               {/* Header Section */}
@@ -471,9 +454,8 @@ export default function QueuesScreen() {
               )}
             </div>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
-    </>
+    </Layout>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar";
+import Layout from "../../components/Layout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
@@ -10,7 +9,6 @@ import { toast } from "react-toastify";
 import "../../App.css";
 
 export default function AutoRepliesScreen() {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,8 +31,6 @@ export default function AutoRepliesScreen() {
     toggleAutoReply,
     updateDepartment,
   } = useAutoReplies();
-
-  const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const filteredReplies = replies.filter((reply) =>
     reply.auto_reply_message?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -132,7 +128,7 @@ export default function AutoRepliesScreen() {
   };
 
   return (
-    <>
+    <Layout>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -150,24 +146,10 @@ export default function AutoRepliesScreen() {
           background: #552C8C;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden">
-        <TopNavbar toggleSidebar={toggleSidebar} />
-
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-          <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
+      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden">
+            <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Auto Replies</h1>
@@ -485,9 +467,9 @@ export default function AutoRepliesScreen() {
               </div>
             </div>
           )}
-        </main>
+          </div>
+        </div>
       </div>
-    </div>
-    </>
+    </Layout>
   );
 }

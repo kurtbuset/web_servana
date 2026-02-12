@@ -3,15 +3,15 @@ import { useState } from "react";
 import { useUser } from "../../src/context/UserContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../src/context/UnsavedChangesContext";
+import { useDepartmentPanel } from "../../src/context/DepartmentPanelContext";
 import UserProfilePanel from "./UserProfilePanel";
-import DepartmentUsersPanel from "./DepartmentUsersPanel";
 
 export default function TopNavbar({ toggleSidebar }) {
   const { userData, loading } = useUser();
   const { isDark } = useTheme();
   const { blockNavigation } = useUnsavedChanges();
+  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  const [showDepartmentPanel, setShowDepartmentPanel] = useState(false);
 
   // Build full name
   const fullName = userData
@@ -38,11 +38,7 @@ export default function TopNavbar({ toggleSidebar }) {
     if (blockNavigation()) {
       return; // Blocked by unsaved changes
     }
-    setShowDepartmentPanel(true);
-  };
-
-  const handleCloseDepartmentPanel = () => {
-    setShowDepartmentPanel(false);
+    toggleDepartmentPanel();
   };
 
   return (
@@ -80,20 +76,24 @@ export default function TopNavbar({ toggleSidebar }) {
           {/* Department Users Icon */}
           <button
             onClick={handleDepartmentClick}
-            className="p-2 rounded-lg transition-all group relative"
-            style={{ 
+            className={`p-2 rounded-lg transition-all group relative ${isDepartmentPanelOpen ? 'bg-[#6237A0] text-white' : ''}`}
+            style={!isDepartmentPanelOpen ? { 
               color: isDark ? 'var(--text-secondary)' : '#6b7280',
               backgroundColor: isDark ? 'transparent' : 'transparent'
-            }}
+            } : {}}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff';
-              e.currentTarget.style.color = '#6237A0';
+              if (!isDepartmentPanelOpen) {
+                e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff';
+                e.currentTarget.style.color = '#6237A0';
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#6b7280';
+              if (!isDepartmentPanelOpen) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#6b7280';
+              }
             }}
-            title="View Department Team"
+            title="Toggle Department Team"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -138,12 +138,6 @@ export default function TopNavbar({ toggleSidebar }) {
         userData={userData}
         isOpen={showProfilePanel}
         onClose={handleCloseProfilePanel}
-      />
-
-      {/* Department Users Panel */}
-      <DepartmentUsersPanel
-        isOpen={showDepartmentPanel}
-        onClose={handleCloseDepartmentPanel}
       />
     </>
   );

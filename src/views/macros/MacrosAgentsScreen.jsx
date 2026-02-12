@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import TopNavbar from '../../../src/components/TopNavbar';
-import Sidebar from '../../../src/components/Sidebar';
+import Layout from '../../components/Layout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Edit3, Search, X } from 'react-feather';
 import useMacros from '../../hooks/useMacros';
@@ -9,14 +8,13 @@ import { useTheme } from '../../context/ThemeContext';
 import '../../App.css';
 
 export default function MacrosAgentsScreen() {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEditId, setCurrentEditId] = useState(null);
   const [editText, setEditText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('All'); // For filtering the main table
-  const [modalSelectedDepartment, setModalSelectedDepartment] = useState('All'); // For the modal department selection
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [modalSelectedDepartment, setModalSelectedDepartment] = useState('All');
   
   // Get user ID from UserContext
   const { getUserId } = useUser();
@@ -96,7 +94,7 @@ export default function MacrosAgentsScreen() {
   };
 
   return (
-    <>
+    <Layout>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -114,24 +112,9 @@ export default function MacrosAgentsScreen() {
           background: #552C8C;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden">
-        <TopNavbar toggleSidebar={toggleSidebar} />
-
+      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar
-            isMobile={true}
-            isOpen={mobileSidebarOpen}
-            toggleDropdown={toggleDropdown}
-            openDropdown={openDropdown}
-          />
-
-          <Sidebar
-            isMobile={false}
-            toggleDropdown={toggleDropdown}
-            openDropdown={openDropdown}
-          />
-
-          <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden">
             <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
               {/* Header Section */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
@@ -379,9 +362,9 @@ export default function MacrosAgentsScreen() {
                 </div>
               </div>
             )}
-          </main>
+          </div>
         </div>
       </div>
-    </>
+    </Layout>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar/index";
+import Layout from "../../components/Layout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { FiLogOut } from "react-icons/fi";
 import { Upload } from "react-feather";
@@ -93,6 +92,10 @@ export default function Profile() {
 
   // ---------------- HANDLE IMAGE SELECTION ----------------
   const handleFileChange = (e) => {
+    console.log("🔍 handleFileChange triggered");
+    console.log("🔍 canManageProfile:", canManageProfile);
+    console.log("🔍 File input event:", e.target.files);
+    
     if (!canManageProfile) {
       console.warn("User does not have permission to manage profile");
       toast.error("You don't have permission to edit your profile");
@@ -100,6 +103,8 @@ export default function Profile() {
     }
 
     const file = e.target.files?.[0];
+    console.log("🔍 Selected file:", file);
+    
     if (file) {
       setFileName(file.name);
       setSelectedFile(file);
@@ -107,6 +112,7 @@ export default function Profile() {
       const reader = new FileReader();
       reader.onloadend = () => {
         // show preview immediately
+        console.log("🔍 File read complete, setting preview");
         setProfilePicture(reader.result);
         setImageUploaded(true);
       };
@@ -225,23 +231,63 @@ export default function Profile() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden relative">
-      <TopNavbar toggleSidebar={toggleSidebar} />
-
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-        />
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 min-h-[calc(100vh-64px)] flex flex-col justify-center items-center relative overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #6237A0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #552C8C;
+        }
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes ping-slow {
+          0% { transform: scale(1); opacity: 1; }
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-blob { animation: blob 7s infinite; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-ping-slow { animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+      `}</style>
+    <Layout>
+      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="flex flex-col h-full gap-0 p-0 md:p-3 flex-1">
+          <div className="h-full flex flex-col md:rounded-xl shadow-sm border-0 md:border overflow-hidden" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <main className="p-4 sm:p-6 min-h-full flex flex-col justify-center items-center relative overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob ${isDark ? 'bg-purple-600' : 'bg-purple-300'}`}></div>
@@ -465,6 +511,9 @@ export default function Profile() {
             )}
           </div>
         </main>
+            </div>
+          </div>
+        </div>
       </div>
 
       {isEditModalOpen && (
@@ -821,42 +870,8 @@ export default function Profile() {
         </div>
       )}
 
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes ping-slow {
-          0% { transform: scale(1); opacity: 1; }
-          75%, 100% { transform: scale(2); opacity: 0; }
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.9); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .animate-ping-slow { animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-      `}</style>
-    </div>
+    </Layout>
+    </>
   );
 }
 

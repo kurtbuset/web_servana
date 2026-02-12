@@ -19,7 +19,7 @@ import { motion } from "framer-motion";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
 import socket from "../../socket";
 import { ROUTES } from "../../constants/routes";
 
@@ -132,41 +132,56 @@ const navSections = [
 
 
 
-const NavItem = ({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
-  const handleClick = (e) => {
+const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
+  const handleClick = useCallback((e) => {
+    // Store current scroll position before navigation
+    const sidebar = e.currentTarget.closest('.sidebar-scroll-container');
+    if (sidebar) {
+      const scrollTop = sidebar.scrollTop;
+      // Store in sessionStorage to persist across renders
+      sessionStorage.setItem('sidebarScrollPosition', scrollTop.toString());
+    }
+    
     if (onBlockedClick && onBlockedClick()) {
       e.preventDefault();
+      return;
     }
-  };
+    
+    // Prevent focus
+    e.currentTarget.blur();
+  }, [onBlockedClick]);
+
+  const handleMouseEnter = useCallback((e) => {
+    if (!isActive) {
+      e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
+    }
+  }, [isActive, isDark]);
+
+  const handleMouseLeave = useCallback((e) => {
+    if (!isActive) {
+      e.currentTarget.style.backgroundColor = 'transparent';
+    }
+  }, [isActive]);
 
   return (
-    <div className="relative group" key={to}>
+    <div className="relative group">
       {isActive && (
-        <motion.div
-          layoutId="activeHighlight"
+        <div
           className="absolute inset-0 rounded-md bg-gradient-to-r from-[#6237A0] to-[#7C4DFF] z-0"
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
       )}
       <Link
         to={to}
         onClick={handleClick}
+        tabIndex={-1}
         className={`relative flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md z-10 transition-all duration-200 ${
           isActive 
             ? "text-white shadow-lg" 
             : ""
         }`}
         style={!isActive ? { color: 'var(--text-primary)' } : {}}
-        onMouseEnter={(e) => {
-          if (!isActive) {
-            e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         title={isCollapsed ? label : ''}
       >
         <div 
@@ -204,9 +219,21 @@ const NavItem = ({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, o
       </Link>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.to === nextProps.to &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.badgeCount === nextProps.badgeCount &&
+    prevProps.isCollapsed === nextProps.isCollapsed &&
+    prevProps.isDark === nextProps.isDark &&
+    prevProps.label === nextProps.label
+  );
+});
 
-const SectionHeader = ({ title, isCollapsed }) => {
+NavItem.displayName = 'NavItem';
+
+const SectionHeader = memo(({ title, isCollapsed }) => {
   if (isCollapsed) return <div className="h-px mx-2 my-1.5" style={{ backgroundColor: 'var(--border-color)' }} />;
   
   return (
@@ -216,11 +243,13 @@ const SectionHeader = ({ title, isCollapsed }) => {
       </h3>
     </div>
   );
-};
+});
+
+SectionHeader.displayName = 'SectionHeader';
 
 
 
-const Sidebar = ({ isMobile, isOpen }) => {
+const Sidebar = memo(({ isMobile, isOpen }) => {
   const location = useLocation();
   const { userData, hasPermission } = useUser();
   const { isDark } = useTheme();
@@ -236,14 +265,71 @@ const Sidebar = ({ isMobile, isOpen }) => {
     return saved === 'true';
   });
 
+  // Ref to track sidebar scroll position
+  const sidebarScrollRef = useRef(null);
+
+  // Restore scroll position on mount and after navigation
+  useEffect(() => {
+    const restoreScrollPosition = () => {
+      const savedPosition = sessionStorage.getItem('sidebarScrollPosition');
+      if (sidebarScrollRef.current && savedPosition) {
+        const position = parseInt(savedPosition, 10);
+        // Use multiple methods to ensure scroll position is restored
+        sidebarScrollRef.current.scrollTop = position;
+        
+        requestAnimationFrame(() => {
+          if (sidebarScrollRef.current) {
+            sidebarScrollRef.current.scrollTop = position;
+          }
+        });
+        
+        // Fallback with slight delay
+        setTimeout(() => {
+          if (sidebarScrollRef.current) {
+            sidebarScrollRef.current.scrollTop = position;
+          }
+        }, 100);
+      }
+    };
+
+    restoreScrollPosition();
+  }, [location.pathname]);
+
+  // Save scroll position periodically
+  useEffect(() => {
+    const sidebar = sidebarScrollRef.current;
+    if (!sidebar) return;
+
+    const handleScroll = () => {
+      sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop.toString());
+    };
+
+    sidebar.addEventListener('scroll', handleScroll, { passive: true });
+    return () => sidebar.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Save collapse state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', isCollapsed);
   }, [isCollapsed]);
 
-  const isActivePath = (to, extraPaths = []) =>
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed(prev => !prev);
+  }, []);
+
+  const handleCollapseMouseEnter = useCallback((e) => {
+    e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
+  }, [isDark]);
+
+  const handleCollapseMouseLeave = useCallback((e) => {
+    e.currentTarget.style.backgroundColor = 'transparent';
+  }, []);
+
+  const isActivePath = useCallback((to, extraPaths = []) =>
     location.pathname.toLowerCase() === to.toLowerCase() ||
-    extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase());
+    extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase()),
+    [location.pathname]
+  );
 
   // Fetch initial chat counts and set up WebSocket listeners
   useEffect(() => {
@@ -329,19 +415,21 @@ const Sidebar = ({ isMobile, isOpen }) => {
 
   if (isMobile && !isOpen) return null;
 
-  // Filter navigation sections based on permissions
-  const visibleNavSections = navSections.map(section => ({
-    ...section,
-    items: section.items.filter(item => {
-      // If no permission specified, item is always visible (like Dashboard)
-      if (!item.permission) {
-        return true;
-      }
-      
-      // Check permission
-      return hasPermission(item.permission);
-    })
-  })).filter(section => section.items.length > 0); // Only show sections with visible items
+  // Filter navigation sections based on permissions - memoize to prevent recalculation
+  const visibleNavSections = useMemo(() => {
+    return navSections.map(section => ({
+      ...section,
+      items: section.items.filter(item => {
+        // If no permission specified, item is always visible (like Dashboard)
+        if (!item.permission) {
+          return true;
+        }
+        
+        // Check permission
+        return hasPermission(item.permission);
+      })
+    })).filter(section => section.items.length > 0); // Only show sections with visible items
+  }, [hasPermission]);
 
   return (
     <aside
@@ -353,10 +441,15 @@ const Sidebar = ({ isMobile, isOpen }) => {
       style={{ 
         backgroundColor: 'var(--card-bg)', 
         color: 'var(--text-primary)',
-        borderRight: `1px solid var(--border-color)`
+        borderRight: `1px solid var(--border-color)`,
+        scrollBehavior: 'auto'
       }}
     >
-      <div className="flex-1 overflow-y-auto p-3">
+      <div 
+        ref={sidebarScrollRef}
+        className="sidebar-scroll-container flex-1 overflow-y-auto p-3" 
+        style={{ scrollBehavior: 'auto', overflowAnchor: 'none' }}
+      >
         <nav className="space-y-3">
           {/* Navigation Sections */}
           {visibleNavSections.map((section) => (
@@ -386,15 +479,11 @@ const Sidebar = ({ isMobile, isOpen }) => {
       {!isMobile && (
         <div className="p-2" style={{ borderTop: `1px solid var(--border-color)` }}>
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={toggleCollapse}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all`}
             style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            onMouseEnter={handleCollapseMouseEnter}
+            onMouseLeave={handleCollapseMouseLeave}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
@@ -410,6 +499,8 @@ const Sidebar = ({ isMobile, isOpen }) => {
       )}
     </aside>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

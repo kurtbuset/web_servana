@@ -1,6 +1,5 @@
 import { useState } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar";
+import Layout from "../../components/Layout";
 import { MessageSquare, Users, Clock, CheckCircle, TrendingUp, Activity, UserCheck } from "react-feather";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
@@ -45,7 +44,6 @@ ChartJS.register(
  * - Enhanced visual design with gradients and animations
  */
 export default function DashboardScreen() {
-    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState(null);
     const { userData, hasPermission, getRoleName } = useUser();
     const { isDark } = useTheme();
@@ -353,17 +351,19 @@ export default function DashboardScreen() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6237A0] mx-auto mb-4"></div>
-                    <p style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</p>
+            <Layout>
+                <div className="flex items-center justify-center h-full" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6237A0] mx-auto mb-4"></div>
+                        <p style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</p>
+                    </div>
                 </div>
-            </div>
+            </Layout>
         );
     }
 
     return (
-        <>
+        <Layout>
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;
@@ -380,26 +380,8 @@ export default function DashboardScreen() {
                     background: #7A4ED9;
                 }
             `}</style>
-            <div className="flex flex-col h-screen overflow-hidden">
-                <TopNavbar toggleSidebar={toggleSidebar} />
-
-                <div className="flex flex-1 overflow-hidden">
-                    <Sidebar
-                        isMobile={true}
-                        isOpen={mobileSidebarOpen}
-                        toggleDropdown={toggleDropdown}
-                        openDropdown={openDropdown}
-                        onClose={() => setMobileSidebarOpen(false)}
-                    />
-
-                    <Sidebar
-                        isMobile={false}
-                        toggleDropdown={toggleDropdown}
-                        openDropdown={openDropdown}
-                    />
-
-                    <main className="flex-1 p-2 sm:p-3 overflow-y-auto" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                        <div className="max-w-7xl mx-auto space-y-2 sm:space-y-3">
+            <main className="flex-1 p-2 sm:p-3 overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                <div className="max-w-7xl mx-auto space-y-2 sm:space-y-3">
                             {/* Header with enhanced design */}
                             <div className="mb-2 rounded-lg p-2.5 sm:p-3 border shadow-sm" style={{ backgroundColor: isDark ? 'rgba(45, 45, 45, 0.6)' : 'rgba(255, 255, 255, 0.6)', borderColor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.5)', backdropFilter: 'blur(10px)' }}>
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -573,8 +555,6 @@ export default function DashboardScreen() {
                             </div>
                         </div>
                     </main>
-                </div>
-            </div>
-        </>
+                </Layout>
     );
 }

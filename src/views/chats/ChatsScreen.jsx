@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar";
+import Layout from "../../components/Layout";
+import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
 import { useChat } from "../../hooks/useChat";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -34,7 +34,6 @@ import "../../App.css";
 export default function ChatsScreen() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [view, setView] = useState("chatList");
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -43,10 +42,10 @@ export default function ChatsScreen() {
   const [transferDepartment, setTransferDepartment] = useState(null);
   const [allDepartments, setAllDepartments] = useState([]);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
-  // Get user permissions
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
   const canMessage = hasPermission("priv_can_message");
@@ -83,10 +82,6 @@ export default function ChatsScreen() {
     bottomRef,
     textareaRef,
   } = useChat();
-
-  const toggleSidebar = () => {
-    setMobileSidebarOpen((prev) => !prev);
-  };
 
   const toggleDropdown = (name) => {
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -278,7 +273,7 @@ export default function ChatsScreen() {
   }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages, isLoadingMore]);
 
   return (
-    <>
+    <Layout>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -308,8 +303,7 @@ export default function ChatsScreen() {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <TopNavbar toggleSidebar={toggleSidebar} />
+      <div className="flex flex-col h-full overflow-hidden"style={{ backgroundColor: 'var(--bg-secondary)' }}>
 
       {/* End Chat Modal */}
       <ConfirmDialog
@@ -343,22 +337,7 @@ export default function ChatsScreen() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-          onClose={() => setMobileSidebarOpen(false)}
-        />
-
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <main className="flex-1" style={{ backgroundColor: 'transparent' }}>
-          <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
+        <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3 flex-1">
             {/* Chat list - Enhanced */}
             <div
               className={`${
@@ -453,6 +432,8 @@ export default function ChatsScreen() {
                     canEndChat={canEndChat}
                     canTransfer={canTransfer}
                     onProfileClick={handleProfileClick}
+                    onToggleDepartmentPanel={toggleDepartmentPanel}
+                    isDepartmentPanelOpen={isDepartmentPanelOpen}
                   />
 
                   <ChatMessages
@@ -507,7 +488,7 @@ export default function ChatsScreen() {
               )}
             </div>
           </div>
-        </main>
+        </div>
 
         {/* Profile Panel */}
         <ProfilePanel
@@ -516,7 +497,6 @@ export default function ChatsScreen() {
           onClose={handleCloseProfile}
         />
       </div>
-    </div>
-    </>
+    </Layout>
   );
 }

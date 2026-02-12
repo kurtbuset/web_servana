@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar";
+import Layout from "../../components/Layout";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { Search, X } from "react-feather";
 import { useUserRoles } from "../../hooks/useRoles";
@@ -10,8 +9,6 @@ import { toast } from "react-toastify";
 import "../../App.css";
 
 export default function ChangeRolesScreen() {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get user permissions
@@ -20,8 +17,6 @@ export default function ChangeRolesScreen() {
   const canAssignRoles = hasPermission("priv_can_assign_role");
 
   const { users, availableRoles, loading, changeUserRole, toggleUserActive } = useUserRoles();
-
-  const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const handleToggleActive = (user) => {
     if (!canAssignRoles) {
@@ -64,23 +59,11 @@ export default function ChangeRolesScreen() {
           background: #552C8C;
         }
       `}</style>
-      <div className="flex flex-col h-screen overflow-hidden">
-        <TopNavbar toggleSidebar={toggleSidebar} />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-          <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
+      <Layout>
+        <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="flex flex-col h-full gap-0 p-0 md:p-3 flex-1">
+            <div className="h-full flex flex-col md:rounded-xl shadow-sm border-0 md:border overflow-hidden" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+              <div className="p-3 sm:p-4">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Change Roles</h1>
@@ -229,10 +212,11 @@ export default function ChangeRolesScreen() {
                 </div>
               )}
             </div>
+              </div>
+            </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </Layout>
     </>
   );
 }
