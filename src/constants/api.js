@@ -4,8 +4,16 @@
  */
 
 // API Base URLs
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+console.log('Environment variables:', {
+  VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+  VITE_SOCKET_URL: import.meta.env.VITE_SOCKET_URL,
+  NODE_ENV: import.meta.env.NODE_ENV
+});
+
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
+console.log('Final URLs:', { API_BASE_URL, SOCKET_URL });
 
 // API Timeouts (in milliseconds)
 export const API_TIMEOUT = {
