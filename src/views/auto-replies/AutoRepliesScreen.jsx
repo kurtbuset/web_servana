@@ -6,6 +6,7 @@ import { Edit3, Search, X } from "react-feather";
 import { useAutoReplies } from "../../hooks/useAutoReplies";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "react-toastify";
 import "../../App.css";
 
@@ -21,7 +22,7 @@ export default function AutoRepliesScreen() {
 
   const { userData, hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canEditAutoReplies = hasPermission("priv_can_manage_auto_reply");
+  const canEditAutoReplies = hasPermission(PERMISSIONS.MANAGE_AUTO_REPLY);
   const {
     replies,
     activeDepartments,

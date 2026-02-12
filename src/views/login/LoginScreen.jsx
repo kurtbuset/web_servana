@@ -34,8 +34,6 @@ export default function LoginScreen() {
       // Force refresh user data after successful login to ensure fresh privileges
       console.log("🔄 Login successful - refreshing user data...");
       await refreshUserData();
-      // Set flag for showing toast after navigation
-      localStorage.setItem("showLoginToast", "true");
     } catch (err) {
       // Error is already handled by useAuth hook (toast notification)
       console.error("Login failed:", err);
