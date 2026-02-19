@@ -10,6 +10,7 @@ import QueuesModals from "./components/QueuesModals";
 import { useQueuesHandlers } from "../../hooks/queues/useQueuesHandlers";
 import { useQueuesEffects } from "../../hooks/queues/useQueuesEffects";
 import { getQueueStyles } from "./styles/queueStyles";
+import { PERMISSIONS } from "../../constants/permissions";
 import "../../App.css";
 
 export default function QueuesScreen() {
@@ -30,9 +31,9 @@ export default function QueuesScreen() {
   const scrollContainerRef = useRef(null);
 
   const { hasPermission } = useUser();
-  const canMessage = hasPermission("priv_can_message");
-  const canEndChat = hasPermission("priv_can_end_chat");
-  const canTransfer = hasPermission("priv_can_transfer");
+  const canMessage = hasPermission(PERMISSIONS.MESSAGE);
+  const canEndChat = hasPermission(PERMISSIONS.END_CHAT);
+  const canTransfer = hasPermission(PERMISSIONS.TRANSFER);
 
   const queueState = useQueues();
   const {

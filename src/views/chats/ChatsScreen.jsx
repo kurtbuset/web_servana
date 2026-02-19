@@ -12,6 +12,7 @@ import ChatsModals from "./components/ChatsModals";
 import { useChatHandlers } from "../../hooks/chats/useChatHandlers";
 import { useChatEffects } from "../../hooks/chats/useChatEffects";
 import { getChatStyles } from "./styles/chatStyles";
+import { PERMISSIONS } from "../../constants/permissions";
 import "../../App.css";
 
 export default function ChatsScreen() {
@@ -31,10 +32,10 @@ export default function ChatsScreen() {
 
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canMessage = hasPermission("priv_can_message");
-  const canEndChat = hasPermission("priv_can_end_chat");
-  const canTransfer = hasPermission("priv_can_transfer");
-  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess");
+  const canMessage = hasPermission(PERMISSIONS.MESSAGE);
+  const canEndChat = hasPermission(PERMISSIONS.END_CHAT);
+  const canTransfer = hasPermission(PERMISSIONS.TRANSFER);
+  const canUseCannedMessages = hasPermission(PERMISSIONS.USE_CANNED_MESS);
 
   const chatState = useChat();
   const {
