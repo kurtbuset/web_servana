@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { LogOut } from "react-feather";
 import api from "../api";
+import { getAvatarUrl } from "../utils/imageUtils";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user
@@ -23,7 +24,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     userData.profile?.prof_lastname
   ].filter(Boolean).join(" ");
 
-  const avatarUrl = userData.image?.img_location;
+  const avatarUrl = getAvatarUrl(userData);
   const email = userData.profile?.prof_email || userData.email;
   const phone = userData.profile?.prof_phone;
   const address = userData.profile?.prof_address;
@@ -58,7 +59,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     <>
       {/* Blur Overlay */}
       <div
-        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[45] transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[75] transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -66,7 +67,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
 
       {/* Slide-in Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[50] transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}
@@ -93,7 +94,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
               <div className="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse"></div>
               <div className="absolute -inset-1 bg-gradient-to-r from-white/40 to-white/20 rounded-full animate-spin-slow"></div>
               <img
-                src={avatarUrl || "profile_picture/DefaultProfile.jpg"}
+                src={avatarUrl}
                 alt={fullName}
                 className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-300"
               />
@@ -301,7 +302,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
 
       {/* Logout Confirmation Modal - Outside panel for true screen centering */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 sm:p-6 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[90] p-4 sm:p-6 animate-fadeIn">
           <div 
             className="rounded-xl shadow-2xl p-6 sm:p-8 max-w-sm w-full transform transition-all animate-scaleIn"
             style={{ backgroundColor: 'var(--card-bg)' }}

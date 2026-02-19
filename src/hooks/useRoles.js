@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import RoleService from "../services/role.service";
-import { toast } from "react-toastify";
+import toast from "../utils/toast";
 
 /**
  * useRoles Hook
@@ -23,10 +23,7 @@ export const useRoles = () => {
     } catch (err) {
       console.error("Failed to fetch roles:", err);
       setError(err.message || "Failed to load roles");
-      toast.error("Failed to load roles. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error("Failed to load roles. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -39,20 +36,14 @@ export const useRoles = () => {
     async (roleData) => {
       try {
         await RoleService.createRole(roleData);
-        toast.success("Role added successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.success("Role added successfully");
         // Refresh roles list
         await fetchRoles();
         return true;
       } catch (err) {
         console.error("Failed to create role:", err);
         const errorMessage = err.response?.data?.error || "Failed to save role";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -66,20 +57,14 @@ export const useRoles = () => {
     async (roleId, roleData) => {
       try {
         await RoleService.updateRole(roleId, roleData);
-        toast.success("Role updated successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.success("Role updated successfully");
         // Refresh roles list
         await fetchRoles();
         return true;
       } catch (err) {
         console.error("Failed to update role:", err);
         const errorMessage = err.response?.data?.error || "Failed to save role";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -107,21 +92,14 @@ export const useRoles = () => {
         );
 
         toast.success(
-          `Role ${!currentActive ? "activated" : "deactivated"} successfully`,
-          {
-            position: "top-right",
-            autoClose: 2000,
-          }
+          `Role ${!currentActive ? "activated" : "deactivated"} successfully`
         );
         return true;
       } catch (err) {
         console.error("Failed to toggle role active status:", err);
         const errorMessage =
           err.response?.data?.error || "Failed to update role status";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -152,19 +130,13 @@ export const useRoles = () => {
           )
         );
 
-        toast.success("Permission updated successfully", {
-          position: "top-right",
-          autoClose: 2000,
-        });
+        toast.success("Permission updated successfully");
         return true;
       } catch (err) {
         console.error("Failed to update permission:", err);
         const errorMessage =
           err.response?.data?.error || "Failed to update permission";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -214,10 +186,7 @@ export const useUserRoles = () => {
     } catch (err) {
       console.error("Failed to fetch users and roles:", err);
       setError(err.message || "Failed to load accounts");
-      toast.error("Failed to load accounts. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error("Failed to load accounts. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -237,18 +206,12 @@ export const useUserRoles = () => {
         )
       );
 
-      toast.success("User role updated successfully", {
-        position: "top-right",
-        autoClose: 2000,
-      });
+      toast.success("User role updated successfully");
       return true;
     } catch (err) {
       console.error("Failed to update user role:", err);
       const errorMessage = err.response?.data?.error || "Failed to update user";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       return false;
     }
   }, []);
@@ -270,20 +233,13 @@ export const useUserRoles = () => {
       );
 
       toast.success(
-        `User ${!currentActive ? "activated" : "deactivated"} successfully`,
-        {
-          position: "top-right",
-          autoClose: 2000,
-        }
+        `User ${!currentActive ? "activated" : "deactivated"} successfully`
       );
       return true;
     } catch (err) {
       console.error("Failed to toggle user active status:", err);
       const errorMessage = err.response?.data?.error || "Failed to update user";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       return false;
     }
   }, []);

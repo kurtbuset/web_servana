@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',
+      },
       fontFamily: {
         inter: ["Inter", "sans-serif"],
         baloo: ['"Baloo 2"', 'cursive'],

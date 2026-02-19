@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Layout from "../../components/Layout";
+import ScreenContainer from "../../components/ScreenContainer";
+import ScrollContainer from "../../components/ScrollContainer";
 import { MessageSquare, Users, Clock, CheckCircle, TrendingUp, Activity, UserCheck } from "react-feather";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
@@ -352,36 +354,23 @@ export default function DashboardScreen() {
     if (loading) {
         return (
             <Layout>
-                <div className="flex items-center justify-center h-full" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6237A0] mx-auto mb-4"></div>
-                        <p style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</p>
+                <ScreenContainer>
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6237A0] mx-auto mb-4"></div>
+                            <p style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</p>
+                        </div>
                     </div>
-                </div>
+                </ScreenContainer>
             </Layout>
         );
     }
 
     return (
         <Layout>
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: ${isDark ? '#2d2d2d' : '#f1f1f1'};
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #6237A0;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #7A4ED9;
-                }
-            `}</style>
-            <main className="flex-1 p-2 sm:p-3 overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                <div className="max-w-7xl mx-auto space-y-2 sm:space-y-3">
+            <ScreenContainer>
+                <ScrollContainer className="flex-1 p-2 sm:p-3">
+                    <div className="max-w-7xl mx-auto space-y-2 sm:space-y-3">
                             {/* Header with enhanced design */}
                             <div className="mb-2 rounded-lg p-2.5 sm:p-3 border shadow-sm" style={{ backgroundColor: isDark ? 'rgba(45, 45, 45, 0.6)' : 'rgba(255, 255, 255, 0.6)', borderColor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.5)', backdropFilter: 'blur(10px)' }}>
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -553,8 +542,9 @@ export default function DashboardScreen() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </main>
-                </Layout>
+                    </div>
+                </ScrollContainer>
+            </ScreenContainer>
+        </Layout>
     );
 }

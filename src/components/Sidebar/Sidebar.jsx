@@ -15,13 +15,13 @@ import {
 } from "react-feather";
 import { HiOfficeBuilding } from "react-icons/hi";
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
 import socket from "../../socket";
 import { ROUTES } from "../../constants/routes";
+import ScrollContainer from "../ScrollContainer";
 
 const navSections = [
   {
@@ -134,17 +134,22 @@ const navSections = [
 
 const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
   const handleClick = useCallback((e) => {
+    // Check if navigation should be blocked
+    if (onBlockedClick) {
+      const isBlocked = onBlockedClick();
+      if (isBlocked) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+    }
+    
     // Store current scroll position before navigation
     const sidebar = e.currentTarget.closest('.sidebar-scroll-container');
     if (sidebar) {
       const scrollTop = sidebar.scrollTop;
       // Store in sessionStorage to persist across renders
       sessionStorage.setItem('sidebarScrollPosition', scrollTop.toString());
-    }
-    
-    if (onBlockedClick && onBlockedClick()) {
-      e.preventDefault();
-      return;
     }
     
     // Prevent focus
@@ -249,24 +254,26 @@ SectionHeader.displayName = 'SectionHeader';
 
 
 
-const Sidebar = memo(({ isMobile, isOpen }) => {
+const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   const location = useLocation();
   const { userData, hasPermission } = useUser();
   const { isDark } = useTheme();
-  const { blockNavigation } = useUnsavedChanges();
+  const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
   const [counts, setCounts] = useState({
     pendingChats: 0,
     activeChats: 0
   });
   
-  // Persist collapse state in localStorage
+  // Persist collapse state in localStorage (desktop only)
   const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (isMobile) return false; // Never collapse on mobile
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === 'true';
   });
 
   // Ref to track sidebar scroll position
   const sidebarScrollRef = useRef(null);
+  const sidebarRef = useRef(null);
 
   // Restore scroll position on mount and after navigation
   useEffect(() => {
@@ -310,8 +317,10 @@ const Sidebar = memo(({ isMobile, isOpen }) => {
 
   // Save collapse state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('sidebarCollapsed', isCollapsed);
-  }, [isCollapsed]);
+    if (!isMobile) {
+      localStorage.setItem('sidebarCollapsed', isCollapsed);
+    }
+  }, [isCollapsed, isMobile]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed(prev => !prev);
@@ -331,34 +340,66 @@ const Sidebar = memo(({ isMobile, isOpen }) => {
     [location.pathname]
   );
 
+  // Close sidebar on navigation (mobile only)
+  useEffect(() => {
+    if (isMobile && isOpen && onClose) {
+      // Small delay to allow the navigation to complete
+      const timeoutId = setTimeout(() => {
+        onClose();
+      }, 150);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [location.pathname]);
+
+  // Handle click outside to close (mobile only)
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
+    const handleClickOutside = (event) => {
+      // Don't close if clicking the toggle button
+      if (event.target.closest('[data-sidebar-toggle]')) {
+        return;
+      }
+      
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        onClose?.();
+      }
+    };
+
+    // Add small delay to prevent immediate close on open
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobile, isOpen, onClose]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, isOpen]);
+
   // Fetch initial chat counts and set up WebSocket listeners
   useEffect(() => {
-    // const fetchCounts = async () => {
-    //   try {
-    //     // TODO: Replace with actual API endpoint
-    //     const res = await api.get("/chat/counts");
-    //     setCounts({
-    //       pendingChats: res.data.pendingChats || 0,
-    //       activeChats: res.data.activeChats || 0
-    //     });
-    //   } catch (error) {
-    //     console.error("Failed to fetch chat counts:", error);
-    //     // Fallback to simulated data for development
-    //     setCounts({
-    //       pendingChats: 8,
-    //       activeChats: 23
-    //     });
-    //   }
-    // };
-
     if (userData) {
       // Connect socket if not already connected
       if (!socket.connected) {
         socket.connect();
       }
-
-      // Fetch initial counts
-      // fetchCounts();
 
       // Listen for real-time count updates
       socket.on("chatCountsUpdate", (data) => {
@@ -394,11 +435,8 @@ const Sidebar = memo(({ isMobile, isOpen }) => {
 
       // Listen for message read/seen event
       socket.on("messagesSeen", (data) => {
-        // When user views a chat, decrease unread count
-        // This assumes the backend sends which chat was viewed
         if (data.chatGroupId) {
           // Optionally refresh counts or handle specific chat
-          // fetchCounts();
         }
       });
 
@@ -413,7 +451,12 @@ const Sidebar = memo(({ isMobile, isOpen }) => {
     }
   }, [userData]);
 
-  if (isMobile && !isOpen) return null;
+  // Debug logging - must be after all other hooks
+  useEffect(() => {
+    if (isMobile) {
+      console.log('Sidebar mobile state changed:', { isMobile, isOpen });
+    }
+  }, [isMobile, isOpen]);
 
   // Filter navigation sections based on permissions - memoize to prevent recalculation
   const visibleNavSections = useMemo(() => {
@@ -432,72 +475,99 @@ const Sidebar = memo(({ isMobile, isOpen }) => {
   }, [hasPermission]);
 
   return (
-    <aside
-      className={`${
-        isMobile
-          ? "absolute top-16 left-0 z-40 h-[calc(100vh-4rem)]"
-          : "hidden md:flex"
-      } ${isCollapsed ? 'w-20' : 'w-56'} flex-col shadow-lg transition-all duration-300`}
-      style={{ 
-        backgroundColor: 'var(--card-bg)', 
-        color: 'var(--text-primary)',
-        borderRight: `1px solid var(--border-color)`,
-        scrollBehavior: 'auto'
-      }}
-    >
-      <div 
-        ref={sidebarScrollRef}
-        className="sidebar-scroll-container flex-1 overflow-y-auto p-3" 
-        style={{ scrollBehavior: 'auto', overflowAnchor: 'none' }}
-      >
-        <nav className="space-y-3">
-          {/* Navigation Sections */}
-          {visibleNavSections.map((section) => (
-            <div key={section.title}>
-              <SectionHeader title={section.title} isCollapsed={isCollapsed} />
-              <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <NavItem
-                    key={item.to}
-                    to={item.to}
-                    Icon={item.icon}
-                    label={item.label}
-                    isActive={isActivePath(item.to)}
-                    badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
-                    isCollapsed={isCollapsed}
-                    isDark={isDark}
-                    onBlockedClick={blockNavigation}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
-      </div>
-
-      {/* Collapse Toggle Button at Bottom - Desktop Only */}
-      {!isMobile && (
-        <div className="p-2" style={{ borderTop: `1px solid var(--border-color)` }}>
-          <button
-            onClick={toggleCollapse}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all`}
-            style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={handleCollapseMouseEnter}
-            onMouseLeave={handleCollapseMouseLeave}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? (
-              <ChevronsRight size={15} />
-            ) : (
-              <>
-                <ChevronsLeft size={15} />
-                <span className="text-xs font-medium">Collapse</span>
-              </>
-            )}
-          </button>
-        </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isMobile && isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose?.();
+          }}
+          style={{ top: '4rem' }}
+        />
       )}
-    </aside>
+
+      {/* Sidebar */}
+      <aside
+        ref={sidebarRef}
+        className={`
+          ${isMobile 
+            ? `fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] transform transition-transform duration-300 ease-in-out ${
+                isOpen ? 'translate-x-0' : '-translate-x-full'
+              }`
+            : "hidden md:flex"
+          } 
+          ${isCollapsed && !isMobile ? 'w-20' : 'w-72 xs:w-64 sm:w-56'} 
+          flex-col shadow-lg
+        `}
+        style={{ 
+          backgroundColor: 'var(--card-bg)', 
+          color: 'var(--text-primary)',
+          borderRight: `1px solid var(--border-color)`,
+          scrollBehavior: 'auto',
+          maxWidth: isMobile ? '85vw' : undefined
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ScrollContainer 
+          ref={sidebarScrollRef}
+          className="sidebar-scroll-container flex-1 p-3" 
+          style={{ 
+            scrollBehavior: 'auto', 
+            overflowAnchor: 'none',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
+          <nav className="space-y-3">
+            {/* Navigation Sections */}
+            {visibleNavSections.map((section) => (
+              <div key={section.title}>
+                <SectionHeader title={section.title} isCollapsed={isCollapsed} />
+                <div className="space-y-0.5">
+                  {section.items.map((item) => (
+                    <NavItem
+                      key={item.to}
+                      to={item.to}
+                      Icon={item.icon}
+                      label={item.label}
+                      isActive={isActivePath(item.to)}
+                      badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
+                      isCollapsed={isCollapsed}
+                      isDark={isDark}
+                      onBlockedClick={blockNavigation}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </ScrollContainer>
+
+        {/* Collapse Toggle Button at Bottom - Desktop Only */}
+        {!isMobile && (
+          <div className="p-2" style={{ borderTop: `1px solid var(--border-color)` }}>
+            <button
+              onClick={toggleCollapse}
+              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all`}
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={handleCollapseMouseEnter}
+              onMouseLeave={handleCollapseMouseLeave}
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? (
+                <ChevronsRight size={15} />
+              ) : (
+                <>
+                  <ChevronsLeft size={15} />
+                  <span className="text-xs font-medium">Collapse</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </aside>
+    </>
   );
 });
 

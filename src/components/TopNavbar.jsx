@@ -5,11 +5,12 @@ import { useTheme } from "../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../src/context/UnsavedChangesContext";
 import { useDepartmentPanel } from "../../src/context/DepartmentPanelContext";
 import UserProfilePanel from "./UserProfilePanel";
+import { getAvatarUrl } from "../utils/imageUtils";
 
 export default function TopNavbar({ toggleSidebar }) {
   const { userData, loading } = useUser();
   const { isDark } = useTheme();
-  const { blockNavigation } = useUnsavedChanges();
+  const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
   const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
@@ -21,7 +22,7 @@ export default function TopNavbar({ toggleSidebar }) {
     : "";
 
   // Get avatar or fallback
-  const avatarUrl = userData?.image?.img_location;
+  const avatarUrl = getAvatarUrl(userData);
 
   const handleProfileClick = () => {
     if (blockNavigation()) {
@@ -51,6 +52,7 @@ export default function TopNavbar({ toggleSidebar }) {
           className="md:hidden absolute left-2 sm:left-3 hover:opacity-80 focus:outline-none transition-opacity"
           onClick={toggleSidebar}
           style={{ color: 'var(--text-primary)' }}
+          data-sidebar-toggle
         >
           <Menu size={20} className="sm:w-6 sm:h-6" strokeWidth={1} />
         </button>
@@ -114,7 +116,7 @@ export default function TopNavbar({ toggleSidebar }) {
           >
             <div className="relative">
               <img
-                src={avatarUrl || "profile_picture/DefaultProfile.jpg"}
+                src={avatarUrl}
                 alt={fullName || "Profile"}
                 className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#6237A0] transition-all"
               />

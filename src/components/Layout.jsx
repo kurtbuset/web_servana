@@ -15,7 +15,16 @@ export default function Layout({ children }) {
   const { isOpen: isDepartmentPanelOpen, close: closeDepartmentPanel } = useDepartmentPanel();
 
   const toggleSidebar = () => {
-    setMobileSidebarOpen(prev => !prev);
+    console.log('Toggle sidebar clicked, current state:', mobileSidebarOpen);
+    setMobileSidebarOpen(prev => {
+      console.log('Setting sidebar to:', !prev);
+      return !prev;
+    });
+  };
+
+  const closeSidebar = () => {
+    console.log('Closing sidebar');
+    setMobileSidebarOpen(false);
   };
 
   const toggleDropdown = (name) => {
@@ -31,16 +40,13 @@ export default function Layout({ children }) {
         <Sidebar
           isMobile={true}
           isOpen={mobileSidebarOpen}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-          onClose={() => setMobileSidebarOpen(false)}
+          onClose={closeSidebar}
         />
 
         {/* Desktop Sidebar */}
         <Sidebar
           isMobile={false}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
+          isOpen={false}
         />
 
         {/* Main Content Area - Flex container for content + department panel */}

@@ -2,6 +2,7 @@
 import { useUser } from "../context/UserContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatLastSeen } from "../utils/timeUtils";
+import { getProfilePictureUrl } from "../utils/imageUtils";
 import api from "../api";
 
 // Cache for department data to prevent refetching on every navigation
@@ -513,7 +514,7 @@ function UserCard({ user, isDark, onClick }) {
   const displayName = fullName || user.sys_user_email;
   
   // Get avatar URL
-  const avatarUrl = user.image?.img_location || "/profile_picture/DefaultProfile.jpg";
+  const avatarUrl = getProfilePictureUrl(user.image?.img_location);
   
   return (
     <div 
@@ -591,7 +592,7 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
   ].filter(Boolean).join(" ").trim();
   
   const displayName = fullName || user.sys_user_email;
-  const avatarUrl = user.image?.img_location || "/profile_picture/DefaultProfile.jpg";
+  const avatarUrl = getProfilePictureUrl(user.image?.img_location);
   const email = user.profile?.prof_email || user.sys_user_email;
   
   // Get user's departments
@@ -646,14 +647,14 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
       {/* Backdrop for mobile */}
       {isMobile && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] animate-fadeIn"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[71] animate-fadeIn"
           onClick={onClose}
         />
       )}
       
       <div
         ref={modalRef}
-        className={`fixed w-[280px] rounded-xl shadow-2xl z-[66] overflow-hidden ${skipAnimation ? '' : (isMobile ? 'animate-scaleIn' : 'animate-slideInRight')}`}
+        className={`fixed w-[280px] rounded-xl shadow-2xl z-[72] overflow-hidden ${skipAnimation ? '' : (isMobile ? 'animate-scaleIn' : 'animate-slideInRight')}`}
         style={{ 
           backgroundColor: 'var(--card-bg)',
           top: position.top,

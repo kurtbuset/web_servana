@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import QueueService from "../services/queue.service";
 import socket from "../socket";
 import { useUser } from "../context/UserContext";
-import { toast } from "react-toastify";
+import toast from "../utils/toast";
 
 /**
  * useQueues Hook

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DepartmentService } from '../services/department.service';
-import { toast } from 'react-toastify';
+import toast from '../utils/toast';
 import { useUser } from '../../src/context/UserContext';
 
 /**
@@ -40,10 +40,7 @@ export const useDepartments = () => {
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to fetch departments';
       setError(errorMessage);
-      toast.error('Failed to load departments. Please refresh the page.', {
-        position: 'top-right',
-        autoClose: 5000,
-      });
+      toast.error('Failed to load departments. Please refresh the page.');
       throw err;
     } finally {
       setLoading(false);
@@ -57,20 +54,14 @@ export const useDepartments = () => {
    */
   const createDepartment = useCallback(async (deptName) => {
     if (!deptName.trim()) {
-      toast.error('Department name cannot be empty', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('Department name cannot be empty');
       return;
     }
 
     // Check if user ID is available
     if (!CURRENT_USER_ID) {
       console.error('❌ No user ID available for department creation');
-      toast.error('Unable to create department: User not authenticated', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('Unable to create department: User not authenticated');
       return;
     }
 
@@ -80,10 +71,7 @@ export const useDepartments = () => {
     );
 
     if (isDuplicate) {
-      toast.error('This department already exists', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('This department already exists');
       return;
     }
 
@@ -96,10 +84,7 @@ export const useDepartments = () => {
         dept_created_by: CURRENT_USER_ID,
       });
       
-      toast.success('Department added successfully', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.success('Department added successfully');
       
       await fetchDepartments(); // Refresh list
       return result;
@@ -107,10 +92,7 @@ export const useDepartments = () => {
       const errorMessage = err.response?.data?.error || 'Failed to save department';
       console.error('❌ Failed to create department:', err);
       setError(errorMessage);
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -125,20 +107,14 @@ export const useDepartments = () => {
    */
   const updateDepartment = useCallback(async (deptId, deptName) => {
     if (!deptName.trim()) {
-      toast.error('Department name cannot be empty', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('Department name cannot be empty');
       return;
     }
 
     // Check if user ID is available
     if (!CURRENT_USER_ID) {
       console.error('❌ No user ID available for department update');
-      toast.error('Unable to update department: User not authenticated', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('Unable to update department: User not authenticated');
       return;
     }
 
@@ -150,10 +126,7 @@ export const useDepartments = () => {
     );
 
     if (isDuplicate) {
-      toast.error('This department already exists', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('This department already exists');
       return;
     }
 
@@ -166,10 +139,7 @@ export const useDepartments = () => {
         dept_updated_by: CURRENT_USER_ID,
       });
       
-      toast.success('Department updated successfully', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.success('Department updated successfully');
       
       await fetchDepartments(); // Refresh list
       return result;
@@ -177,10 +147,7 @@ export const useDepartments = () => {
       const errorMessage = err.response?.data?.error || 'Failed to save department';
       console.error('❌ Failed to update department:', err);
       setError(errorMessage);
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -197,10 +164,7 @@ export const useDepartments = () => {
     // Check if user ID is available
     if (!CURRENT_USER_ID) {
       console.error('❌ No user ID available for department toggle');
-      toast.error('Unable to toggle department: User not authenticated', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error('Unable to toggle department: User not authenticated');
       return;
     }
 
@@ -221,19 +185,12 @@ export const useDepartments = () => {
       );
 
       toast.success(
-        `Department ${!currentStatus ? 'activated' : 'deactivated'} successfully`,
-        {
-          position: 'top-right',
-          autoClose: 2000,
-        }
+        `Department ${!currentStatus ? 'activated' : 'deactivated'} successfully`
       );
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to toggle active status';
       console.error('❌ Failed to toggle department:', err);
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     }
   }, [CURRENT_USER_ID]);

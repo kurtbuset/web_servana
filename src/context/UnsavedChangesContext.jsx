@@ -1,23 +1,26 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 const UnsavedChangesContext = createContext();
 
 export const UnsavedChangesProvider = ({ children }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [onNavigationBlocked, setOnNavigationBlocked] = useState(null);
+  const onNavigationBlockedRef = useRef(null);
 
-  const blockNavigation = useCallback((callback) => {
-    if (hasUnsavedChanges && onNavigationBlocked) {
-      onNavigationBlocked();
+  const setOnNavigationBlocked = useCallback((callback) => {
+    onNavigationBlockedRef.current = callback;
+  }, []);
+
+  const blockNavigation = useCallback(() => {
+    if (hasUnsavedChanges && onNavigationBlockedRef.current) {
+      onNavigationBlockedRef.current();
       return true; // Navigation blocked
     }
     return false; // Navigation allowed
-  }, [hasUnsavedChanges, onNavigationBlocked]);
+  }, [hasUnsavedChanges]);
 
   const value = {
     hasUnsavedChanges,
     setHasUnsavedChanges,
-    onNavigationBlocked,
     setOnNavigationBlocked,
     blockNavigation
   };

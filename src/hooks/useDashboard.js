@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DashboardService } from '../services/dashboard.service';
-import { toast } from 'react-toastify';
+import toast from '../utils/toast';
 
 /**
  * useDashboard hook manages dashboard data and state

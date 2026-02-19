@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChatService } from '../services/chat.service';
 import { useUser } from '../context/UserContext';
-import { toast } from 'react-toastify';
+import toast from '../utils/toast';
 import socket from '../socket';
 
 /**

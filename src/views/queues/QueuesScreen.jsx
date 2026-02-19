@@ -11,8 +11,10 @@ import CustomerList from "../../components/chat/CustomerList";
 import ChatHeader from "../../components/chat/ChatHeader";
 import ChatMessages from "../../components/chat/ChatMessages";
 import MessageInput from "../../components/chat/MessageInput";
-import { toast } from "react-toastify";
+import toast from "../../utils/toast";
 import "../../App.css";
+import "../../styles/GridLayout.css";
+import "../../styles/Animations.css";
 
 export default function QueuesScreen() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -235,40 +237,6 @@ export default function QueuesScreen() {
 
   return (
     <Layout>
-      <style>{`
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: #d1d5db transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(229, 231, 235, 0.3);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #d1d5db;
-          border-radius: 4px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #a1a1aa;
-        }
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-in {
-          animation: slideIn 0.3s ease-out;
-        }
-      `}</style>
       <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
 
       {/* End Chat Modal */}
