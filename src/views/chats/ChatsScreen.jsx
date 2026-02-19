@@ -31,10 +31,10 @@ export default function ChatsScreen() {
 
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canMessage = hasPermission(PERMISSIONS.MESSAGE);
-  const canEndChat = hasPermission(PERMISSIONS.END_CHAT);
-  const canTransfer = hasPermission(PERMISSIONS.TRANSFER);
-  const canUseCannedMessages = hasPermission(PERMISSIONS.USE_CANNED_MESS);
+  const canMessage = hasPermission("priv_can_message");
+  const canEndChat = hasPermission("priv_can_end_chat");
+  const canTransfer = hasPermission("priv_can_transfer");
+  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess");
 
   const chatState = useChat();
   const {
