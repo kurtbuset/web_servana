@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast from '../utils/toast';
+import { showSuccess, showError } from '../utils/toast';
 import { AuthService } from '../services/auth.service';
 
 /**
@@ -31,13 +31,13 @@ export const useAuth = () => {
     setError(null);
     try {
       const result = await AuthService.login(email, password);
-      toast.success('Login successful');
+      showSuccess('Login successful');
       navigate('/dashboard');
       return result;
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Login failed';
       setError(errorMessage);
-      toast.error(errorMessage);
+      showError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ export const useAuth = () => {
     setError(null);
     try {
       await AuthService.logout();
-      toast.success('Logged out successfully');
+      showSuccess('Logged out successfully');
       navigate('/login');
     } catch (err) {
       console.error('Logout error:', err);

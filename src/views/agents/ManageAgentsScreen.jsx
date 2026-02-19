@@ -231,51 +231,45 @@ export default function ManageAgentsScreen() {
       <ScreenContainer>
         <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
             
-            {/* Breadcrumb Navigation */}
-            <div className="flex items-center gap-2 mb-3 text-xs">
-              <button
-                onClick={() => handleBreadcrumbClick("list")}
-                className={`transition-colors ${
-                  currentView === "list" 
-                    ? "font-semibold text-[#6237A0]" 
-                    : "hover:text-[#6237A0]"
-                }`}
-                style={currentView !== "list" ? { color: 'var(--text-secondary)' } : {}}
-              >
+            {/* Breadcrumb Navigation - Only show when NOT on list view */}
+            {currentView !== "list" && (
+              <div className="flex items-center gap-2 mb-3 text-xs">
+                <button
+                  onClick={() => handleBreadcrumbClick("list")}
+                  className="transition-colors hover:text-[#6237A0]"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Accounts
+                </button>
                 
-              </button>
-              
-              {currentView !== "list" && (
-                <>
-                  <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <button
-                    onClick={() => handleBreadcrumbClick("detail")}
-                    className={`transition-colors ${
-                      currentView === "detail" 
-                        ? "font-semibold text-[#6237A0]" 
-                        : "hover:text-[#6237A0]"
-                    }`}
-                    style={currentView !== "detail" ? { color: 'var(--text-secondary)' } : {}}
-                  >
-                    {selectedAgent?.email?.split('@')[0] || "Agent"}
-                  </button>
-                </>
-              )}
-              
-              {currentView === "editDept" && (
-                <>
-                  <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <span className="font-semibold text-[#6237A0]">Edit Department</span>
-                </>
-              )}
+                <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                <button
+                  onClick={() => handleBreadcrumbClick("detail")}
+                  className={`transition-colors ${
+                    currentView === "detail" 
+                      ? "font-semibold text-[#6237A0]" 
+                      : "hover:text-[#6237A0]"
+                  }`}
+                  style={currentView !== "detail" ? { color: 'var(--text-secondary)' } : {}}
+                >
+                  {selectedAgent?.email?.split('@')[0] || "Agent"}
+                </button>
+                
+                {currentView === "editDept" && (
+                  <>
+                    <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                    <span className="font-semibold text-[#6237A0]">Edit Department</span>
+                  </>
+                )}
 
-              {currentView === "analytics" && (
-                <>
-                  <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <span className="font-semibold text-[#6237A0]">Analytics</span>
-                </>
-              )}
-            </div>
+                {currentView === "analytics" && (
+                  <>
+                    <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                    <span className="font-semibold text-[#6237A0]">Analytics</span>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Main Content */}
             <div className="flex-1 overflow-hidden flex flex-col">
@@ -359,10 +353,15 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3 flex-shrink-0">
-        <h1 className="text-base sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Accounts</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4 flex-shrink-0">
+        <div className="relative">
+          <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
+            Accounts
+            <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
+          </h1>
+        </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Search Bar */}
           <SearchBar
             value={searchQuery}

@@ -108,7 +108,12 @@ export default function DepartmentScreen() {
         <div className="p-3 sm:p-4 flex flex-col h-full">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Departments</h1>
+            <div className="relative">
+              <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
+                Departments
+                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
+              </h1>
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Search Bar */}

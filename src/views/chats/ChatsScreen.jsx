@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Layout from "../../components/Layout";
+import { AnimatedBackground } from "../../components/ui";
 import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
 import { useChat } from "../../hooks/useChat";
 import { useUser } from "../../context/UserContext";
@@ -303,7 +304,9 @@ export default function ChatsScreen() {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
-      <div className="flex flex-col h-full overflow-hidden"style={{ backgroundColor: 'var(--bg-secondary)' }}>
+      <div className="flex flex-col h-full overflow-hidden relative" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+      <AnimatedBackground isDark={isDark} />
+      <div className="flex flex-col h-full overflow-hidden relative z-10">
 
       {/* End Chat Modal */}
       <ConfirmDialog
@@ -496,6 +499,7 @@ export default function ChatsScreen() {
           isOpen={showProfilePanel}
           onClose={handleCloseProfile}
         />
+      </div>
       </div>
     </Layout>
   );

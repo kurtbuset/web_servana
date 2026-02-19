@@ -201,20 +201,18 @@ const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDa
           />
         </div>
         {!isCollapsed && (
-          <>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-xs">{label}</div>
-            </div>
-            {badgeCount !== undefined && badgeCount > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                isActive 
-                  ? "bg-white text-[#6237A0]" 
-                  : "bg-[#6237A0] text-white"
-              } shadow-sm`}>
-                {badgeCount > 99 ? '99+' : badgeCount}
-              </span>
-            )}
-          </>
+          <div className="flex-1 min-w-0 transition-opacity duration-200">
+            <div className="font-medium text-xs">{label}</div>
+          </div>
+        )}
+        {!isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 ${
+            isActive 
+              ? "bg-white text-[#6237A0]" 
+              : "bg-[#6237A0] text-white"
+          } shadow-sm`}>
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </span>
         )}
         {isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
@@ -499,7 +497,7 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
             : "hidden md:flex"
           } 
           ${isCollapsed && !isMobile ? 'w-20' : 'w-72 xs:w-64 sm:w-56'} 
-          flex-col shadow-lg
+          flex-col shadow-lg transition-all duration-300 ease-in-out
         `}
         style={{ 
           backgroundColor: 'var(--card-bg)', 
@@ -546,22 +544,24 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
 
         {/* Collapse Toggle Button at Bottom - Desktop Only */}
         {!isMobile && (
-          <div className="p-2" style={{ borderTop: `1px solid var(--border-color)` }}>
+          <div className="p-2 transition-all duration-300" style={{ borderTop: `1px solid var(--border-color)` }}>
             <button
               onClick={toggleCollapse}
-              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all`}
+              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all duration-300`}
               style={{ color: 'var(--text-secondary)' }}
               onMouseEnter={handleCollapseMouseEnter}
               onMouseLeave={handleCollapseMouseLeave}
               title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {isCollapsed ? (
-                <ChevronsRight size={15} />
-              ) : (
-                <>
+              <div className="transition-transform duration-300">
+                {isCollapsed ? (
+                  <ChevronsRight size={15} />
+                ) : (
                   <ChevronsLeft size={15} />
-                  <span className="text-xs font-medium">Collapse</span>
-                </>
+                )}
+              </div>
+              {!isCollapsed && (
+                <span className="text-xs font-medium transition-opacity duration-200">Collapse</span>
               )}
             </button>
           </div>

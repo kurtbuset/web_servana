@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Settings, Users, Shield, MessageSquare } from "react-feather";
 import Layout from "../../components/Layout";
+import ScreenContainer from "../../components/ScreenContainer";
 import Modal from "../../components/Modal";
-import LoadingSpinner from "../../components/LoadingSpinner";
 import UnsavedChangesBar from "../../components/UnsavedChangesBar";
 import SearchBar from "../../components/SearchBar";
 import ToggleSwitch from "../../components/ToggleSwitch";
@@ -380,28 +380,39 @@ export default function RolesScreen() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden">
-            <SplitPanel
-              showLeft={!selectedRole}
-              leftPanel={
-                <>
-                  <PanelHeader
-                    icon={Users}
-                    title="Roles"
-                    actionButton={
-                      canManageRoles && (
-                        <button
-                          onClick={handleCreateRole}
-                          className="p-1.5 text-[#6237A0] hover:bg-purple-50 rounded-lg transition-colors"
-                          title="Create Role"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      )
-                    }
-                  >
+      <ScreenContainer>
+        <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="relative">
+              <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
+                Roles & Permissions
+                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
+              </h1>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-hidden">
+            <div className="rounded-lg shadow-sm h-full" style={{ backgroundColor: 'var(--card-bg)' }}>
+              <SplitPanel
+                showLeft={!selectedRole}
+                leftPanel={
+                  <>
+                    <PanelHeader
+                      title="Roles"
+                      actionButton={
+                        canManageRoles && (
+                          <button
+                            onClick={handleCreateRole}
+                            className="p-1.5 text-[#6237A0] hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Create Role"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        )
+                      }
+                    >
                     <SearchBar
                       value={searchQuery}
                       onChange={setSearchQuery}
@@ -492,6 +503,7 @@ export default function RolesScreen() {
                 )
               }
             />
+            </div>
 
             {isModalOpen && (
               <Modal
@@ -531,18 +543,18 @@ export default function RolesScreen() {
                 />
               </Modal>
             )}
-          </div>
 
-          {/* Render unsaved changes bar at bottom when there are changes */}
-          <UnsavedChangesBar
-            show={hasUnsavedChanges}
-            onSave={handleSaveChanges}
-            onReset={handleResetChanges}
-            isSaving={isSaving}
-            shake={shakeBar}
-          />
+            {/* Render unsaved changes bar at bottom when there are changes */}
+            <UnsavedChangesBar
+              show={hasUnsavedChanges}
+              onSave={handleSaveChanges}
+              onReset={handleResetChanges}
+              isSaving={isSaving}
+              shake={shakeBar}
+            />
+          </div>
         </div>
-      </div>
+      </ScreenContainer>
     </Layout>
   );
 }

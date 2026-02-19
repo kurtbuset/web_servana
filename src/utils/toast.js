@@ -1,20 +1,23 @@
+import React from 'react';
 import { toast as reactToast } from 'react-toastify';
+import Toast from '../components/ui/Toast';
 
 /**
  * Toast Notification Utility
  * 
- * A wrapper around react-toastify with consistent styling and easy-to-use methods.
- * Provides success, error, warning, and info notifications with customizable options.
+ * A wrapper around react-toastify with custom Toast component.
+ * Provides success, error, warning, and info notifications with modern design.
  */
 
 const defaultOptions = {
   position: "top-right",
-  autoClose: 3000,
+  autoClose: 3500,
   hideProgressBar: false,
   closeOnClick: true,
   pauseOnHover: true,
   draggable: true,
   progress: undefined,
+  closeButton: false, // We use our custom close button
 };
 
 /**
@@ -23,10 +26,18 @@ const defaultOptions = {
  * @param {object} options - Optional toast configuration
  */
 export const showSuccess = (message, options = {}) => {
-  reactToast.success(message, {
-    ...defaultOptions,
-    ...options,
-  });
+  reactToast.success(
+    ({ closeToast }) => React.createElement(Toast, {
+      type: "success",
+      title: "Success",
+      message: message,
+      onClose: closeToast
+    }),
+    {
+      ...defaultOptions,
+      ...options,
+    }
+  );
 };
 
 /**
@@ -35,11 +46,18 @@ export const showSuccess = (message, options = {}) => {
  * @param {object} options - Optional toast configuration
  */
 export const showError = (message, options = {}) => {
-  reactToast.error(message, {
-    ...defaultOptions,
-    autoClose: 4000, // Errors stay a bit longer
-    ...options,
-  });
+  reactToast.error(
+    ({ closeToast }) => React.createElement(Toast, {
+      type: "error",
+      title: "Error",
+      message: message,
+      onClose: closeToast
+    }),
+    {
+      ...defaultOptions,
+      ...options,
+    }
+  );
 };
 
 /**
@@ -48,10 +66,18 @@ export const showError = (message, options = {}) => {
  * @param {object} options - Optional toast configuration
  */
 export const showWarning = (message, options = {}) => {
-  reactToast.warning(message, {
-    ...defaultOptions,
-    ...options,
-  });
+  reactToast.warning(
+    ({ closeToast }) => React.createElement(Toast, {
+      type: "warning",
+      title: "Warning",
+      message: message,
+      onClose: closeToast
+    }),
+    {
+      ...defaultOptions,
+      ...options,
+    }
+  );
 };
 
 /**
@@ -60,10 +86,18 @@ export const showWarning = (message, options = {}) => {
  * @param {object} options - Optional toast configuration
  */
 export const showInfo = (message, options = {}) => {
-  reactToast.info(message, {
-    ...defaultOptions,
-    ...options,
-  });
+  reactToast.info(
+    ({ closeToast }) => React.createElement(Toast, {
+      type: "info",
+      title: "Information",
+      message: message,
+      onClose: closeToast
+    }),
+    {
+      ...defaultOptions,
+      ...options,
+    }
+  );
 };
 
 /**

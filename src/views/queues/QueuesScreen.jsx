@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Layout from "../../components/Layout";
+import { AnimatedBackground } from "../../components/ui";
 import { useQueues } from "../../hooks/useQueues";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -237,7 +238,9 @@ export default function QueuesScreen() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+      <div className="flex flex-col h-full overflow-hidden relative" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+      <AnimatedBackground isDark={isDark} />
+      <div className="flex flex-col h-full overflow-hidden relative z-10">
 
       {/* End Chat Modal */}
       <ConfirmDialog
@@ -423,6 +426,7 @@ export default function QueuesScreen() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </Layout>
   );
