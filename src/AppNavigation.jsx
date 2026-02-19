@@ -31,7 +31,7 @@ const ManageAdmin = lazy(() => import("./views/manage-admin/ManageAdmin.jsx"));
 const AnalyticsScreen = lazy(() => import("./views/analytics/AnalyticsScreen.jsx"));
 
 import "react-toastify/dist/ReactToastify.css";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 
 
 /**

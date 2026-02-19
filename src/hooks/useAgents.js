@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AgentService } from '../services/agent.service';
-import { toast } from 'react-toastify';
+import toast from '../utils/toast';
 
 /**
  * useAgents hook manages agent CRUD operations
@@ -48,10 +48,7 @@ export const useAgents = () => {
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to fetch agents';
       setError(errorMessage);
-      toast.error('Failed to load agents. Please refresh the page.', {
-        position: 'top-right',
-        autoClose: 5000,
-      });
+      toast.error('Failed to load agents. Please refresh the page.');
       throw err;
     } finally {
       setLoading(false);
@@ -92,19 +89,19 @@ export const useAgents = () => {
     // Validation
     if (!trimmedEmail || !trimmedPassword) {
       const error = 'Email and password are required.';
-      toast.error(error, { position: 'top-right', autoClose: 3000 });
+      toast.error(error);
       throw new Error(error);
     }
 
     if (!isValidEmail(trimmedEmail)) {
       const error = 'Please enter a valid email address.';
-      toast.error(error, { position: 'top-right', autoClose: 3000 });
+      toast.error(error);
       throw new Error(error);
     }
 
     if (emailAlreadyExists(trimmedEmail)) {
       const error = 'Email is already taken.';
-      toast.error(error, { position: 'top-right', autoClose: 3000 });
+      toast.error(error);
       throw new Error(error);
     }
 
@@ -131,19 +128,13 @@ export const useAgents = () => {
 
       setAgents((prev) => [...prev, newAgent]);
 
-      toast.success('Agent added successfully', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.success('Agent added successfully');
 
       return result;
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to save agent';
       setError(errorMessage);
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -165,19 +156,19 @@ export const useAgents = () => {
     // Validation
     if (!trimmedEmail || !trimmedPassword) {
       const error = 'Email and password are required.';
-      toast.error(error, { position: 'top-right', autoClose: 3000 });
+      toast.error(error);
       throw new Error(error);
     }
 
     if (!isValidEmail(trimmedEmail)) {
       const error = 'Please enter a valid email address.';
-      toast.error(error, { position: 'top-right', autoClose: 3000 });
+      toast.error(error);
       throw new Error(error);
     }
 
     if (emailAlreadyExists(trimmedEmail, agentId)) {
       const error = 'Email is already taken.';
-      toast.error(error, { position: 'top-right', autoClose: 3000 });
+      toast.error(error);
       throw new Error(error);
     }
 
@@ -200,17 +191,11 @@ export const useAgents = () => {
         )
       );
 
-      toast.success('Agent updated successfully', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.success('Agent updated successfully');
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to save agent';
       setError(errorMessage);
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -244,10 +229,7 @@ export const useAgents = () => {
       );
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to update agent status';
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     }
   }, [agents]);
@@ -277,16 +259,10 @@ export const useAgents = () => {
         )
       );
 
-      toast.success('Department updated successfully', {
-        position: 'top-right',
-        autoClose: 2000,
-      });
+      toast.success('Department updated successfully');
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to update department';
-      toast.error(errorMessage, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      toast.error(errorMessage);
       throw err;
     }
   }, [agents]);

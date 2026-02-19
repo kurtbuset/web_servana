@@ -11,8 +11,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import TopNavbar from '../../components/TopNavbar';
-import Sidebar from '../../components/Sidebar';
+import Layout from '../../components/Layout';
 import { useTheme } from '../../context/ThemeContext';
 
 // Register ChartJS components
@@ -29,17 +28,7 @@ ChartJS.register(
 
 const AnalyticsScreen = () => {
   const [timeRange, setTimeRange] = useState('weekly');
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const { isDark } = useTheme();
-
-  const toggleSidebar = () => {
-    setMobileSidebarOpen((prev) => !prev);
-  };
-
-  const toggleDropdown = (name) => {
-    setOpenDropdown((prev) => (prev === name ? null : name));
-  };
 
   // Static data for Messages line chart
   const messagesData = {
@@ -146,16 +135,8 @@ const AnalyticsScreen = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-      <TopNavbar toggleSidebar={toggleSidebar} />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={false}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-        />
-        <main className="flex-1 overflow-y-auto p-3" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+    <Layout>
+      <div className="flex-1 overflow-y-auto p-3" style={{ backgroundColor: 'var(--bg-secondary)' }}>
           {/* Header */}
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Analytics</h1>
@@ -419,9 +400,8 @@ const AnalyticsScreen = () => {
               </div>
             </div>
           </div>
-        </main>
       </div>
-    </div>
+    </Layout>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import AutoReplyService from "../services/autoReply.service";
-import { toast } from "react-toastify";
+import toast from "../utils/toast";
 
 /**
  * useAutoReplies Hook
@@ -25,10 +25,7 @@ export const useAutoReplies = () => {
     } catch (err) {
       console.error("Failed to fetch auto replies:", err);
       setError(err.message || "Failed to fetch auto replies");
-      toast.error("Failed to load auto-replies. Please refresh the page.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error("Failed to load auto-replies. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -56,10 +53,7 @@ export const useAutoReplies = () => {
   const createAutoReply = useCallback(
     async (message, deptId, createdBy) => {
       if (!message.trim()) {
-        toast.error("Message cannot be empty", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error("Message cannot be empty");
         return false;
       }
 
@@ -70,10 +64,7 @@ export const useAutoReplies = () => {
           created_by: createdBy,
         });
 
-        toast.success("Auto-reply added successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.success("Auto-reply added successfully");
 
         // Refresh replies list
         await fetchReplies();
@@ -84,10 +75,7 @@ export const useAutoReplies = () => {
           err.response?.data?.message ||
           err.response?.data?.error ||
           "Failed to add auto-reply";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -100,10 +88,7 @@ export const useAutoReplies = () => {
   const updateAutoReply = useCallback(
     async (autoReplyId, message, deptId, updatedBy) => {
       if (message !== undefined && !message.trim()) {
-        toast.error("Message cannot be empty", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error("Message cannot be empty");
         return false;
       }
 
@@ -114,10 +99,7 @@ export const useAutoReplies = () => {
           updated_by: updatedBy,
         });
 
-        toast.success("Auto-reply updated successfully", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.success("Auto-reply updated successfully");
 
         // Refresh replies list
         await fetchReplies();
@@ -128,10 +110,7 @@ export const useAutoReplies = () => {
           err.response?.data?.message ||
           err.response?.data?.error ||
           "Failed to update auto-reply";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -169,10 +148,7 @@ export const useAutoReplies = () => {
         return true;
       } catch (err) {
         console.error("Failed to toggle status:", err);
-        toast.error("Failed to update auto-reply status", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error("Failed to update auto-reply status");
         return false;
       }
     },
@@ -197,10 +173,7 @@ export const useAutoReplies = () => {
           )
         );
 
-        toast.success("Department updated successfully", {
-          position: "top-right",
-          autoClose: 2000,
-        });
+        toast.success("Department updated successfully");
         return true;
       } catch (err) {
         console.error("Failed to update department:", err);
@@ -208,10 +181,7 @@ export const useAutoReplies = () => {
           err.response?.data?.message ||
           err.response?.data?.error ||
           "Failed to update department";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.error(errorMessage);
         return false;
       }
     },

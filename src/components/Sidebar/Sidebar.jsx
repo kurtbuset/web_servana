@@ -15,13 +15,13 @@ import {
 } from "react-feather";
 import { HiOfficeBuilding } from "react-icons/hi";
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
 import { ROUTES } from "../../constants/routes";
 import { PERMISSIONS } from "../../constants/permissions";
+import ScrollContainer from "../ScrollContainer";
 
 const navSections = [
   {
@@ -132,41 +132,61 @@ const navSections = [
 
 
 
-const NavItem = ({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
-  const handleClick = (e) => {
-    if (onBlockedClick && onBlockedClick()) {
-      e.preventDefault();
+const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
+  const handleClick = useCallback((e) => {
+    // Check if navigation should be blocked
+    if (onBlockedClick) {
+      const isBlocked = onBlockedClick();
+      if (isBlocked) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
     }
-  };
+    
+    // Store current scroll position before navigation
+    const sidebar = e.currentTarget.closest('.sidebar-scroll-container');
+    if (sidebar) {
+      const scrollTop = sidebar.scrollTop;
+      // Store in sessionStorage to persist across renders
+      sessionStorage.setItem('sidebarScrollPosition', scrollTop.toString());
+    }
+    
+    // Prevent focus
+    e.currentTarget.blur();
+  }, [onBlockedClick]);
+
+  const handleMouseEnter = useCallback((e) => {
+    if (!isActive) {
+      e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
+    }
+  }, [isActive, isDark]);
+
+  const handleMouseLeave = useCallback((e) => {
+    if (!isActive) {
+      e.currentTarget.style.backgroundColor = 'transparent';
+    }
+  }, [isActive]);
 
   return (
-    <div className="relative group" key={to}>
+    <div className="relative group">
       {isActive && (
-        <motion.div
-          layoutId="activeHighlight"
+        <div
           className="absolute inset-0 rounded-md bg-gradient-to-r from-[#6237A0] to-[#7C4DFF] z-0"
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
       )}
       <Link
         to={to}
         onClick={handleClick}
+        tabIndex={-1}
         className={`relative flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md z-10 transition-all duration-200 ${
           isActive 
             ? "text-white shadow-lg" 
             : ""
         }`}
         style={!isActive ? { color: 'var(--text-primary)' } : {}}
-        onMouseEnter={(e) => {
-          if (!isActive) {
-            e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         title={isCollapsed ? label : ''}
       >
         <div 
@@ -204,9 +224,21 @@ const NavItem = ({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, o
       </Link>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.to === nextProps.to &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.badgeCount === nextProps.badgeCount &&
+    prevProps.isCollapsed === nextProps.isCollapsed &&
+    prevProps.isDark === nextProps.isDark &&
+    prevProps.label === nextProps.label
+  );
+});
 
-const SectionHeader = ({ title, isCollapsed }) => {
+NavItem.displayName = 'NavItem';
+
+const SectionHeader = memo(({ title, isCollapsed }) => {
   if (isCollapsed) return <div className="h-px mx-2 my-1.5" style={{ backgroundColor: 'var(--border-color)' }} />;
   
   return (
@@ -216,120 +248,272 @@ const SectionHeader = ({ title, isCollapsed }) => {
       </h3>
     </div>
   );
-};
+});
+
+SectionHeader.displayName = 'SectionHeader';
 
 
 
-const Sidebar = ({ isMobile, isOpen }) => {
+const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   const location = useLocation();
   const { userData, hasPermission } = useUser();
   const { isDark } = useTheme();
-  const { blockNavigation } = useUnsavedChanges();
+  const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
   const [counts, setCounts] = useState({
     pendingChats: 0,
     activeChats: 0
   });
   
-  // Persist collapse state in localStorage
+  // Persist collapse state in localStorage (desktop only)
   const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (isMobile) return false; // Never collapse on mobile
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === 'true';
   });
 
+  // Ref to track sidebar scroll position
+  const sidebarScrollRef = useRef(null);
+  const sidebarRef = useRef(null);
+
+  // Restore scroll position on mount and after navigation
+  useEffect(() => {
+    const restoreScrollPosition = () => {
+      const savedPosition = sessionStorage.getItem('sidebarScrollPosition');
+      if (sidebarScrollRef.current && savedPosition) {
+        const position = parseInt(savedPosition, 10);
+        // Use multiple methods to ensure scroll position is restored
+        sidebarScrollRef.current.scrollTop = position;
+        
+        requestAnimationFrame(() => {
+          if (sidebarScrollRef.current) {
+            sidebarScrollRef.current.scrollTop = position;
+          }
+        });
+        
+        // Fallback with slight delay
+        setTimeout(() => {
+          if (sidebarScrollRef.current) {
+            sidebarScrollRef.current.scrollTop = position;
+          }
+        }, 100);
+      }
+    };
+
+    restoreScrollPosition();
+  }, [location.pathname]);
+
+  // Save scroll position periodically
+  useEffect(() => {
+    const sidebar = sidebarScrollRef.current;
+    if (!sidebar) return;
+
+    const handleScroll = () => {
+      sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop.toString());
+    };
+
+    sidebar.addEventListener('scroll', handleScroll, { passive: true });
+    return () => sidebar.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Save collapse state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('sidebarCollapsed', isCollapsed);
-  }, [isCollapsed]);
+    if (!isMobile) {
+      localStorage.setItem('sidebarCollapsed', isCollapsed);
+    }
+  }, [isCollapsed, isMobile]);
 
-  const isActivePath = (to, extraPaths = []) =>
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed(prev => !prev);
+  }, []);
+
+  const handleCollapseMouseEnter = useCallback((e) => {
+    e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
+  }, [isDark]);
+
+  const handleCollapseMouseLeave = useCallback((e) => {
+    e.currentTarget.style.backgroundColor = 'transparent';
+  }, []);
+
+  const isActivePath = useCallback((to, extraPaths = []) =>
     location.pathname.toLowerCase() === to.toLowerCase() ||
-    extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase());
+    extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase()),
+    [location.pathname]
+  );
 
-  
+  // Close sidebar on navigation (mobile only)
+  useEffect(() => {
+    if (isMobile && isOpen && onClose) {
+      // Small delay to allow the navigation to complete
+      const timeoutId = setTimeout(() => {
+        onClose();
+      }, 150);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [location.pathname]);
 
-  if (isMobile && !isOpen) return null;
+  // Handle click outside to close (mobile only)
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
 
-  // Filter navigation sections based on permissions
-  const visibleNavSections = navSections.map(section => ({
-    ...section,
-    items: section.items.filter(item => {
-      // If no permission specified, item is always visible (like Dashboard)
-      if (!item.permission) {
-        return true;
+    const handleClickOutside = (event) => {
+      // Don't close if clicking the toggle button
+      if (event.target.closest('[data-sidebar-toggle]')) {
+        return;
       }
       
-      // Check permission
-      return hasPermission(item.permission);
-    })
-  })).filter(section => section.items.length > 0); // Only show sections with visible items
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        onClose?.();
+      }
+    };
+
+    // Add small delay to prevent immediate close on open
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobile, isOpen, onClose]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, isOpen]);
+
+
+  // Debug logging - must be after all other hooks
+  useEffect(() => {
+    if (isMobile) {
+      console.log('Sidebar mobile state changed:', { isMobile, isOpen });
+    }
+  }, [isMobile, isOpen]);
+
+  // Filter navigation sections based on permissions - memoize to prevent recalculation
+  const visibleNavSections = useMemo(() => {
+    return navSections.map(section => ({
+      ...section,
+      items: section.items.filter(item => {
+        // If no permission specified, item is always visible (like Dashboard)
+        if (!item.permission) {
+          return true;
+        }
+        
+        // Check permission
+        return hasPermission(item.permission);
+      })
+    })).filter(section => section.items.length > 0); // Only show sections with visible items
+  }, [hasPermission]);
 
   return (
-    <aside
-      className={`${
-        isMobile
-          ? "absolute top-16 left-0 z-40 h-[calc(100vh-4rem)]"
-          : "hidden md:flex"
-      } ${isCollapsed ? 'w-20' : 'w-56'} flex-col shadow-lg transition-all duration-300`}
-      style={{ 
-        backgroundColor: 'var(--card-bg)', 
-        color: 'var(--text-primary)',
-        borderRight: `1px solid var(--border-color)`
-      }}
-    >
-      <div className="flex-1 overflow-y-auto p-3">
-        <nav className="space-y-3">
-          {/* Navigation Sections */}
-          {visibleNavSections.map((section) => (
-            <div key={section.title}>
-              <SectionHeader title={section.title} isCollapsed={isCollapsed} />
-              <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <NavItem
-                    key={item.to}
-                    to={item.to}
-                    Icon={item.icon}
-                    label={item.label}
-                    isActive={isActivePath(item.to)}
-                    badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
-                    isCollapsed={isCollapsed}
-                    isDark={isDark}
-                    onBlockedClick={blockNavigation}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
-      </div>
-
-      {/* Collapse Toggle Button at Bottom - Desktop Only */}
-      {!isMobile && (
-        <div className="p-2" style={{ borderTop: `1px solid var(--border-color)` }}>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all`}
-            style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? (
-              <ChevronsRight size={15} />
-            ) : (
-              <>
-                <ChevronsLeft size={15} />
-                <span className="text-xs font-medium">Collapse</span>
-              </>
-            )}
-          </button>
-        </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isMobile && isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose?.();
+          }}
+          style={{ top: '4rem' }}
+        />
       )}
-    </aside>
+
+      {/* Sidebar */}
+      <aside
+        ref={sidebarRef}
+        className={`
+          ${isMobile 
+            ? `fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] transform transition-transform duration-300 ease-in-out ${
+                isOpen ? 'translate-x-0' : '-translate-x-full'
+              }`
+            : "hidden md:flex"
+          } 
+          ${isCollapsed && !isMobile ? 'w-20' : 'w-72 xs:w-64 sm:w-56'} 
+          flex-col shadow-lg
+        `}
+        style={{ 
+          backgroundColor: 'var(--card-bg)', 
+          color: 'var(--text-primary)',
+          borderRight: `1px solid var(--border-color)`,
+          scrollBehavior: 'auto',
+          maxWidth: isMobile ? '85vw' : undefined
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ScrollContainer 
+          ref={sidebarScrollRef}
+          className="sidebar-scroll-container flex-1 p-3" 
+          style={{ 
+            scrollBehavior: 'auto', 
+            overflowAnchor: 'none',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
+          <nav className="space-y-3">
+            {/* Navigation Sections */}
+            {visibleNavSections.map((section) => (
+              <div key={section.title}>
+                <SectionHeader title={section.title} isCollapsed={isCollapsed} />
+                <div className="space-y-0.5">
+                  {section.items.map((item) => (
+                    <NavItem
+                      key={item.to}
+                      to={item.to}
+                      Icon={item.icon}
+                      label={item.label}
+                      isActive={isActivePath(item.to)}
+                      badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
+                      isCollapsed={isCollapsed}
+                      isDark={isDark}
+                      onBlockedClick={blockNavigation}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </ScrollContainer>
+
+        {/* Collapse Toggle Button at Bottom - Desktop Only */}
+        {!isMobile && (
+          <div className="p-2" style={{ borderTop: `1px solid var(--border-color)` }}>
+            <button
+              onClick={toggleCollapse}
+              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all`}
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={handleCollapseMouseEnter}
+              onMouseLeave={handleCollapseMouseLeave}
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? (
+                <ChevronsRight size={15} />
+              ) : (
+                <>
+                  <ChevronsLeft size={15} />
+                  <span className="text-xs font-medium">Collapse</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </aside>
+    </>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

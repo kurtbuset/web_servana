@@ -2,6 +2,7 @@
 import { useUser } from "../context/UserContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatLastSeen } from "../utils/timeUtils";
+import { getProfilePictureUrl } from "../utils/imageUtils";
 import api from "../api";
 
 // Cache for department data to prevent refetching on every navigation
@@ -29,7 +30,7 @@ const CACHE_DURATION = 60000; // 1 minute cache
  * />
  * ```
  */
-const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose }) => {
+const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown = false }) => {
   const { userData, getUserStatus, userStatuses } = useUser();
   const { isDark } = useTheme();
   const [departmentsData, setDepartmentsData] = useState(departmentDataCache);
@@ -154,30 +155,32 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose }) => {
 
   return (
     <>
-      {/* Only render if isOpen is true */}
+      {/* Mobile/Tablet Overlay (< 1024px) - Only show on mobile when open */}
       {isOpen && (
-        <>
-          {/* Mobile/Tablet Overlay (< 1024px) */}
-          <div
-            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
-            onClick={() => {
-              document.body.classList.remove('department-panel-open');
-              // Trigger parent to close panel
-              if (onClose) onClose();
-              window.dispatchEvent(new CustomEvent('closeDepartmentPanel'));
-            }}
-          />
-          
-          {/* Panel - Slide-in on mobile, fixed on desktop */}
-          <div
-            className={`fixed top-14 sm:top-16 right-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-60 sm:w-72 lg:w-60 shadow-lg border-l overflow-hidden flex flex-col transition-all duration-300 z-50 ${
-              isOpen ? 'translate-x-0' : 'translate-x-full'
-            }`}
-            style={{ 
-              backgroundColor: 'var(--card-bg)',
-              borderColor: 'var(--border-color)'
-            }}
-          >
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[65] transition-opacity duration-300"
+          onClick={() => {
+            if (onClose) onClose();
+          }}
+        />
+      )}
+      
+      {/* Panel - Discord-style: Overlay on mobile, compress content on desktop */}
+      <div
+        className={`
+          lg:relative lg:flex-shrink-0
+          fixed lg:static top-14 sm:top-16 lg:top-0 right-0 
+          h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] lg:h-full
+          shadow-lg border-l overflow-hidden flex flex-col
+          transition-all duration-300 ease-in-out
+          ${isOpen ? 'lg:w-60' : 'lg:w-0'}
+          ${isOpen ? 'translate-x-0 w-60 sm:w-72 z-[70]' : 'translate-x-full lg:translate-x-0 w-0 z-[70]'}
+        `}
+        style={{ 
+          backgroundColor: 'var(--card-bg)',
+          borderColor: 'var(--border-color)'
+        }}
+      >
       {/* Header */}
       <div className="p-4" style={{ 
         background: isDark 
@@ -188,11 +191,9 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose }) => {
           {/* Close button for mobile/tablet */}
           <button
             onClick={() => {
-              document.body.classList.remove('department-panel-open');
               if (onClose) onClose();
-              window.dispatchEvent(new CustomEvent('closeDepartmentPanel'));
             }}
-            className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-md transition-all"
+            className="lg:hidden absolute top-4 right-4 p-1 hover:bg-white/20 rounded-md transition-all"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -358,8 +359,6 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose }) => {
           skipAnimation={previousUserId === selectedUser.sys_user_id}
         />
       )}
-        </>
-      )}
     </>
   );
 });
@@ -515,7 +514,7 @@ function UserCard({ user, isDark, onClick }) {
   const displayName = fullName || user.sys_user_email;
   
   // Get avatar URL
-  const avatarUrl = user.image?.img_location || "/profile_picture/DefaultProfile.jpg";
+  const avatarUrl = getProfilePictureUrl(user.image?.img_location);
   
   return (
     <div 
@@ -593,7 +592,7 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
   ].filter(Boolean).join(" ").trim();
   
   const displayName = fullName || user.sys_user_email;
-  const avatarUrl = user.image?.img_location || "/profile_picture/DefaultProfile.jpg";
+  const avatarUrl = getProfilePictureUrl(user.image?.img_location);
   const email = user.profile?.prof_email || user.sys_user_email;
   
   // Get user's departments
@@ -648,14 +647,14 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
       {/* Backdrop for mobile */}
       {isMobile && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] animate-fadeIn"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[71] animate-fadeIn"
           onClick={onClose}
         />
       )}
       
       <div
         ref={modalRef}
-        className={`fixed w-[280px] rounded-xl shadow-2xl z-[56] overflow-hidden ${skipAnimation ? '' : (isMobile ? 'animate-scaleIn' : 'animate-slideInRight')}`}
+        className={`fixed w-[280px] rounded-xl shadow-2xl z-[72] overflow-hidden ${skipAnimation ? '' : (isMobile ? 'animate-scaleIn' : 'animate-slideInRight')}`}
         style={{ 
           backgroundColor: 'var(--card-bg)',
           top: position.top,

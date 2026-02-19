@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'react-toastify';
+import toast from '../utils/toast';
 import { ProfileService } from '../services/profile.service';
 
 /**
