@@ -12,6 +12,7 @@ import AddAgentModal from "./components/AddAgentModal";
 import { useAgents } from "../../hooks/useAgents";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import toast from "../../utils/toast";
 import { Avatar } from "../../components/ui";
@@ -50,8 +51,8 @@ export default function ManageAgentsScreen() {
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
-  const canAssignDepartment = hasPermission("priv_can_assign_dept");
-  const canCreateAccount = hasPermission("priv_can_create_account");
+  const canAssignDepartment = hasPermission(PERMISSIONS.ASSIGN_DEPT);
+  const canCreateAccount = hasPermission(PERMISSIONS.CREATE_ACCOUNT);
 
   const {
     agents,

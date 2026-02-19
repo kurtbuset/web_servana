@@ -18,6 +18,7 @@ import {
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import { useRoles } from "../../hooks/useRoles";
 import RoleService from "../../services/role.service";
 import toast from "../../utils/toast";
@@ -81,7 +82,7 @@ export default function RolesScreen() {
   const { roles, loading, createRole, toggleRoleActive, updateRole } = useRoles();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
 
-  const canManageRoles = hasPermission("priv_can_manage_role");
+  const canManageRoles = hasPermission(PERMISSIONS.MANAGE_ROLE);
 
   const filteredRoles = roles.filter((role) =>
     role.name.toLowerCase().includes(searchQuery.toLowerCase())

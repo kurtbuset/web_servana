@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import toast from "../../utils/toast";
 import { getProfilePictureUrl } from "../../utils/imageUtils";
 import "../../styles/GridLayout.css";
@@ -55,7 +56,7 @@ export default function Profile() {
   const { setUserData, hasPermission } = useUser();
   const { isDark } = useTheme();
   const navigate = useNavigate();
-  const canManageProfile = hasPermission("priv_can_manage_profile");
+  const canManageProfile = hasPermission(PERMISSIONS.MANAGE_PROFILE);
 
   // ---------------- FETCH PROFILE ----------------
   const fetchProfile = useCallback(async () => {

@@ -5,6 +5,7 @@ import SearchBar from '../../components/SearchBar';
 import { useAutoReplies } from '../../hooks/useAutoReplies';
 import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../context/ThemeContext';
+import { PERMISSIONS } from "../../constants/permissions";
 import { useUnsavedChanges } from '../../context/UnsavedChangesContext';
 import toast from '../../utils/toast';
 import DepartmentSidebar from './components/DepartmentSidebar';
@@ -40,7 +41,7 @@ export default function AutoRepliesScreen() {
   const currentUserId = getUserId();
   const { isDark } = useTheme();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
-  const canEditAutoReplies = hasPermission("priv_can_manage_auto_reply");
+  const canEditAutoReplies = hasPermission(PERMISSIONS.MANAGE_AUTO_REPLY);
   const {
     replies,
     allDepartments,

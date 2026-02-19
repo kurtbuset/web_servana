@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
+import { PERMISSIONS, isValidPermission } from "../constants/permissions";
 import socket from "../socket";
 
 const UserContext = createContext();
@@ -289,6 +290,11 @@ export const UserProvider = ({ children }) => {
   };
 
   const hasPermission = (permission) => {
+    // Validate that the permission is a known constant
+    if (!isValidPermission(permission)) {
+      console.warn(`🚨 hasPermission(${permission}): Unknown permission constant. Check PERMISSIONS in constants/permissions.js`);
+    }
+    
     // Remove admin override - everyone goes through privilege table
     if (!userData?.privilege) {
       console.warn(`🚨 hasPermission(${permission}): No privilege data available`);

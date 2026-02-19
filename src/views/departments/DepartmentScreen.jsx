@@ -7,6 +7,7 @@ import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
 import DepartmentsTable from "./components/DepartmentsTable";
 import DepartmentModal from "./components/DepartmentModal";
+import { PERMISSIONS } from "../../constants/permissions";
 import "../../App.css";
 
 /**
@@ -30,7 +31,7 @@ export default function DepartmentScreen() {
   // Get user permissions
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canEditDepartment = hasPermission("priv_can_manage_dept");
+  const canEditDepartment = hasPermission(PERMISSIONS.MANAGE_DEPT);
 
   // Get department state and actions from hook
   const {

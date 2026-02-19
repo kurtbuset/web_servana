@@ -1,7 +1,12 @@
 node_modules
-npm-debug.log
+npm-debug.log*
 .git
 .gitignore
-dist
+README.md
 .env
-.expo
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+dist
+build

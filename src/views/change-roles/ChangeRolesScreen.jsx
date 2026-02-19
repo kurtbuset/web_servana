@@ -5,6 +5,7 @@ import SearchBar from "../../components/SearchBar";
 import { useUserRoles } from "../../hooks/useRoles";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import toast from "../../utils/toast";
 import UserRolesTable from "./components/UserRolesTable";
 import "../../App.css";
@@ -15,7 +16,7 @@ export default function ChangeRolesScreen() {
   // Get user permissions
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canAssignRoles = hasPermission("priv_can_assign_role");
+  const canAssignRoles = hasPermission(PERMISSIONS.ASSIGN_ROLE);
 
   const { users, availableRoles, loading, changeUserRole, toggleUserActive } = useUserRoles();
 

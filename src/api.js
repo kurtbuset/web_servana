@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL, // e.g., http://localhost:3000
+  baseURL: import.meta.env.VITE_BACKEND_URL, // e.g., http://localhost:5000
   withCredentials: true, // send/receive cookies
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000, // Increased to 30 seconds for slow queries

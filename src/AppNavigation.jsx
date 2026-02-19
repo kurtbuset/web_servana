@@ -10,6 +10,7 @@ import api from "../src/api";
 import { useUser } from "./context/UserContext";
 import { useTheme } from "./context/ThemeContext";
 import LoadingSpinner from "./components/LoadingSpinner";
+import { PERMISSIONS } from "./constants/permissions";
 
 // Critical path - load immediately
 import LoginScreen from "./views/login/LoginScreen.jsx";
@@ -201,7 +202,7 @@ function AppNavigation() {
           path="/Queues"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
+              <PermissionRoute permission={PERMISSIONS.VIEW_MESSAGE}>
                 <QueuesScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -211,7 +212,7 @@ function AppNavigation() {
           path="/Chats"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
+              <PermissionRoute permission={PERMISSIONS.VIEW_MESSAGE}>
                 <ChatsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -221,7 +222,7 @@ function AppNavigation() {
           path="/department"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_dept">
+              <PermissionRoute permission={PERMISSIONS.MANAGE_DEPT}>
                 <DepartmentScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -239,7 +240,7 @@ function AppNavigation() {
           path="/manage-agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_create_account">
+              <PermissionRoute permission={PERMISSIONS.CREATE_ACCOUNT}>
                 <ManageAgentsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -249,7 +250,7 @@ function AppNavigation() {
           path="/change-role"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_assign_role">
+              <PermissionRoute permission={PERMISSIONS.ASSIGN_ROLE}>
                 <ChangeRolesScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -259,7 +260,7 @@ function AppNavigation() {
           path="/auto-replies"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_auto_reply">
+              <PermissionRoute permission={PERMISSIONS.MANAGE_AUTO_REPLY}>
                 <AutoRepliesScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -269,7 +270,7 @@ function AppNavigation() {
           path="/agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission={PERMISSIONS.USE_CANNED_MESS}>
                 <MacrosAgentsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -279,7 +280,7 @@ function AppNavigation() {
           path="/clients"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission={PERMISSIONS.USE_CANNED_MESS}>
                 <MacrosClientsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -289,7 +290,7 @@ function AppNavigation() {
           path="/macros-agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission={PERMISSIONS.USE_CANNED_MESS}>
                 <MacrosAgentsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -299,7 +300,7 @@ function AppNavigation() {
           path="/macros-clients"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission={PERMISSIONS.USE_CANNED_MESS}>
                 <MacrosClientsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -309,7 +310,7 @@ function AppNavigation() {
           path="/manage-admin"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_create_account">
+              <PermissionRoute permission={PERMISSIONS.CREATE_ACCOUNT}>
                 <ManageAdmin />
               </PermissionRoute>
             </ProtectedRoute>
@@ -319,7 +320,7 @@ function AppNavigation() {
           path="/roles"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_role">
+              <PermissionRoute permission={PERMISSIONS.MANAGE_ROLE}>
                 <RolesScreen />
               </PermissionRoute>
             </ProtectedRoute>
