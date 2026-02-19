@@ -1,18 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import TopNavbar from "../../../src/components/TopNavbar";
 import Sidebar from "../../../src/components/Sidebar";
-import { useQueues } from "../../hooks/useQueues";
+import { useQueues } from "../../hooks/queues/useQueues";
 import { useUser } from "../../context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
-import ConfirmDialog from "../../components/chat/ConfirmDialog";
-import TransferModal from "../../components/chat/TransferModal";
-import DepartmentFilter from "../../components/chat/DepartmentFilter";
-import CustomerList from "../../components/chat/CustomerList";
-import ChatHeader from "../../components/chat/ChatHeader";
-import ChatMessages from "../../components/chat/ChatMessages";
-import MessageInput from "../../components/chat/MessageInput";
-import { toast } from "react-toastify";
+import QueuesSidebar from "./components/QueuesSidebar";
+import QueuesArea from "./components/QueuesArea";
+import QueuesModals from "./components/QueuesModals";
+import { useQueuesHandlers } from "../../hooks/queues/useQueuesHandlers";
+import { useQueuesEffects } from "../../hooks/queues/useQueuesEffects";
+import { getQueueStyles } from "./styles/queueStyles";
 import "../../App.css";
 
 export default function QueuesScreen() {
@@ -21,7 +18,6 @@ export default function QueuesScreen() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
-
   const [inputMessage, setInputMessage] = useState("");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
@@ -33,447 +29,97 @@ export default function QueuesScreen() {
   const textareaRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
-  // Get user permissions
   const { hasPermission } = useUser();
-  const { isDark } = useTheme();
   const canMessage = hasPermission("priv_can_message");
   const canEndChat = hasPermission("priv_can_end_chat");
   const canTransfer = hasPermission("priv_can_transfer");
-  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess");
 
+  const queueState = useQueues();
   const {
-    departments,
-    selectedDepartment,
-    setSelectedDepartment,
-    selectedCustomer,
-    messages,
-    earliestMessageTime,
-    hasMoreMessages,
-    isLoadingMore,
-    chatEnded,
-    filteredCustomers,
-    loading,
-    selectCustomer,
-    acceptChat,
-    sendMessage: sendMessageAction,
-    endChat,
-    loadMessages,
-  } = useQueues();
+    departments, selectedDepartment, setSelectedDepartment, selectedCustomer,
+    messages, earliestMessageTime, hasMoreMessages, isLoadingMore, chatEnded,
+    filteredCustomers, loading, selectCustomer, acceptChat,
+    sendMessage: sendMessageAction, endChat, loadMessages,
+  } = queueState;
+
+  const handlers = useQueuesHandlers({
+    canTransfer, canEndChat, canMessage, isMobile, textareaRef,
+    setOpenDropdown, setShowTransferModal, setTransferDepartment, selectedDepartment,
+    setShowTransferConfirmModal, setShowEndChatModal, setInputMessage, setView,
+    selectCustomer, acceptChat, sendMessageAction, endChat,
+  });
+
+  useQueuesEffects({
+    dropdownRef, bottomRef, textareaRef, scrollContainerRef, setOpenDropdown,
+    setIsMobile, messages, inputMessage, earliestMessageTime, hasMoreMessages,
+    selectedCustomer, loadMessages, isLoadingMore,
+  });
 
   const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
-
-  const toggleDropdown = (name) => {
-    setOpenDropdown((prev) => (prev === name ? null : name));
-  };
-
-  const handleTransferClick = () => {
-    if (!canTransfer) {
-      console.warn("User does not have permission to transfer chats");
-      return;
-    }
-    setOpenDropdown(null);
-    setShowTransferModal(true);
-    setTransferDepartment(selectedDepartment);
-  };
-
-  const handleDepartmentSelect = () => {
-    if (transferDepartment) {
-      setShowTransferModal(false);
-      setShowTransferConfirmModal(true);
-    }
-  };
-
-  const confirmTransfer = () => {
-    setShowTransferConfirmModal(false);
-    console.log(`Transferring to ${transferDepartment}`);
-    alert(`Customer transferred to ${transferDepartment}`);
-  };
-
-  const cancelTransfer = () => {
-    setShowTransferModal(false);
-    setTransferDepartment(null);
-  };
-
-  const cancelTransferConfirm = () => {
-    setShowTransferConfirmModal(false);
-  };
-
-  const handleEndChat = () => {
-    if (!canEndChat) {
-      console.warn("User does not have permission to end chats");
-      return;
-    }
-    setOpenDropdown(null);
-    setShowEndChatModal(true);
-  };
-
-  const confirmEndChat = () => {
-    setShowEndChatModal(false);
-    endChat();
-    if (isMobile) setView("chatList");
-  };
-
-  const cancelEndChat = () => {
-    setShowEndChatModal(false);
-  };
-
-  const handleInputChange = (e) => {
-    setInputMessage(e.target.value);
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-  };
-
-  const sendMessage = () => {
-    if (!canMessage) {
-      console.warn("User does not have permission to send messages");
-      return;
-    }
-    
-    const trimmedMessage = inputMessage.replace(/\n+$/, "");
-    if (trimmedMessage.trim() === "") return;
-
-    sendMessageAction(trimmedMessage);
-    setInputMessage("");
-  };
-
-  const handleChatClick = async (customer) => {
-    await selectCustomer(customer);
-    if (isMobile) setView("conversation");
-  };
-
-  const handleAcceptChat = async () => {
-    const success = await acceptChat();
-    if (success) {
-      toast.success("Chat accepted! You can now communicate with the client.");
-    } else {
-      toast.error("Failed to accept chat. Please try again.");
-    }
-  };
-
-  const handleBackClick = () => {
-    setView("chatList");
-  };
-
-  // Handle scroll for loading more messages
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    let isThrottled = false;
-    const throttleDelay = 300; // 300ms throttle
-
-    const handleScroll = async () => {
-      if (isThrottled || isLoadingMore) return;
-      
-      // Check if scrolled to top (with small buffer for better UX)
-      if (container.scrollTop <= 50 && hasMoreMessages && selectedCustomer) {
-        isThrottled = true;
-        const prevHeight = container.scrollHeight;
-        const prevScrollTop = container.scrollTop;
-
-        try {
-          await loadMessages(selectedCustomer.id, earliestMessageTime, true);
-
-          // Maintain scroll position after loading
-          setTimeout(() => {
-            if (container) {
-              const newHeight = container.scrollHeight;
-              const heightDiff = newHeight - prevHeight;
-              container.scrollTop = prevScrollTop + heightDiff;
-            }
-          }, 50);
-        } catch (error) {
-          console.error('Error loading more messages:', error);
-        }
-
-        // Reset throttle after delay
-        setTimeout(() => {
-          isThrottled = false;
-        }, throttleDelay);
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages, isLoadingMore]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-
-
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [messages]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [inputMessage]);
-
+  const toggleDropdown = (name) => setOpenDropdown((prev) => (prev === name ? null : name));
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
     <>
-      <style>{`
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: #d1d5db transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(229, 231, 235, 0.3);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #d1d5db;
-          border-radius: 4px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #a1a1aa;
-        }
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-in {
-          animation: slideIn 0.3s ease-out;
-        }
-      `}</style>
+      <style>{getQueueStyles()}</style>
       <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <TopNavbar toggleSidebar={toggleSidebar} />
 
-      {/* End Chat Modal */}
-      <ConfirmDialog
-        isOpen={showEndChatModal}
-        title="End Chat"
-        message="Are you sure you want to end this chat session?"
-        onConfirm={confirmEndChat}
-        onCancel={cancelEndChat}
-        confirmText="Confirm"
-        confirmButtonClass="bg-red-500 hover:bg-red-600"
-      />
-
-      {/* Transfer Modal */}
-      <TransferModal
-        isOpen={showTransferModal}
-        departments={departments}
-        selectedDepartment={transferDepartment}
-        currentDepartment={selectedDepartment}
-        onDepartmentChange={setTransferDepartment}
-        onConfirm={handleDepartmentSelect}
-        onCancel={cancelTransfer}
-      />
-
-      {/* Transfer Confirm Modal */}
-      <ConfirmDialog
-        isOpen={showTransferConfirmModal}
-        title="Confirm Transfer"
-        message={`Are you sure you want to transfer this customer to ${transferDepartment}?`}
-        onConfirm={confirmTransfer}
-        onCancel={cancelTransferConfirm}
-      />
-
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-          onClose={() => setMobileSidebarOpen(false)}
+        <QueuesModals
+          state={{
+            showEndChatModal,
+            showTransferModal,
+            showTransferConfirmModal,
+            departments,
+            transferDepartment,
+            selectedDepartment,
+          }}
+          actions={{
+            confirmEndChat: handlers.confirmEndChat,
+            cancelEndChat: handlers.cancelEndChat,
+            setTransferDepartment,
+            handleDepartmentSelect: handlers.handleDepartmentSelect,
+            confirmTransfer: () => handlers.confirmTransfer(transferDepartment),
+            cancelTransfer: handlers.cancelTransfer,
+            cancelTransferConfirm: handlers.cancelTransferConfirm,
+          }}
         />
 
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={toggleDropdown}
-          openDropdown={openDropdown}
-        />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar isMobile={true} isOpen={mobileSidebarOpen} toggleDropdown={toggleDropdown}
+            openDropdown={openDropdown} onClose={() => setMobileSidebarOpen(false)} />
+          <Sidebar isMobile={false} toggleDropdown={toggleDropdown} openDropdown={openDropdown} />
 
-        <main className="flex-1 bg-transparent">
-          <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
-            {/* Queues list - Enhanced */}
-            <div
-              className={`${
-                view === "chatList" ? "block" : "hidden md:block"
-              } w-full md:w-[320px] lg:w-[360px] md:rounded-xl shadow-sm border overflow-hidden flex flex-col`}
-              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
-            >
-              {/* Header Section */}
-              <div className="bg-gradient-to-r from-[#6237A0] to-[#7A4ED9] p-3 md:p-4">
-                <h2 className="text-base md:text-lg font-bold text-white mb-0.5 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Queue
-                </h2>
-                <p className="text-purple-100 text-[10px] md:text-xs">
-                  {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} waiting
-                </p>
-              </div>
-
-              <DepartmentFilter
-                departments={departments}
-                selectedDepartment={selectedDepartment}
-                onDepartmentChange={setSelectedDepartment}
-                isOpen={showDeptDropdown}
-                onToggle={() => setShowDeptDropdown((prev) => !prev)}
+          <main className="flex-1 bg-transparent">
+            <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
+              <QueuesSidebar
+                state={{
+                  view, loading, filteredCustomers, selectedCustomer,
+                  departments, selectedDepartment, showDeptDropdown
+                }}
+                actions={{
+                  setSelectedDepartment,
+                  setShowDeptDropdown,
+                  handleChatClick: handlers.handleChatClick
+                }}
               />
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {loading ? (
-                  <div className="flex-1 flex items-center justify-center p-6">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#6237A0] border-t-transparent"></div>
-                      </div>
-                      <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                        Loading Queue
-                      </h3>
-                      <p className="text-xs max-w-xs mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        Fetching customers waiting in queue...
-                      </p>
-                    </div>
-                  </div>
-                ) : filteredCustomers.length > 0 ? (
-                  <CustomerList
-                    customers={filteredCustomers}
-                    selectedCustomer={selectedCustomer}
-                    onCustomerClick={handleChatClick}
-                  />
-                ) : (
-                  <div className="flex-1 flex items-center justify-center p-6">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full flex items-center justify-center">
-                        <svg className="w-8 h-8 text-[#6237A0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                        Queue is Empty
-                      </h3>
-                      <p className="text-xs max-w-xs mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        No customers are waiting in the queue right now.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <QueuesArea
+                state={{
+                  view, isMobile, selectedCustomer, chatEnded, groupedMessages,
+                  hasMoreMessages, isLoadingMore, inputMessage, openDropdown
+                }}
+                actions={{
+                  refs: { scrollContainerRef, bottomRef, textareaRef, dropdownRef },
+                  handlers,
+                  permissions: { canMessage, canEndChat, canTransfer },
+                  toggleDropdown
+                }}
+              />
             </div>
-
-            {/* Chat area - Enhanced */}
-            <div
-              className={`${
-                view === "conversation" ? "block" : "hidden md:flex"
-              } flex-1 flex flex-col md:rounded-xl shadow-sm border overflow-hidden`}
-              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
-            >
-              {selectedCustomer ? (
-                <>
-                  <ChatHeader
-                    customer={selectedCustomer}
-                    isMobile={isMobile}
-                    onBack={handleBackClick}
-                    showAcceptButton={
-                      !selectedCustomer.isAccepted && !selectedCustomer.sys_user_id
-                    }
-                    onAccept={handleAcceptChat}
-                    showMenu={
-                      selectedCustomer.isAccepted || selectedCustomer.sys_user_id
-                    }
-                    chatEnded={chatEnded}
-                    menuOpen={openDropdown === "customerMenu"}
-                    onMenuToggle={() => toggleDropdown("customerMenu")}
-                    onEndChat={handleEndChat}
-                    onTransfer={handleTransferClick}
-                    dropdownRef={dropdownRef}
-                    canEndChat={canEndChat}
-                    canTransfer={canTransfer}
-                  />
-
-                  <ChatMessages
-                    groupedMessages={groupedMessages}
-                    selectedCustomer={selectedCustomer}
-                    chatEnded={chatEnded}
-                    scrollContainerRef={scrollContainerRef}
-                    bottomRef={bottomRef}
-                    isMobile={isMobile}
-                    hasMoreMessages={hasMoreMessages}
-                    isLoadingMore={isLoadingMore}
-                  />
-
-                  <MessageInput
-                    inputMessage={inputMessage}
-                    onInputChange={handleInputChange}
-                    onSendMessage={sendMessage}
-                    textareaRef={textareaRef}
-                    showCannedMessages={false}
-                    onToggleCannedMessages={() => {}}
-                    cannedMessages={[]}
-                    onSelectCannedMessage={() => {}}
-                    disabled={
-                      !canMessage || 
-                      (!selectedCustomer.isAccepted && !selectedCustomer.sys_user_id)
-                    }
-                    chatEnded={chatEnded}
-                    showPreviewBanner={
-                      canMessage &&
-                      !selectedCustomer.isAccepted &&
-                      !selectedCustomer.sys_user_id &&
-                      !chatEnded
-                    }
-                    canUseCannedMessages={false}
-                  />
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center p-4">
-                  <div className="text-center animate-slide-in">
-                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full flex items-center justify-center">
-                      <svg className="w-10 h-10 md:w-12 md:h-12 text-[#6237A0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base md:text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No Chat Selected</h3>
-                    <p className="text-xs md:text-sm max-w-xs mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                      Select a customer from the queue to start chatting
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
     </>
   );
 }
