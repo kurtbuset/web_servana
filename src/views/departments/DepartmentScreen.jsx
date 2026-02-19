@@ -5,6 +5,7 @@ import { Edit3, Search, X } from "react-feather";
 import { useDepartments } from "../../hooks/useDepartments";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import "../../../src/App.css";
 
 /**
@@ -32,7 +33,7 @@ export default function DepartmentScreen() {
   // Get user permissions
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canEditDepartment = hasPermission("priv_can_manage_dept");
+  const canEditDepartment = hasPermission(PERMISSIONS.MANAGE_DEPT);
 
   // Get department state and actions from hook
   const {

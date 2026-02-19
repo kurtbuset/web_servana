@@ -22,6 +22,7 @@ import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
 import socket from "../../socket";
 import { ROUTES } from "../../constants/routes";
+import { PERMISSIONS } from "../../constants/permissions";
 
 const navSections = [
   {
@@ -46,7 +47,7 @@ const navSections = [
         to: ROUTES.QUEUES, 
         icon: Layers, 
         label: "Queues", 
-        permission: "priv_can_view_message", 
+        permission: PERMISSIONS.VIEW_MESSAGE, 
         showBadge: true, 
         badgeKey: "pendingChats"
       },
@@ -54,7 +55,7 @@ const navSections = [
         to: ROUTES.CHATS, 
         icon: MessageSquare, 
         label: "Active Chats", 
-        permission: "priv_can_view_message", 
+        permission: PERMISSIONS.VIEW_MESSAGE, 
         showBadge: true, 
         badgeKey: "activeChats"
       }
@@ -67,13 +68,13 @@ const navSections = [
         to: ROUTES.DEPARTMENTS, 
         icon: HiOfficeBuilding, 
         label: "Departments", 
-        permission: "priv_can_manage_dept"
+        permission: PERMISSIONS.MANAGE_DEPT
       },
       { 
         to: ROUTES.AUTO_REPLIES, 
         icon: Cpu, 
         label: "Auto-Replies", 
-        permission: "priv_can_manage_auto_reply"
+        permission: PERMISSIONS.MANAGE_AUTO_REPLY
       }
     ]
   },
@@ -84,13 +85,13 @@ const navSections = [
         to: ROUTES.MANAGE_AGENTS, 
         icon: Headphones, 
         label: "Manage Agents", 
-        permission: "priv_can_create_account"
+        permission: PERMISSIONS.CREATE_ACCOUNT
       },
       { 
         to: ROUTES.CHANGE_ROLE, 
         icon: UserCheck, 
         label: "Change Roles", 
-        permission: "priv_can_assign_role"
+        permission: PERMISSIONS.ASSIGN_ROLE
       }
     ]
   },
@@ -101,13 +102,13 @@ const navSections = [
         to: ROUTES.MACROS_AGENTS, 
         icon: MessageCircle, 
         label: "Agent Macros", 
-        permission: "priv_can_use_canned_mess"
+        permission: PERMISSIONS.USE_CANNED_MESS
       },
       { 
         to: ROUTES.MACROS_CLIENTS, 
         icon: FileText, 
         label: "Client Macros", 
-        permission: "priv_can_use_canned_mess"
+        permission: PERMISSIONS.USE_CANNED_MESS
       }
     ]
   },
@@ -118,13 +119,13 @@ const navSections = [
         to: ROUTES.MANAGE_ADMIN, 
         icon: Shield, 
         label: "Admin Users", 
-        permission: "priv_can_create_account"
+        permission: PERMISSIONS.CREATE_ACCOUNT
       },
       { 
         to: ROUTES.ROLES, 
         icon: Key, 
         label: "Roles & Permissions", 
-        permission: "priv_can_manage_role"
+        permission: PERMISSIONS.MANAGE_ROLE
       }
     ]
   }
@@ -331,87 +332,7 @@ const Sidebar = memo(({ isMobile, isOpen }) => {
     [location.pathname]
   );
 
-  // Fetch initial chat counts and set up WebSocket listeners
-  useEffect(() => {
-    // const fetchCounts = async () => {
-    //   try {
-    //     // TODO: Replace with actual API endpoint
-    //     const res = await api.get("/chat/counts");
-    //     setCounts({
-    //       pendingChats: res.data.pendingChats || 0,
-    //       activeChats: res.data.activeChats || 0
-    //     });
-    //   } catch (error) {
-    //     console.error("Failed to fetch chat counts:", error);
-    //     // Fallback to simulated data for development
-    //     setCounts({
-    //       pendingChats: 8,
-    //       activeChats: 23
-    //     });
-    //   }
-    // };
-
-    if (userData) {
-      // Connect socket if not already connected
-      if (!socket.connected) {
-        socket.connect();
-      }
-
-      // Fetch initial counts
-      // fetchCounts();
-
-      // Listen for real-time count updates
-      socket.on("chatCountsUpdate", (data) => {
-        setCounts({
-          pendingChats: data.pendingChats || 0,
-          activeChats: data.activeChats || 0
-        });
-      });
-
-      // Listen for new chat in queue
-      socket.on("newChatInQueue", () => {
-        setCounts(prev => ({
-          ...prev,
-          pendingChats: prev.pendingChats + 1
-        }));
-      });
-
-      // Listen for chat accepted (moved from queue to active)
-      socket.on("chatAccepted", () => {
-        setCounts(prev => ({
-          pendingChats: Math.max(0, prev.pendingChats - 1),
-          activeChats: prev.activeChats + 1
-        }));
-      });
-
-      // Listen for chat closed/resolved
-      socket.on("chatClosed", () => {
-        setCounts(prev => ({
-          ...prev,
-          activeChats: Math.max(0, prev.activeChats - 1)
-        }));
-      });
-
-      // Listen for message read/seen event
-      socket.on("messagesSeen", (data) => {
-        // When user views a chat, decrease unread count
-        // This assumes the backend sends which chat was viewed
-        if (data.chatGroupId) {
-          // Optionally refresh counts or handle specific chat
-          // fetchCounts();
-        }
-      });
-
-      // Cleanup on unmount
-      return () => {
-        socket.off("chatCountsUpdate");
-        socket.off("newChatInQueue");
-        socket.off("chatAccepted");
-        socket.off("chatClosed");
-        socket.off("messagesSeen");
-      };
-    }
-  }, [userData]);
+  
 
   if (isMobile && !isOpen) return null;
 

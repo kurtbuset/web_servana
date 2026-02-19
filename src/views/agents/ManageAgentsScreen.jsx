@@ -5,6 +5,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAgents } from "../../hooks/useAgents";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "react-toastify";
 import "../../../src/App.css";
 
@@ -39,8 +40,8 @@ export default function ManageAgentsScreen() {
 
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canAssignDepartment = hasPermission("priv_can_assign_dept");
-  const canCreateAccount = hasPermission("priv_can_create_account");
+  const canAssignDepartment = hasPermission(PERMISSIONS.ASSIGN_DEPT);
+  const canCreateAccount = hasPermission(PERMISSIONS.CREATE_ACCOUNT);
 
   const {
     agents,

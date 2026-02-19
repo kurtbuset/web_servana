@@ -3,6 +3,7 @@ import Layout from "../../components/Layout";
 import { MessageSquare, Users, Clock, CheckCircle, TrendingUp, Activity, UserCheck } from "react-feather";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../../hooks/useDashboard";
 import { Line } from 'react-chartjs-2';
@@ -210,7 +211,7 @@ export default function DashboardScreen() {
                     </div>
                     <span className="text-xs sm:text-sm font-medium group-hover:text-[#6237A0] transition-colors" style={{ color: 'var(--text-primary)' }}>View All Chats</span>
                 </button>
-                {hasPermission("priv_can_create_account") && (
+                {hasPermission(PERMISSIONS.CREATE_ACCOUNT) && (
                     <button 
                         onClick={() => navigate('/manage-agents')}
                         className="flex items-center gap-3 p-3 sm:p-3.5 rounded-lg border-2 transition-all text-left group"
@@ -255,7 +256,7 @@ export default function DashboardScreen() {
     // Show different stats based on permissions
     const renderStats = () => {
         // If user has management permissions, show admin-level stats
-        if (hasPermission("priv_can_manage_role") || hasPermission("priv_can_create_account")) {
+        if (hasPermission(PERMISSIONS.MANAGE_ROLE) || hasPermission(PERMISSIONS.CREATE_ACCOUNT)) {
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
                     <StatCard
@@ -302,7 +303,7 @@ export default function DashboardScreen() {
                     />
                 </div>
             );
-        } else if (hasPermission("priv_can_view_message")) {
+        } else if (hasPermission(PERMISSIONS.VIEW_MESSAGE)) {
             // Agent-level stats for users with chat permissions
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
@@ -511,7 +512,7 @@ export default function DashboardScreen() {
                                                 </div>
                                                 <span className="text-[10px] font-medium group-hover:text-[#6237A0] transition-colors" style={{ color: 'var(--text-primary)' }}>View All Chats</span>
                                             </button>
-                                            {hasPermission("priv_can_create_account") && (
+                                            {hasPermission(PERMISSIONS.CREATE_ACCOUNT) && (
                                                 <button 
                                                     onClick={() => navigate('/manage-agents')}
                                                     className="flex items-center gap-2 p-2 rounded-lg border transition-all text-left group"

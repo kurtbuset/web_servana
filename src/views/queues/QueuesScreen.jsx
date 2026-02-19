@@ -3,6 +3,7 @@ import Layout from "../../components/Layout";
 import { useQueues } from "../../hooks/useQueues";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
+import { PERMISSIONS } from "../../constants/permissions";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
 import ConfirmDialog from "../../components/chat/ConfirmDialog";
 import TransferModal from "../../components/chat/TransferModal";
@@ -35,10 +36,10 @@ export default function QueuesScreen() {
   // Get user permissions
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canMessage = hasPermission("priv_can_message");
-  const canEndChat = hasPermission("priv_can_end_chat");
-  const canTransfer = hasPermission("priv_can_transfer");
-  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess");
+  const canMessage = hasPermission(PERMISSIONS.MESSAGE);
+  const canEndChat = hasPermission(PERMISSIONS.END_CHAT);
+  const canTransfer = hasPermission(PERMISSIONS.TRANSFER);
+  const canUseCannedMessages = hasPermission(PERMISSIONS.USE_CANNED_MESS);
 
   const {
     departments,
