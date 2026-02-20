@@ -1,6 +1,5 @@
 // src/App.js
 import './App.css';
-import './styles/Animations.css';
 import AppNavigation from './AppNavigation.jsx';
 import { UserProvider } from "../src/context/UserContext.jsx";
 import { ThemeProvider } from "../src/context/ThemeContext.jsx";

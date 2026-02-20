@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
-import { AnimatedBackground } from "../../components/ui";
 import LoginHeader from "./components/LoginHeader";
 import LoginForm from "./components/LoginForm";
+import AnimatedBackground from "./components/AnimatedBackground";
 import BrandingPanel from "./components/BrandingPanel";
 import LoginAnimations from "./components/LoginAnimations";
 
@@ -42,10 +42,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-3 sm:px-4 py-4 sm:py-6 relative overflow-hidden" style={{ background: isDark ? '#1e1e1e' : '#ffffff' }}>
-      {/* Animated Background */}
+    <div className="min-h-screen flex items-center justify-center px-3 sm:px-4 py-4 sm:py-6 relative overflow-hidden" style={{ background: isDark ? 'linear-gradient(to bottom right, #1e1e1e, #2a2a2a, #1e1e1e)' : 'linear-gradient(to bottom right, #F7F5FB, #E8E4F3, #F0EBFF)' }}>
+      {/* Animated background elements */}
       <AnimatedBackground isDark={isDark} />
-      
+
       <div className="w-full max-w-[1200px] backdrop-blur-lg rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row min-h-[600px] sm:min-h-[650px] lg:min-h-[700px] relative z-10" style={{ 
         backgroundColor: isDark ? 'rgba(42, 42, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
         border: `1px solid ${isDark ? 'rgba(74, 74, 74, 0.2)' : 'rgba(255, 255, 255, 0.2)'}`

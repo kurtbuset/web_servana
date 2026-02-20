@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import Layout from "../../components/Layout";
-import { AnimatedBackground } from "../../components/ui";
 import { useQueues } from "../../hooks/queues/useQueues";
 import { useUser } from "../../context/UserContext";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
@@ -55,7 +54,6 @@ export default function QueuesScreen() {
       <style>{getQueueStyles()}</style>
       <div className="flex flex-col h-full overflow-hidden">
         <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
-          <AnimatedBackground isDark={isDark} />
           <QueuesSidebar
             state={{
               view, loading, filteredCustomers, selectedCustomer,
