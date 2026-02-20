@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import Layout from "../../components/Layout";
-import { AnimatedBackground } from "../../components/ui";
 import { useChat } from "../../hooks/chats/useChat";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -14,6 +13,7 @@ import { useChatEffects } from "../../hooks/chats/useChatEffects";
 import { getChatStyles } from "./styles/chatStyles";
 import { PERMISSIONS } from "../../constants/permissions";
 import "../../App.css";
+import ScreenContainer from "../../components/ScreenContainer";
 
 export default function ChatsScreen() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -64,7 +64,8 @@ export default function ChatsScreen() {
 
   return (
     <Layout>
-      <style>{getChatStyles(isDark)}</style>
+      <ScreenContainer>
+        <style>{getChatStyles(isDark)}</style>
       <div className="flex flex-col h-full overflow-hidden">
         <ChatsModals
           state={{
@@ -119,6 +120,7 @@ export default function ChatsScreen() {
         <ProfilePanel customer={selectedCustomer} isOpen={showProfilePanel}
           onClose={handlers.handleCloseProfile} />
       </div>
+      </ScreenContainer>
     </Layout>
   );
 }
