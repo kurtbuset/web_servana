@@ -31,7 +31,7 @@ const ManageAdmin = lazy(() => import("./views/manage-admin/ManageAdmin.jsx"));
 const AnalyticsScreen = lazy(() => import("./views/analytics/AnalyticsScreen.jsx"));
 
 import "react-toastify/dist/ReactToastify.css";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer } from "./components/ui";
 
 
 /**
@@ -153,30 +153,8 @@ function AppNavigation() {
   return (
     <Router>
       <Suspense fallback={<LoadingSpinner variant="page" message="Loading..." />}>
-        <ToastContainer 
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={isDark ? "dark" : "light"}
-        style={{
-          fontSize: '14px'
-        }}
-        toastStyle={{
-          backgroundColor: isDark ? '#2a2a2a' : '#ffffff',
-          color: isDark ? '#f5f5f5' : '#1a1a1a',
-          border: `1px solid ${isDark ? '#4a4a4a' : '#e5e7eb'}`,
-          boxShadow: isDark 
-            ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)' 
-            : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-        }}
-      />
-      <Routes>
+        <ToastContainer isDark={isDark} />
+        <Routes>
         {/* Public: Login, redirect if authed */}
         <Route
           path="/"

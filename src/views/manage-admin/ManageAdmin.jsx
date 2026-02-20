@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../api";
-import TopNavbar from "../../../src/components/TopNavbar";
-import Sidebar from "../../../src/components/Sidebar/index";
-import SearchBar from "../../components/SearchBar";
+import Layout from "../../components/Layout";
+import ScreenContainer from "../../components/ScreenContainer";
 import { useTheme } from "../../context/ThemeContext";
 import AdminTable from "./components/AdminTable";
 import AddEditAdminModal from "./components/AddEditAdminModal";
@@ -12,8 +11,6 @@ import "../../styles/GridLayout.css";
 import "../../styles/Animations.css";
 
 export default function ManageAdmin() {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agents, setAgents] = useState([]);
@@ -29,8 +26,6 @@ export default function ManageAdmin() {
   const [viewProfileModal, setViewProfileModal] = useState(null);
 
   const { isDark } = useTheme();
-
-  const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isValidEmail = (value) => emailRegex.test(value.trim());
@@ -186,100 +181,84 @@ export default function ManageAdmin() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNavbar toggleSidebar={toggleSidebar} />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          isMobile={true}
-          isOpen={mobileSidebarOpen}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <Sidebar
-          isMobile={false}
-          toggleDropdown={setOpenDropdown}
-          openDropdown={openDropdown}
-        />
-
-        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-          <div className="p-3 sm:p-4 rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+    <Layout>
+      <ScreenContainer>
+        <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="relative">
+              <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
                 Manage Admins
+                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
               </h1>
-
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                <SearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search admins..."
-                  isDark={isDark}
-                  className="flex-1 sm:flex-initial sm:w-56 md:w-64"
-                />
-
-                <button
-                  onClick={openAddModal}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-[#6237A0] text-white hover:bg-[#552C8C]"
-                >
-                  + Add Admin
-                </button>
-              </div>
             </div>
 
-            {/* Table Container */}
-            <div className="flex-1 overflow-hidden">
-              <AdminTable
-                agents={filteredAgents}
-                currentUserId={currentUserId}
-                loading={loading}
-                error={error}
-                searchQuery={searchQuery}
-                isDark={isDark}
-                onViewProfile={(agent) => setViewProfileModal(agent)}
-                onEdit={(agent) => {
-                  if (agent.sys_user_id !== currentUserId) {
-                    openEditModal(agent);
-                    setError(null);
-                  }
-                }}
-                onToggleStatus={toggleActiveStatus}
-              />
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              <button
+                onClick={openAddModal}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-[#6237A0] text-white hover:bg-[#552C8C]"
+              >
+                + Add Admin
+              </button>
             </div>
           </div>
 
-          {/* Modals */}
-          <AddEditAdminModal
-            isOpen={isModalOpen}
-            isEdit={currentEditId !== null}
-            email={editEmail}
-            password={editPassword}
-            showPassword={showPassword}
-            error={modalError}
-            isDark={isDark}
-            onEmailChange={(value) => {
-              setEditEmail(value);
-              if (modalError) setModalError(null);
-            }}
-            onPasswordChange={(value) => {
-              setEditPassword(value);
-              if (modalError) setModalError(null);
-            }}
-            onTogglePassword={() => setShowPassword(!showPassword)}
-            onSave={saveAdmin}
-            onClose={() => {
-              setIsModalOpen(false);
-              setModalError(null);
-            }}
-          />
+          {/* Content Area */}
+          <div className="flex-1 overflow-hidden">
+            <div className="rounded-lg shadow-sm h-full flex flex-col" style={{ backgroundColor: 'var(--card-bg)' }}>
+              {/* Content Area */}
+              <div className="flex-1 overflow-hidden p-2">
+                <AdminTable
+                  agents={filteredAgents}
+                  currentUserId={currentUserId}
+                  loading={loading}
+                  error={error}
+                  searchQuery={searchQuery}
+                  isDark={isDark}
+                  onViewProfile={(agent) => setViewProfileModal(agent)}
+                  onEdit={(agent) => {
+                    if (agent.sys_user_id !== currentUserId) {
+                      openEditModal(agent);
+                      setError(null);
+                    }
+                  }}
+                  onToggleStatus={toggleActiveStatus}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <ViewProfileModal
-            user={viewProfileModal}
-            onClose={() => setViewProfileModal(null)}
-          />
-        </main>
-      </div>
-    </div>
+        {/* Modals */}
+        <AddEditAdminModal
+          isOpen={isModalOpen}
+          isEdit={currentEditId !== null}
+          email={editEmail}
+          password={editPassword}
+          showPassword={showPassword}
+          error={modalError}
+          isDark={isDark}
+          onEmailChange={(value) => {
+            setEditEmail(value);
+            if (modalError) setModalError(null);
+          }}
+          onPasswordChange={(value) => {
+            setEditPassword(value);
+            if (modalError) setModalError(null);
+          }}
+          onTogglePassword={() => setShowPassword(!showPassword)}
+          onSave={saveAdmin}
+          onClose={() => {
+            setIsModalOpen(false);
+            setModalError(null);
+          }}
+        />
+
+        <ViewProfileModal
+          user={viewProfileModal}
+          onClose={() => setViewProfileModal(null)}
+        />
+      </ScreenContainer>
+    </Layout>
   );
 }
