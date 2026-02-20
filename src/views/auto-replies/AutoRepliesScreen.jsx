@@ -232,33 +232,39 @@ export default function AutoRepliesScreen() {
   return (
     <Layout>
       <ScreenContainer>
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="relative">
+              <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
+                Auto Replies
+                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
+              </h1>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              {/* Add Button */}
+              <button
+                onClick={openAddModal}
+                disabled={!canEditAutoReplies}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                  canEditAutoReplies
+                    ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
+                    : "cursor-not-allowed"
+                }`}
+                style={!canEditAutoReplies ? {
+                  backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
+                  color: isDark ? '#9ca3af' : '#6b7280'
+                } : {}}
+              >
+                + Add Reply
+              </button>
+            </div>
+          </div>
+
+          {/* Content Area */}
           <div className="flex-1 overflow-hidden">
             <div className="rounded-lg shadow-sm h-full grid-layout" style={{ backgroundColor: 'var(--card-bg)' }}>
-              {/* Header Section */}
-              <div className="grid-header p-2.5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2" style={{ borderBottom: `1px solid var(--border-color)` }}>
-                <h1 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Auto Replies</h1>
-                
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  {/* Add Button */}
-                  <button
-                    onClick={openAddModal}
-                    disabled={!canEditAutoReplies}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                      canEditAutoReplies
-                        ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
-                        : "cursor-not-allowed"
-                    }`}
-                    style={!canEditAutoReplies ? {
-                      backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
-                      color: isDark ? '#9ca3af' : '#6b7280'
-                    } : {}}
-                  >
-                    + Add Reply
-                  </button>
-                </div>
-              </div>
-
               {/* Mobile Department Filter */}
               <MobileDepartmentFilter
                 allDepartments={allDepartments}
@@ -315,59 +321,59 @@ export default function AutoRepliesScreen() {
                 </div>
               </div>
             </div>
-
-            {/* Modals */}
-            <EditReplyModal
-              isOpen={isEditModalOpen}
-              editText={editText}
-              isDark={isDark}
-              onTextChange={setEditText}
-              onSave={handleSaveEdit}
-              onClose={() => {
-                setIsEditModalOpen(false);
-                setEditText("");
-                setEditingReplyId(null);
-              }}
-            />
-
-            <AddReplyModal
-              isOpen={isAddModalOpen}
-              editText={editText}
-              modalDepartment={modalDepartment}
-              allDepartments={allDepartments}
-              isDark={isDark}
-              onTextChange={setEditText}
-              onDepartmentChange={setModalDepartment}
-              onSave={handleSaveAdd}
-              onClose={() => {
-                setIsAddModalOpen(false);
-                setEditText("");
-                setModalDepartment('All');
-              }}
-            />
-
-            {transferModalOpen && (
-              <TransferReplyModal
-                isOpen={true}
-                transferToDept={transferToDept}
-                allDepartments={allDepartments}
-                hasUnsavedChanges={hasUnsavedChanges}
-                shakeBar={shakeBar}
-                isDark={isDark}
-                onDepartmentChange={handleTransferDeptChange}
-                onTransfer={handleTransferReply}
-                onReset={handleResetTransfer}
-                onClose={handleCloseTransferModal}
-              />
-            )}
-
-            <DeleteReplyModal
-              isOpen={deleteModalOpen}
-              isDark={isDark}
-              onDelete={handleDeleteReply}
-              onClose={handleCloseDeleteModal}
-            />
           </div>
+
+          {/* Modals */}
+          <EditReplyModal
+            isOpen={isEditModalOpen}
+            editText={editText}
+            isDark={isDark}
+            onTextChange={setEditText}
+            onSave={handleSaveEdit}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setEditText("");
+              setEditingReplyId(null);
+            }}
+          />
+
+          <AddReplyModal
+            isOpen={isAddModalOpen}
+            editText={editText}
+            modalDepartment={modalDepartment}
+            allDepartments={allDepartments}
+            isDark={isDark}
+            onTextChange={setEditText}
+            onDepartmentChange={setModalDepartment}
+            onSave={handleSaveAdd}
+            onClose={() => {
+              setIsAddModalOpen(false);
+              setEditText("");
+              setModalDepartment('All');
+            }}
+          />
+
+          {transferModalOpen && (
+            <TransferReplyModal
+              isOpen={true}
+              transferToDept={transferToDept}
+              allDepartments={allDepartments}
+              hasUnsavedChanges={hasUnsavedChanges}
+              shakeBar={shakeBar}
+              isDark={isDark}
+              onDepartmentChange={handleTransferDeptChange}
+              onTransfer={handleTransferReply}
+              onReset={handleResetTransfer}
+              onClose={handleCloseTransferModal}
+            />
+          )}
+
+          <DeleteReplyModal
+            isOpen={deleteModalOpen}
+            isDark={isDark}
+            onDelete={handleDeleteReply}
+            onClose={handleCloseDeleteModal}
+          />
         </div>
       </ScreenContainer>
     </Layout>
