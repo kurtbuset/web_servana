@@ -10,7 +10,9 @@ import { useQueuesHandlers } from "../../hooks/queues/useQueuesHandlers";
 import { useQueuesEffects } from "../../hooks/queues/useQueuesEffects";
 import { getQueueStyles } from "./styles/queueStyles";
 import { PERMISSIONS } from "../../constants/permissions";
+import { useTheme } from "../../context/ThemeContext";
 import "../../App.css";
+import ScreenContainer from "../../components/ScreenContainer";
 
 export default function QueuesScreen() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -18,6 +20,7 @@ export default function QueuesScreen() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
+  const { isDark } = useTheme();
 
   const dropdownRef = useRef(null);
   const bottomRef = useRef(null);
@@ -52,36 +55,37 @@ export default function QueuesScreen() {
 
   return (
     <Layout>
-      <style>{getQueueStyles()}</style>
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
-          <AnimatedBackground isDark={isDark} />
-          <QueuesSidebar
-            state={{
-              view, loading, filteredCustomers, selectedCustomer,
-              departments, selectedDepartment, showDeptDropdown
-            }}
-            actions={{
-              setSelectedDepartment,
-              setShowDeptDropdown,
-              handleChatClick: handlers.handleChatClick
-            }}
-          />
+      <ScreenContainer>
+        <style>{getQueueStyles()}</style>
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex flex-col md:flex-row h-full gap-0 md:gap-3 p-0 md:p-3">
+            <QueuesSidebar
+              state={{
+                view, loading, filteredCustomers, selectedCustomer,
+                departments, selectedDepartment, showDeptDropdown
+              }}
+              actions={{
+                setSelectedDepartment,
+                setShowDeptDropdown,
+                handleChatClick: handlers.handleChatClick
+              }}
+            />
 
-          <QueuesArea
-            state={{
-              view, isMobile, selectedCustomer, chatEnded, groupedMessages,
-              hasMoreMessages, isLoadingMore, inputMessage, openDropdown
-            }}
-            actions={{
-              refs: { scrollContainerRef, bottomRef, textareaRef, dropdownRef },
-              handlers,
-              permissions: { canMessage },
-              toggleDropdown
-            }}
-          />
+            <QueuesArea
+              state={{
+                view, isMobile, selectedCustomer, chatEnded, groupedMessages,
+                hasMoreMessages, isLoadingMore, inputMessage, openDropdown
+              }}
+              actions={{
+                refs: { scrollContainerRef, bottomRef, textareaRef, dropdownRef },
+                handlers,
+                permissions: { canMessage },
+                toggleDropdown
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </ScreenContainer>
     </Layout>
   );
 }
