@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import Layout from "../../components/Layout";
-import { AnimatedBackground } from "../../components/ui";
 import { useQueues } from "../../hooks/queues/useQueues";
 import { useUser } from "../../context/UserContext";
 import { groupMessagesByDate } from "../../utils/dateFormatters";

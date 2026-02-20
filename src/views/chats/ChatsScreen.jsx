@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import Layout from "../../components/Layout";
-import { AnimatedBackground } from "../../components/ui";
 import { useChat } from "../../hooks/chats/useChat";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";

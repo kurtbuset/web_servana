@@ -1,5 +1,4 @@
 import { useTheme } from '../context/ThemeContext';
-import AnimatedBackground from './ui/AnimatedBackground';
 
 /**
  * ScreenContainer - Reusable container component for screen layouts
@@ -10,7 +9,6 @@ import AnimatedBackground from './ui/AnimatedBackground';
  * - Border and shadow
  * - Background color
  * - Full height layout
- * - Animated background
  * 
  * @param {Object} props
  * @param {React.ReactNode} props.children - Content to render inside the container
@@ -40,14 +38,11 @@ export default function ScreenContainer({
 
   return (
     <div 
-      className={`flex flex-col ${fullHeight ? 'h-full' : ''} overflow-hidden relative`} 
+      className={`flex flex-col ${fullHeight ? 'h-full' : ''} overflow-hidden`} 
       style={{ backgroundColor: 'var(--bg-secondary)' }}
     >
-      {/* Animated Background */}
-      <AnimatedBackground isDark={isDark} />
-      
       <div 
-        className={`flex flex-col ${fullHeight ? 'h-full' : ''} gap-0 ${noPadding ? 'p-0' : 'p-0 md:p-3'} flex-1 relative z-10`}
+        className={`flex flex-col ${fullHeight ? 'h-full' : ''} gap-0 ${noPadding ? 'p-0' : 'p-0 md:p-3'} flex-1`}
       >
         <div 
           className={`${fullHeight ? 'h-full' : ''} flex flex-col md:rounded-xl shadow-sm border-0 md:border overflow-hidden ${className}`}

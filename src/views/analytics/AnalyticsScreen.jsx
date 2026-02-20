@@ -12,7 +12,6 @@ import {
   Filler
 } from 'chart.js';
 import Layout from '../../components/Layout';
-import { AnimatedBackground } from '../../components/ui';
 import { useTheme } from '../../context/ThemeContext';
 
 // Register ChartJS components
@@ -137,9 +136,7 @@ const AnalyticsScreen = () => {
 
   return (
     <Layout>
-      <div className="flex-1 overflow-y-auto p-3 relative" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-          <AnimatedBackground isDark={isDark} />
-          <div className="relative z-10">
+      <div className="flex-1 overflow-y-auto p-3" style={{ backgroundColor: 'var(--bg-secondary)' }}>
           {/* Header */}
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Analytics</h1>
@@ -402,7 +399,6 @@ const AnalyticsScreen = () => {
                 <span className="text-red-600 text-[10px]">↓ 5%</span>
               </div>
             </div>
-          </div>
           </div>
       </div>
     </Layout>
