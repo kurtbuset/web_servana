@@ -8,7 +8,7 @@ export default function ViewProfileModal({ user, onClose }) {
   if (!user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 animate-fadeIn" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[70] p-4 animate-fadeIn" onClick={onClose}>
       <div className="rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-slideUp" onClick={(e) => e.stopPropagation()}>
         {/* Purple Gradient Header */}
         <div className="relative bg-gradient-to-br from-[#8B5CF6] via-[#7C3AED] to-[#6D28D9] p-5 text-white">

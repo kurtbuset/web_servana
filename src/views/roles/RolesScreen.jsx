@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Settings, Users, Shield, MessageSquare } from "react-feather";
+import { Plus, Settings, Users, Shield, MessageSquare, HelpCircle } from "react-feather";
 import Layout from "../../components/Layout";
 import ScreenContainer from "../../components/ScreenContainer";
 import Modal from "../../components/Modal";
@@ -13,7 +13,8 @@ import {
   EmptyState, 
   LoadingState, 
   SplitPanel, 
-  DetailHeader 
+  DetailHeader,
+  Tooltip
 } from "../../components/ui";
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -384,11 +385,24 @@ export default function RolesScreen() {
         <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
               <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
                 Roles & Permissions
                 <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
               </h1>
+              <Tooltip 
+                content="Define and manage user roles with specific permissions. Create custom roles, assign permissions for different features, and control access levels across the system."
+                position="bottom"
+                isDark={isDark}
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 cursor-help">
+                  <HelpCircle 
+                    size={16} 
+                    className="transition-colors" 
+                    style={{ color: '#8B5CF6' }}
+                  />
+                </div>
+              </Tooltip>
             </div>
           </div>
 

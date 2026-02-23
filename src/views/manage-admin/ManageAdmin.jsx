@@ -3,9 +3,21 @@ import api from "../../api";
 import Layout from "../../components/Layout";
 import ScreenContainer from "../../components/ScreenContainer";
 import { useTheme } from "../../context/ThemeContext";
+import { 
+  Tooltip,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../components/ui";
+import { usePagination } from "../../hooks/usePagination";
 import AdminTable from "./components/AdminTable";
 import AddEditAdminModal from "./components/AddEditAdminModal";
 import ViewProfileModal from "./components/ViewProfileModal";
+import { HelpCircle } from "react-feather";
 import "../../../src/App.css";
 import "../../styles/GridLayout.css";
 import "../../styles/Animations.css";
@@ -24,6 +36,9 @@ export default function ManageAdmin() {
   const [modalError, setModalError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [viewProfileModal, setViewProfileModal] = useState(null);
+  const [sortBy, setSortBy] = useState('default');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const { isDark } = useTheme();
 
@@ -60,6 +75,42 @@ export default function ManageAdmin() {
   const filteredAgents = agents.filter((agent) =>
     agent.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Sort filtered agents
+  const sortedAgents = [...filteredAgents].sort((a, b) => {
+    switch (sortBy) {
+      case 'alphabetical':
+        return a.email.toLowerCase().localeCompare(b.email.toLowerCase());
+      case 'reverse':
+        return b.email.toLowerCase().localeCompare(a.email.toLowerCase());
+      case 'default':
+      default:
+        return b.sys_user_id - a.sys_user_id; // Newest first
+    }
+  });
+
+  // Pagination
+  const {
+    totalPages,
+    paginationRange,
+    hasNextPage,
+    hasPreviousPage,
+    startIndex,
+    endIndex
+  } = usePagination({
+    totalItems: sortedAgents.length,
+    itemsPerPage,
+    currentPage,
+    siblingCount: 1
+  });
+
+  // Get current page agents
+  const paginatedAgents = sortedAgents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query, sort, or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy, itemsPerPage]);
 
   const resetModalFields = () => {
     setCurrentEditId(null);
@@ -186,11 +237,24 @@ export default function ManageAdmin() {
         <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
               <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
                 Manage Admins
                 <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
               </h1>
+              <Tooltip 
+                content="Manage administrator accounts. Create new admins, edit their credentials, and control their account status. Admins have elevated permissions to manage the system."
+                position="bottom"
+                isDark={isDark}
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 cursor-help">
+                  <HelpCircle 
+                    size={16} 
+                    className="transition-colors" 
+                    style={{ color: '#8B5CF6' }}
+                  />
+                </div>
+              </Tooltip>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -209,11 +273,13 @@ export default function ManageAdmin() {
               {/* Content Area */}
               <div className="flex-1 overflow-hidden p-2">
                 <AdminTable
-                  agents={filteredAgents}
+                  agents={paginatedAgents}
                   currentUserId={currentUserId}
                   loading={loading}
                   error={error}
                   searchQuery={searchQuery}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
                   isDark={isDark}
                   onViewProfile={(agent) => setViewProfileModal(agent)}
                   onEdit={(agent) => {
@@ -225,6 +291,85 @@ export default function ManageAdmin() {
                   onToggleStatus={toggleActiveStatus}
                 />
               </div>
+
+              {/* Pagination Controls */}
+              {!loading && !error && sortedAgents.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  {/* Items per page selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      Show
+                    </span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                      className="px-2 py-1 text-xs rounded border focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+                      style={{
+                        backgroundColor: 'var(--input-bg)',
+                        color: 'var(--text-primary)',
+                        borderColor: 'var(--border-color)'
+                      }}
+                    >
+                      <option value="10">10</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                    <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      per page
+                    </span>
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => setCurrentPage(currentPage - 1)}
+                            disabled={!hasPreviousPage}
+                            isDark={isDark}
+                          />
+                        </PaginationItem>
+
+                        {paginationRange?.map((pageNumber, index) => {
+                          if (pageNumber === 'DOTS') {
+                            return (
+                              <PaginationItem key={`dots-${index}`}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+
+                          return (
+                            <PaginationItem key={pageNumber}>
+                              <PaginationLink
+                                onClick={() => setCurrentPage(pageNumber)}
+                                isActive={currentPage === pageNumber}
+                                isDark={isDark}
+                              >
+                                {pageNumber}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => setCurrentPage(currentPage + 1)}
+                            disabled={!hasNextPage}
+                            isDark={isDark}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+
+                  {/* Page info */}
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Showing {startIndex + 1} to {endIndex} of {sortedAgents.length}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

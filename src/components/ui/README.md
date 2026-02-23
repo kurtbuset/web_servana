@@ -236,3 +236,66 @@ Advanced avatar component with initials fallback and badges.
 - You need different shapes
 - You want ring effects
 - You need more customization options
+
+---
+
+### SortButton.jsx
+Reusable alphabetical sort button with three states.
+
+**Props:**
+- `sortBy` (string) - Current sort state: 'default', 'alphabetical', 'reverse' (default: 'default')
+- `onSortChange` (function) - Callback when sort state changes
+- `className` (string) - Additional CSS classes
+- `isDark` (boolean) - Dark mode flag (optional)
+
+**Sort States:**
+- `default` - No sorting applied (inactive icon)
+- `alphabetical` - A-Z sorting (up arrow, active)
+- `reverse` - Z-A sorting (down arrow, active)
+
+**Usage:**
+```jsx
+const [sortBy, setSortBy] = useState('default');
+
+<SortButton 
+  sortBy={sortBy} 
+  onSortChange={setSortBy}
+  isDark={isDark}
+/>
+```
+
+**In Table Headers:**
+```jsx
+<th className="py-2 px-2 text-left font-semibold">
+  <div className="flex items-center gap-2">
+    <span>Name</span>
+    <SortButton 
+      sortBy={sortBy} 
+      onSortChange={setSortBy}
+      isDark={isDark}
+    />
+  </div>
+</th>
+```
+
+**Sorting Logic Example:**
+```jsx
+const sortedData = [...data].sort((a, b) => {
+  switch (sortBy) {
+    case 'alphabetical':
+      return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    case 'reverse':
+      return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+    case 'default':
+    default:
+      return 0; // Original order
+  }
+});
+```
+
+**Features:**
+- Three-state cycle: default → alphabetical → reverse → default
+- Visual feedback with color-coded icons
+- Accessible with proper ARIA labels
+- Hover effects
+- Consistent styling across the app
