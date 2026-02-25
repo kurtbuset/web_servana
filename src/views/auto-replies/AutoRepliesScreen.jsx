@@ -2,6 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import ScreenContainer from '../../components/ScreenContainer';
 import SearchBar from '../../components/SearchBar';
+import { 
+  Tooltip, 
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '../../components/ui';
+import usePagination from '../../hooks/usePagination';
 import { useAutoReplies } from '../../hooks/useAutoReplies';
 import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -15,6 +26,7 @@ import AddReplyModal from './components/AddReplyModal';
 import TransferReplyModal from './components/TransferReplyModal';
 import DeleteReplyModal from './components/DeleteReplyModal';
 import InfoNote from './components/InfoNote';
+import { HelpCircle } from 'react-feather';
 import '../../App.css';
 import '../../styles/GridLayout.css';
 
@@ -35,6 +47,9 @@ export default function AutoRepliesScreen() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showMobileDeptFilter, setShowMobileDeptFilter] = useState(false);
   const [shakeBar, setShakeBar] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortBy, setSortBy] = useState('default');
 
   const { userData, hasPermission, getUserId } = useUser();
   const currentUserId = getUserId();
@@ -81,6 +96,42 @@ export default function AutoRepliesScreen() {
     
     return matchesSearch && matchesDepartment;
   });
+
+  // Sort filtered replies
+  const sortedReplies = [...filteredReplies].sort((a, b) => {
+    switch (sortBy) {
+      case 'alphabetical':
+        return (a.auto_reply_message || '').toLowerCase().localeCompare((b.auto_reply_message || '').toLowerCase());
+      case 'reverse':
+        return (b.auto_reply_message || '').toLowerCase().localeCompare((a.auto_reply_message || '').toLowerCase());
+      case 'default':
+      default:
+        return b.auto_reply_id - a.auto_reply_id; // Newest first
+    }
+  });
+
+  // Pagination
+  const {
+    totalPages,
+    paginationRange,
+    hasNextPage,
+    hasPreviousPage,
+    startIndex,
+    endIndex
+  } = usePagination({
+    totalItems: sortedReplies.length,
+    itemsPerPage,
+    currentPage,
+    siblingCount: 1
+  });
+
+  // Get current page replies
+  const paginatedReplies = sortedReplies.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query, department, sort, or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedDepartment, sortBy, itemsPerPage]);
 
   const handleSaveEdit = async () => {
     if (!canEditAutoReplies) {
@@ -234,11 +285,24 @@ export default function AutoRepliesScreen() {
         <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
               <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
                 Auto Replies
                 <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
               </h1>
+              <Tooltip 
+                content="Set up automated responses for common inquiries. Create, edit, and manage auto-replies that can be assigned to specific departments or used across all departments."
+                position="bottom"
+                isDark={isDark}
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 cursor-help">
+                  <HelpCircle 
+                    size={16} 
+                    className="transition-colors" 
+                    style={{ color: '#8B5CF6' }}
+                  />
+                </div>
+              </Tooltip>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -305,18 +369,100 @@ export default function AutoRepliesScreen() {
                   </div>
 
                   {/* Auto Replies Table */}
-                  <AutoReplyTable
-                    replies={filteredReplies}
-                    allDepartments={allDepartments}
-                    loading={loading}
-                    error={error}
-                    searchQuery={searchQuery}
-                    isDark={isDark}
-                    onEdit={openEditModal}
-                    onToggleStatus={handleStatusToggle}
-                    onTransfer={handleOpenTransferModal}
-                    onDelete={handleOpenDeleteModal}
-                  />
+                  <div className="flex-1 overflow-hidden flex flex-col">
+                    <AutoReplyTable
+                      replies={paginatedReplies}
+                      allDepartments={allDepartments}
+                      loading={loading}
+                      error={error}
+                      searchQuery={searchQuery}
+                      sortBy={sortBy}
+                      onSortChange={setSortBy}
+                      isDark={isDark}
+                      onEdit={openEditModal}
+                      onToggleStatus={handleStatusToggle}
+                      onTransfer={handleOpenTransferModal}
+                      onDelete={handleOpenDeleteModal}
+                    />
+
+                    {/* Pagination Controls */}
+                    {!loading && !error && sortedReplies.length > 0 && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                          <div className="flex justify-center">
+                            <Pagination>
+                              <PaginationContent>
+                                <PaginationItem>
+                                  <PaginationPrevious
+                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                    disabled={!hasPreviousPage}
+                                    isDark={isDark}
+                                  />
+                                </PaginationItem>
+
+                                {paginationRange?.map((pageNumber, index) => {
+                                  if (pageNumber === 'DOTS') {
+                                    return (
+                                      <PaginationItem key={`dots-${index}`}>
+                                        <PaginationEllipsis />
+                                      </PaginationItem>
+                                    );
+                                  }
+
+                                  return (
+                                    <PaginationItem key={pageNumber}>
+                                      <PaginationLink
+                                        onClick={() => setCurrentPage(pageNumber)}
+                                        isActive={currentPage === pageNumber}
+                                        isDark={isDark}
+                                      >
+                                        {pageNumber}
+                                      </PaginationLink>
+                                    </PaginationItem>
+                                  );
+                                })}
+
+                                <PaginationItem>
+                                  <PaginationNext
+                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                    disabled={!hasNextPage}
+                                    isDark={isDark}
+                                  />
+                                </PaginationItem>
+                              </PaginationContent>
+                            </Pagination>
+                          </div>
+                        )}
+
+                        {/* Page info and items per page selector */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          <div className="flex items-center gap-2">
+                            <span>Show</span>
+                            <select
+                              value={itemsPerPage}
+                              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                              className="px-2 py-1 text-xs rounded border focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+                              style={{
+                                backgroundColor: 'var(--input-bg)',
+                                color: 'var(--text-primary)',
+                                borderColor: 'var(--border-color)'
+                              }}
+                            >
+                              <option value="10">10</option>
+                              <option value="50">50</option>
+                              <option value="100">100</option>
+                            </select>
+                            <span>per page</span>
+                          </div>
+                          
+                          <div>
+                            Showing {startIndex + 1} to {Math.min(endIndex, sortedReplies.length)} of {sortedReplies.length} replies
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

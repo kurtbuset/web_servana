@@ -1,4 +1,4 @@
-import { LoadingState } from '../../../components/ui';
+import { LoadingState, SortButton } from '../../../components/ui';
 import UserRoleTableRow from './UserRoleTableRow';
 
 /**
@@ -9,6 +9,8 @@ export default function UserRolesTable({
   availableRoles,
   loading,
   searchQuery,
+  sortBy,
+  onSortChange,
   canAssignRoles,
   isDark,
   onToggleActive,
@@ -23,7 +25,16 @@ export default function UserRolesTable({
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10" style={{ color: 'var(--text-secondary)', backgroundColor: isDark ? '#2a2a2a' : '#f9fafb', borderBottom: `1px solid var(--border-color)` }}>
           <tr>
-            <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Email</th>
+            <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">
+              <div className="flex items-center gap-2">
+                <span>Email</span>
+                <SortButton 
+                  sortBy={sortBy} 
+                  onSortChange={onSortChange}
+                  isDark={isDark}
+                />
+              </div>
+            </th>
             <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
             <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-36 sm:w-40 text-xs">Role</th>
           </tr>

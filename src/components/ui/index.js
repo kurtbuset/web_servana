@@ -10,3 +10,14 @@ export { default as Avatar } from './Avatar';
 export { default as Toast } from './Toast';
 export { default as ToastContainer } from './ToastContainer';
 export { default as AnimatedBackground } from './AnimatedBackground';
+export { default as Tooltip } from './Tooltip';
+export { default as SortButton } from './SortButton';
+export {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from './Pagination';

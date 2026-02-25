@@ -46,13 +46,22 @@ export default function TopNavbar({ toggleSidebar }) {
     <>
       <header 
         className="h-14 sm:h-16 shadow flex items-center z-50 pl-12 sm:pl-14 md:pl-16 relative justify-between pr-3 sm:pr-4 md:pr-6 transition-colors duration-300"
-        style={{ backgroundColor: 'var(--card-bg)', borderBottom: `1px solid var(--border-color)` }}
+        style={{ 
+          backgroundColor: 'var(--card-bg)', 
+          borderBottom: `1px solid var(--border-color)`,
+          opacity: hasUnsavedChanges ? 0.5 : 1,
+          pointerEvents: hasUnsavedChanges ? 'none' : 'auto'
+        }}
       >
         <button
           className="md:hidden absolute left-2 sm:left-3 hover:opacity-80 focus:outline-none transition-opacity"
           onClick={toggleSidebar}
-          style={{ color: 'var(--text-primary)' }}
+          style={{ 
+            color: 'var(--text-primary)',
+            pointerEvents: 'auto'
+          }}
           data-sidebar-toggle
+          disabled={hasUnsavedChanges}
         >
           <Menu size={20} className="sm:w-6 sm:h-6" strokeWidth={1} />
         </button>
@@ -81,10 +90,11 @@ export default function TopNavbar({ toggleSidebar }) {
             className={`p-2 rounded-lg transition-all group relative ${isDepartmentPanelOpen ? 'bg-[#6237A0] text-white' : ''}`}
             style={!isDepartmentPanelOpen ? { 
               color: isDark ? 'var(--text-secondary)' : '#6b7280',
-              backgroundColor: isDark ? 'transparent' : 'transparent'
-            } : {}}
+              backgroundColor: isDark ? 'transparent' : 'transparent',
+              pointerEvents: 'auto'
+            } : { pointerEvents: 'auto' }}
             onMouseEnter={(e) => {
-              if (!isDepartmentPanelOpen) {
+              if (!isDepartmentPanelOpen && !hasUnsavedChanges) {
                 e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff';
                 e.currentTarget.style.color = '#6237A0';
               }
@@ -95,7 +105,8 @@ export default function TopNavbar({ toggleSidebar }) {
                 e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#6b7280';
               }
             }}
-            title="Toggle Department Team"
+            title={hasUnsavedChanges ? "Save or reset changes first" : "Toggle Department Team"}
+            disabled={hasUnsavedChanges}
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -113,6 +124,9 @@ export default function TopNavbar({ toggleSidebar }) {
           <button 
             onClick={handleProfileClick}
             className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity group"
+            style={{ pointerEvents: 'auto' }}
+            title={hasUnsavedChanges ? "Save or reset changes first" : "View Profile"}
+            disabled={hasUnsavedChanges}
           >
             <div className="relative">
               <img

@@ -1,4 +1,4 @@
-import { LoadingState } from '../../../components/ui';
+import { LoadingState, SortButton } from '../../../components/ui';
 import AutoReplyTableRow from './AutoReplyTableRow';
 
 /**
@@ -10,6 +10,8 @@ export default function AutoReplyTable({
   loading,
   error,
   searchQuery,
+  sortBy,
+  onSortChange,
   isDark,
   onEdit,
   onToggleStatus,
@@ -33,7 +35,16 @@ export default function AutoReplyTable({
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10" style={{ color: 'var(--text-secondary)', backgroundColor: isDark ? '#2a2a2a' : '#f9fafb', borderBottom: `1px solid var(--border-color)` }}>
           <tr>
-            <th className="py-2 px-2 text-left font-semibold">Message</th>
+            <th className="py-2 px-2 text-left font-semibold">
+              <div className="flex items-center gap-2">
+                <span>Message</span>
+                <SortButton 
+                  sortBy={sortBy} 
+                  onSortChange={onSortChange}
+                  isDark={isDark}
+                />
+              </div>
+            </th>
             <th className="py-2 px-2 text-center font-semibold w-24">Status</th>
             <th className="py-2 px-2 text-center font-semibold w-32">Department</th>
             <th className="py-2 px-2 text-center font-semibold w-20">Actions</th>

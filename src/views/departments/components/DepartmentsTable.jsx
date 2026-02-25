@@ -1,4 +1,4 @@
-import { LoadingState } from '../../../components/ui';
+import { LoadingState, SortButton } from '../../../components/ui';
 import DepartmentTableRow from './DepartmentTableRow';
 
 /**
@@ -9,6 +9,8 @@ export default function DepartmentsTable({
   loading,
   error,
   searchQuery,
+  sortBy,
+  onSortChange,
   canEditDepartment,
   isDark,
   onEdit,
@@ -31,7 +33,16 @@ export default function DepartmentsTable({
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10" style={{ color: 'var(--text-secondary)', backgroundColor: isDark ? '#2a2a2a' : '#f9fafb', borderBottom: `1px solid var(--border-color)` }}>
           <tr>
-            <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">Department Name</th>
+            <th className="py-2 px-2.5 sm:px-3 text-left font-semibold text-xs">
+              <div className="flex items-center gap-2">
+                <span>Department Name</span>
+                <SortButton 
+                  sortBy={sortBy} 
+                  onSortChange={onSortChange}
+                  isDark={isDark}
+                />
+              </div>
+            </th>
             <th className="py-2 px-2.5 sm:px-3 text-center font-semibold w-28 sm:w-32 text-xs">Status</th>
           </tr>
         </thead>

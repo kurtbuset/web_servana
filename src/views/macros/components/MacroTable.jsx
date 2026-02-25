@@ -1,4 +1,6 @@
 import { Edit3 } from 'react-feather';
+import ToggleSwitch from '../../../components/ToggleSwitch';
+import { SortButton } from '../../../components/ui';
 
 /**
  * MacroTable Component
@@ -27,16 +29,6 @@ export default function MacroTable({
   searchQuery,
   isDark
 }) {
-  const handleSortClick = () => {
-    if (sortBy === 'alphabetical') {
-      onSortChange('reverse');
-    } else if (sortBy === 'reverse') {
-      onSortChange('default');
-    } else {
-      onSortChange('alphabetical');
-    }
-  };
-
   return (
     <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
       <table className="w-full text-xs">
@@ -45,31 +37,11 @@ export default function MacroTable({
             <th className="py-2 px-2 text-left font-semibold">
               <div className="flex items-center gap-2">
                 <span>Message</span>
-                <button
-                  onClick={handleSortClick}
-                  className="p-1 rounded hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-colors"
-                  title={sortBy === 'alphabetical' ? 'Sort Z-A' : sortBy === 'reverse' ? 'Sort by Newest' : 'Sort A-Z'}
-                >
-                  {sortBy === 'alphabetical' ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <text x="2" y="11" fontSize="10" fontWeight="bold" fill="#6237A0">A</text>
-                      <text x="2" y="22" fontSize="10" fontWeight="bold" fill="#6237A0">Z</text>
-                      <path d="M17 16V4M17 4L13 8M17 4L21 8" stroke="#6237A0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  ) : sortBy === 'reverse' ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <text x="2" y="11" fontSize="10" fontWeight="bold" fill="#6237A0">A</text>
-                      <text x="2" y="22" fontSize="10" fontWeight="bold" fill="#6237A0">Z</text>
-                      <path d="M17 8V20M17 20L13 16M17 20L21 16" stroke="#6237A0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <text x="2" y="11" fontSize="10" fontWeight="bold" fill="currentColor" opacity="0.4">A</text>
-                      <text x="2" y="22" fontSize="10" fontWeight="bold" fill="currentColor" opacity="0.4">Z</text>
-                      <path d="M17 16V4M17 4L13 8M17 4L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
-                    </svg>
-                  )}
-                </button>
+                <SortButton 
+                  sortBy={sortBy} 
+                  onSortChange={onSortChange}
+                  isDark={isDark}
+                />
               </div>
             </th>
             <th className="py-2 px-2 text-center font-semibold w-24">Status</th>
@@ -121,15 +93,11 @@ export default function MacroTable({
                   </td>
 
                   <td className="py-3 px-3 sm:px-4 text-center">
-                    <label className="inline-flex relative items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={reply.active}
-                        onChange={() => onToggleActive(reply.id)}
-                      />
-                      <div className="w-11 h-6 rounded-full peer transition-colors duration-300 relative bg-gray-300 peer-checked:bg-[#6237A0] after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-5" />
-                    </label>
+                    <ToggleSwitch
+                      checked={reply.active}
+                      onChange={() => onToggleActive(reply.id)}
+                      size="md"
+                    />
                   </td>
 
                   <td className="py-3 px-3 sm:px-4 text-center">

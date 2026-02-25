@@ -4,6 +4,7 @@ import { useTheme } from "../context/ThemeContext";
 import { LogOut } from "react-feather";
 import api from "../api";
 import { getAvatarUrl } from "../utils/imageUtils";
+import ScrollContainer from "./ScrollContainer";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user
@@ -59,7 +60,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     <>
       {/* Blur Overlay */}
       <div
-        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[75] transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[60] transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -67,7 +68,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
 
       {/* Slide-in Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}
@@ -150,7 +151,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
         </div>
 
         {/* Brief Info with enhanced styling */}
-        <div className="p-6 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 380px)', background: 'linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary))' }}>
+        <ScrollContainer className="flex-1 p-6 space-y-4" style={{ background: 'linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary))' }}>
           <div className="space-y-3">
             {email && (
               <InfoItem
@@ -273,10 +274,10 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </button>
-        </div>
+        </ScrollContainer>
 
         {/* Footer Action with Close and Logout buttons */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t" style={{ background: 'linear-gradient(to top, var(--bg-tertiary), var(--bg-secondary))', borderColor: 'var(--border-color)' }}>
+        <div className="p-6 border-t flex-shrink-0" style={{ background: 'linear-gradient(to top, var(--bg-tertiary), var(--bg-secondary))', borderColor: 'var(--border-color)' }}>
           <div className="flex gap-2">
             <button
               onClick={onClose}
@@ -302,7 +303,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
 
       {/* Logout Confirmation Modal - Outside panel for true screen centering */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[90] p-4 sm:p-6 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 sm:p-6 animate-fadeIn">
           <div 
             className="rounded-xl shadow-2xl p-6 sm:p-8 max-w-sm w-full transform transition-all animate-scaleIn"
             style={{ backgroundColor: 'var(--card-bg)' }}

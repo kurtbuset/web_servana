@@ -133,6 +133,8 @@ const navSections = [
 
 
 const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
+  const [shouldBlock, setShouldBlock] = useState(false);
+
   const handleClick = useCallback((e) => {
     // Check if navigation should be blocked
     if (onBlockedClick) {
@@ -140,7 +142,10 @@ const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDa
       if (isBlocked) {
         e.preventDefault();
         e.stopPropagation();
-        return;
+        setShouldBlock(true);
+        // Reset block state after animation
+        setTimeout(() => setShouldBlock(false), 500);
+        return false;
       }
     }
     
@@ -168,6 +173,41 @@ const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDa
     }
   }, [isActive]);
 
+  const NavContent = (
+    <>
+      <div 
+        className={`p-0.5 rounded ${isActive ? 'bg-white/20' : ''}`}
+        style={!isActive ? { backgroundColor: 'var(--bg-tertiary)' } : {}}
+      >
+        <Icon 
+          size={13} 
+          strokeWidth={isActive ? 2 : 1.5} 
+          className={isActive ? 'text-white' : ''}
+          style={!isActive ? { color: 'var(--text-secondary)' } : {}}
+        />
+      </div>
+      {!isCollapsed && (
+        <div className="flex-1 min-w-0 transition-opacity duration-200">
+          <div className="font-medium text-xs">{label}</div>
+        </div>
+      )}
+      {!isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
+        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 ${
+          isActive 
+            ? "bg-white text-[#6237A0]" 
+            : "bg-[#6237A0] text-white"
+        } shadow-sm`}>
+          {badgeCount > 99 ? '99+' : badgeCount}
+        </span>
+      )}
+      {isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+          {badgeCount > 9 ? '9+' : badgeCount}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <div className="relative group">
       {isActive && (
@@ -184,41 +224,12 @@ const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDa
             ? "text-white shadow-lg" 
             : ""
         }`}
-        style={!isActive ? { color: 'var(--text-primary)' } : {}}
+        style={!isActive ? { color: 'var(--text-primary)', cursor: shouldBlock ? 'not-allowed' : 'pointer' } : { cursor: shouldBlock ? 'not-allowed' : 'pointer' }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         title={isCollapsed ? label : ''}
       >
-        <div 
-          className={`p-0.5 rounded ${isActive ? 'bg-white/20' : ''}`}
-          style={!isActive ? { backgroundColor: 'var(--bg-tertiary)' } : {}}
-        >
-          <Icon 
-            size={13} 
-            strokeWidth={isActive ? 2 : 1.5} 
-            className={isActive ? 'text-white' : ''}
-            style={!isActive ? { color: 'var(--text-secondary)' } : {}}
-          />
-        </div>
-        {!isCollapsed && (
-          <div className="flex-1 min-w-0 transition-opacity duration-200">
-            <div className="font-medium text-xs">{label}</div>
-          </div>
-        )}
-        {!isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 ${
-            isActive 
-              ? "bg-white text-[#6237A0]" 
-              : "bg-[#6237A0] text-white"
-          } shadow-sm`}>
-            {badgeCount > 99 ? '99+' : badgeCount}
-          </span>
-        )}
-        {isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-            {badgeCount > 9 ? '9+' : badgeCount}
-          </span>
-        )}
+        {NavContent}
       </Link>
     </div>
   );
@@ -504,7 +515,9 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
           color: 'var(--text-primary)',
           borderRight: `1px solid var(--border-color)`,
           scrollBehavior: 'auto',
-          maxWidth: isMobile ? '85vw' : undefined
+          maxWidth: isMobile ? '85vw' : undefined,
+          opacity: hasUnsavedChanges ? 0.5 : 1,
+          pointerEvents: hasUnsavedChanges ? 'none' : 'auto'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -548,10 +561,14 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
             <button
               onClick={toggleCollapse}
               className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all duration-300`}
-              style={{ color: 'var(--text-secondary)' }}
+              style={{ 
+                color: 'var(--text-secondary)',
+                pointerEvents: hasUnsavedChanges ? 'none' : 'auto'
+              }}
               onMouseEnter={handleCollapseMouseEnter}
               onMouseLeave={handleCollapseMouseLeave}
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={hasUnsavedChanges ? "Save or reset changes first" : (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+              disabled={hasUnsavedChanges}
             >
               <div className="transition-transform duration-300">
                 {isCollapsed ? (

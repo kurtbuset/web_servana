@@ -1,0 +1,9 @@
+// Export all chat components for easy importing
+export { default as ChatContainer } from './ChatContainer';
+export { default as ChatModals } from './ChatModals';
+export { default as ChatSidebar } from './ChatSidebar';
+export { default as ChatSidebarHeader } from './ChatSidebarHeader';
+export { default as ChatSidebarEmpty } from './ChatSidebarEmpty';
+export { default as ChatMainArea } from './ChatMainArea';
+export { default as ChatMainEmpty } from './ChatMainEmpty';
+export { default as ChatStyles } from './ChatStyles';

@@ -1,10 +1,21 @@
   import { useState, useEffect, useCallback } from "react";
-import { Edit3, ChevronRight } from "react-feather";
+import { Edit3, ChevronRight, HelpCircle } from "react-feather";
 import Layout from "../../components/Layout";
 import ScreenContainer from "../../components/ScreenContainer";
 import ScrollContainer from "../../components/ScrollContainer";
 import SearchBar from "../../components/SearchBar";
 import ToggleSwitch from "../../components/ToggleSwitch";
+import { 
+  Tooltip, 
+  SortButton,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../components/ui";
 import AgentDetailView from "./components/AgentDetailView";
 import EditDepartmentView from "./components/EditDepartmentView";
 import AnalyticsView from "./components/AnalyticsView";
@@ -13,6 +24,7 @@ import { useAgents } from "../../hooks/useAgents";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import { usePagination } from "../../hooks/usePagination";
 import toast from "../../utils/toast";
 import { Avatar } from "../../components/ui";
 import "../../../src/App.css";
@@ -350,15 +362,68 @@ export default function ManageAgentsScreen() {
 
 // ListView Component - Main accounts list
 function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgentClick, onAddAgent, onToggleActive, canCreateAccount, isDark }) {
+  const [sortBy, setSortBy] = useState('default');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Sort filtered agents
+  const sortedAgents = [...filteredAgents].sort((a, b) => {
+    switch (sortBy) {
+      case 'alphabetical':
+        return (a.email || '').toLowerCase().localeCompare((b.email || '').toLowerCase());
+      case 'reverse':
+        return (b.email || '').toLowerCase().localeCompare((a.email || '').toLowerCase());
+      case 'default':
+      default:
+        return 0; // Keep original order
+    }
+  });
+
+  // Pagination
+  const {
+    totalPages,
+    paginationRange,
+    hasNextPage,
+    hasPreviousPage,
+    startIndex,
+    endIndex
+  } = usePagination({
+    totalItems: sortedAgents.length,
+    itemsPerPage,
+    currentPage,
+    siblingCount: 1
+  });
+
+  // Get current page agents
+  const paginatedAgents = sortedAgents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query, sort, or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy, itemsPerPage]);
+
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4 flex-shrink-0">
-        <div className="relative">
+        <div className="relative flex items-center gap-2">
           <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
             Accounts
             <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
           </h1>
+          <Tooltip 
+            content="Manage agent accounts. Create new agents, edit their information, assign departments, and control account status. View detailed analytics for each agent."
+            position="bottom"
+            isDark={isDark}
+          >
+            <div className="flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 cursor-help">
+              <HelpCircle 
+                size={16} 
+                className="transition-colors" 
+                style={{ color: '#8B5CF6' }}
+              />
+            </div>
+          </Tooltip>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -406,7 +471,16 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
               <table className="min-w-full text-sm">
                 <thead className="sticky top-0 z-10" style={{ backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' }}>
                   <tr>
-                    <th className="py-2 px-3 text-left font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>Accounts</th>
+                    <th className="py-2 px-3 text-left font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      <div className="flex items-center gap-2">
+                        <span>Accounts</span>
+                        <SortButton 
+                          sortBy={sortBy} 
+                          onSortChange={setSortBy}
+                          isDark={isDark}
+                        />
+                      </div>
+                    </th>
                     <th className="py-2 px-3 text-center font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>Edit</th>
                     <th className="py-2 px-3 text-center font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>Active</th>
                     <th className="py-2 px-3 text-left font-semibold text-xs" style={{ color: 'var(--text-secondary)' }}>Departments</th>
@@ -414,7 +488,7 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAgents.length === 0 ? (
+                  {paginatedAgents.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center py-12">
                         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -423,7 +497,10 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                       </td>
                     </tr>
                   ) : (
-                    filteredAgents.map((agent, idx) => (
+                    paginatedAgents.map((agent, idx) => {
+                      // Calculate the actual index in the original array
+                      const actualIdx = startIndex + idx;
+                      return (
                       <tr 
                         key={idx}
                         className="border-t transition-colors"
@@ -450,7 +527,7 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                             checked={agent.active} 
                             onChange={(e) => {
                               e.stopPropagation();
-                              onToggleActive(idx);
+                              onToggleActive(actualIdx);
                             }} 
                             disabled={!canCreateAccount} 
                           />
@@ -469,7 +546,7 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                         </td>
                         <td className="py-2 px-3 text-center">
                           <button
-                            onClick={() => onAgentClick(agent, idx)}
+                            onClick={() => onAgentClick(agent, actualIdx)}
                             className="p-1.5 rounded-full transition-colors inline-flex items-center justify-center"
                             style={{ color: 'var(--text-secondary)' }}
                             onMouseEnter={(e) => {
@@ -485,7 +562,8 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                           </button>
                         </td>
                       </tr>
-                    ))
+                    );
+                  })
                   )}
                 </tbody>
               </table>
@@ -493,17 +571,19 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
 
             {/* Mobile Card View */}
             <ScrollContainer className="md:hidden h-full space-y-2">
-              {filteredAgents.length === 0 ? (
+              {paginatedAgents.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {searchQuery ? "No agents found matching your search" : "No agents available"}
                   </p>
                 </div>
               ) : (
-                filteredAgents.map((agent, idx) => (
+                paginatedAgents.map((agent, idx) => {
+                  const actualIdx = startIndex + idx;
+                  return (
                   <div
                     key={idx}
-                    onClick={() => onAgentClick(agent, idx)}
+                    onClick={() => onAgentClick(agent, actualIdx)}
                     className="p-3 rounded-lg border transition-colors"
                     style={{ 
                       backgroundColor: 'var(--card-bg)',
@@ -558,12 +638,92 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                       </div>
                     )}
                   </div>
-                ))
+                );
+              })
               )}
             </ScrollContainer>
           </>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && sortedAgents.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border-t flex-shrink-0" style={{ borderColor: 'var(--border-color)' }}>
+          {/* Items per page selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Show
+            </span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="px-2 py-1 text-xs rounded border focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+              style={{
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-color)'
+              }}
+            >
+              <option value="10">10</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              per page
+            </span>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={!hasPreviousPage}
+                    isDark={isDark}
+                  />
+                </PaginationItem>
+
+                {paginationRange?.map((pageNumber, index) => {
+                  if (pageNumber === 'DOTS') {
+                    return (
+                      <PaginationItem key={`dots-${index}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(pageNumber)}
+                        isActive={currentPage === pageNumber}
+                        isDark={isDark}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={!hasNextPage}
+                    isDark={isDark}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+
+          {/* Page info */}
+          <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            Showing {startIndex + 1} to {endIndex} of {sortedAgents.length}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

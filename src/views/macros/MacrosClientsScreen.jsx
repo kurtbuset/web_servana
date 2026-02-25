@@ -4,12 +4,24 @@ import ScreenContainer from '../../components/ScreenContainer';
 import Modal from '../../components/Modal';
 import UnsavedChangesBar from '../../components/UnsavedChangesBar';
 import SearchBar from '../../components/SearchBar';
+import { 
+  Tooltip,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '../../components/ui';
+import usePagination from '../../hooks/usePagination';
 import DepartmentSidebar from './components/DepartmentSidebar';
 import MacroTable from './components/MacroTable';
 import useMacros from '../../hooks/useMacros';
 import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useUnsavedChanges } from '../../context/UnsavedChangesContext';
+import { HelpCircle } from 'react-feather';
 import '../../App.css';
 import '../../styles/GridLayout.css';
 
@@ -30,6 +42,21 @@ export default function MacrosClientsScreen() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showMobileDeptFilter, setShowMobileDeptFilter] = useState(false);
   const [shakeBar, setShakeBar] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Detect mobile view
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Get user ID from UserContext
   const { getUserId } = useUser();
@@ -97,6 +124,29 @@ export default function MacrosClientsScreen() {
         return b.id - a.id; // Newest first (higher ID = newer)
     }
   });
+
+  // Pagination
+  const {
+    totalPages,
+    paginationRange,
+    hasNextPage,
+    hasPreviousPage,
+    startIndex,
+    endIndex
+  } = usePagination({
+    totalItems: sortedReplies.length,
+    itemsPerPage,
+    currentPage,
+    siblingCount: 1
+  });
+
+  // Get current page macros
+  const paginatedReplies = sortedReplies.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query, department, sort, or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedDepartment, sortBy, itemsPerPage]);
 
   const handleSaveMacro = async () => {
     if (currentEditId !== null) {
@@ -187,11 +237,24 @@ export default function MacrosClientsScreen() {
         <div className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
               <h1 className="text-lg sm:text-xl font-bold relative inline-block" style={{ color: 'var(--text-primary)' }}>
                 Client Macros
                 <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-[#6237A0] via-[#8B5CF6] to-transparent rounded-full"></div>
               </h1>
+              <Tooltip 
+                content="Create and manage quick response templates for client communications. Organize macros by department or make them available to everyone. Streamline client interactions with pre-written messages."
+                position="bottom"
+                isDark={isDark}
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 cursor-help">
+                  <HelpCircle 
+                    size={16} 
+                    className="transition-colors" 
+                    style={{ color: '#8B5CF6' }}
+                  />
+                </div>
+              </Tooltip>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -214,99 +277,6 @@ export default function MacrosClientsScreen() {
           <div className="flex-1 overflow-hidden">
             <div className="rounded-lg shadow-sm h-full grid-layout" style={{ backgroundColor: 'var(--card-bg)' }}>
 
-              {/* Mobile Department Filter Button */}
-              <div className="md:hidden p-2" style={{ borderBottom: `1px solid var(--border-color)` }}>
-                <button
-                  onClick={() => setShowMobileDeptFilter(!showMobileDeptFilter)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={{ 
-                    backgroundColor: isDark ? '#2a2a2a' : '#f3f4f6',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  <span>Department: {selectedDepartment === 'All' ? '@everyone' : selectedDepartment}</span>
-                  <svg 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    style={{ 
-                      transform: showMobileDeptFilter ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s'
-                    }}
-                  >
-                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                
-                {/* Mobile Department Dropdown */}
-                {showMobileDeptFilter && (
-                  <div className="mt-2 rounded-lg p-2 max-h-60 overflow-y-auto custom-scrollbar" style={{ backgroundColor: isDark ? '#1e1e1e' : '#f9fafb', border: `1px solid var(--border-color)` }}>
-                    <div className="mb-2 flex items-center px-2 py-1.5 rounded relative border" style={{ borderColor: 'var(--border-color)', backgroundColor: 'transparent' }}>
-                      <Search size={12} className="mr-1.5 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                      <input
-                        type="text"
-                        placeholder="Search..."
-                        value={departmentSearchQuery}
-                        onChange={(e) => setDepartmentSearchQuery(e.target.value)}
-                        className="bg-transparent focus:outline-none text-xs w-full pr-5"
-                        style={{ color: 'var(--text-primary)' }}
-                      />
-                      {departmentSearchQuery && (
-                        <X
-                          size={12}
-                          className="cursor-pointer absolute right-2 transition-colors"
-                          style={{ color: 'var(--text-secondary)' }}
-                          onClick={() => setDepartmentSearchQuery('')}
-                        />
-                      )}
-                    </div>
-                    
-                    <div className="space-y-0.5">
-                      <button
-                        onClick={() => {
-                          setSelectedDepartment('All');
-                          setShowMobileDeptFilter(false);
-                        }}
-                        className="w-full text-left px-2 py-1.5 rounded text-xs transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/10"
-                        style={
-                          selectedDepartment === 'All'
-                            ? { backgroundColor: 'transparent', color: '#6237A0', fontWeight: 'bold' }
-                            : { color: 'var(--text-primary)', backgroundColor: 'transparent' }
-                        }
-                      >
-                        @everyone
-                      </button>
-                      {departments && departments.length > 0 && departments
-                        .filter((dept) => dept.dept_name.toLowerCase().includes(departmentSearchQuery.toLowerCase()))
-                        .map((dept) => (
-                        <button
-                          key={dept.dept_id}
-                          onClick={() => {
-                            if (dept.dept_is_active) {
-                              setSelectedDepartment(dept.dept_name);
-                              setShowMobileDeptFilter(false);
-                            }
-                          }}
-                          disabled={!dept.dept_is_active}
-                          className="w-full text-left px-2 py-1.5 rounded text-xs transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/10"
-                          style={
-                            selectedDepartment === dept.dept_name
-                              ? { backgroundColor: 'transparent', color: '#6237A0', fontWeight: 'bold' }
-                              : !dept.dept_is_active
-                              ? { color: 'var(--text-secondary)', backgroundColor: 'transparent', opacity: 0.5, cursor: 'not-allowed' }
-                              : { color: 'var(--text-primary)', backgroundColor: 'transparent' }
-                          }
-                        >
-                          {dept.dept_name}
-                          {!dept.dept_is_active && ' (Inactive)'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Left Sidebar - Department Filter */}
               <DepartmentSidebar
                 departments={departments}
@@ -316,6 +286,9 @@ export default function MacrosClientsScreen() {
                 onSearchChange={setDepartmentSearchQuery}
                 loading={loading}
                 isDark={isDark}
+                isMobile={isMobile}
+                showMobileFilter={showMobileDeptFilter}
+                onToggleMobile={() => setShowMobileDeptFilter(!showMobileDeptFilter)}
               />
 
               {/* Main Content */}
@@ -362,32 +335,113 @@ export default function MacrosClientsScreen() {
                       />
                     </div>
 
-                    <MacroTable
-                      macros={sortedReplies}
-                      departments={departments}
-                      sortBy={sortBy}
-                      onSortChange={setSortBy}
-                      onEdit={(reply) => {
-                        setCurrentEditId(reply.id);
-                        setEditText(reply.text);
-                        setIsModalOpen(true);
-                      }}
-                      onToggleActive={handleToggleActive}
-                      onTransfer={(reply) => {
-                        setSelectedMacroId(reply.id);
-                        const initialDept = reply.dept_id?.toString() || 'All';
-                        setTransferToDept(initialDept);
-                        setOriginalTransferDept(initialDept);
-                        setHasUnsavedChanges(false);
-                        setTransferModalOpen(true);
-                      }}
-                      onDelete={(id) => {
-                        setSelectedMacroId(id);
-                        setDeleteModalOpen(true);
-                      }}
-                      searchQuery={searchQuery}
-                      isDark={isDark}
-                    />
+                    {/* Macros Table */}
+                    <div className="flex-1 overflow-hidden flex flex-col">
+                      <MacroTable
+                        macros={paginatedReplies}
+                        departments={departments}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
+                        onEdit={(reply) => {
+                          setCurrentEditId(reply.id);
+                          setEditText(reply.text);
+                          setIsModalOpen(true);
+                        }}
+                        onToggleActive={handleToggleActive}
+                        onTransfer={(reply) => {
+                          setSelectedMacroId(reply.id);
+                          const initialDept = reply.dept_id?.toString() || 'All';
+                          setTransferToDept(initialDept);
+                          setOriginalTransferDept(initialDept);
+                          setHasUnsavedChanges(false);
+                          setTransferModalOpen(true);
+                        }}
+                        onDelete={(id) => {
+                          setSelectedMacroId(id);
+                          setDeleteModalOpen(true);
+                        }}
+                        searchQuery={searchQuery}
+                        isDark={isDark}
+                      />
+
+                      {/* Pagination Controls */}
+                      {!loading && !error && sortedReplies.length > 0 && (
+                        <div className="mt-3 flex flex-col gap-2">
+                          {/* Pagination */}
+                          {totalPages > 1 && (
+                            <div className="flex justify-center">
+                              <Pagination>
+                                <PaginationContent>
+                                  <PaginationItem>
+                                    <PaginationPrevious
+                                      onClick={() => setCurrentPage(currentPage - 1)}
+                                      disabled={!hasPreviousPage}
+                                      isDark={isDark}
+                                    />
+                                  </PaginationItem>
+
+                                  {paginationRange?.map((pageNumber, index) => {
+                                    if (pageNumber === 'DOTS') {
+                                      return (
+                                        <PaginationItem key={`dots-${index}`}>
+                                          <PaginationEllipsis />
+                                        </PaginationItem>
+                                      );
+                                    }
+
+                                    return (
+                                      <PaginationItem key={pageNumber}>
+                                        <PaginationLink
+                                          onClick={() => setCurrentPage(pageNumber)}
+                                          isActive={currentPage === pageNumber}
+                                          isDark={isDark}
+                                        >
+                                          {pageNumber}
+                                        </PaginationLink>
+                                      </PaginationItem>
+                                    );
+                                  })}
+
+                                  <PaginationItem>
+                                    <PaginationNext
+                                      onClick={() => setCurrentPage(currentPage + 1)}
+                                      disabled={!hasNextPage}
+                                      isDark={isDark}
+                                    />
+                                  </PaginationItem>
+                                </PaginationContent>
+                              </Pagination>
+                            </div>
+                          )}
+
+                          {/* Page info and items per page selector */}
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            <div className="flex items-center gap-2">
+                              <span>Show</span>
+                              <select
+                                value={itemsPerPage}
+                                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                className="px-2 py-1 text-xs rounded border focus:outline-none focus:ring-2 focus:ring-[#6237A0]/30"
+                                style={{
+                                  backgroundColor: 'var(--input-bg)',
+                                  color: 'var(--text-primary)',
+                                  borderColor: 'var(--border-color)'
+                                }}
+                              >
+                                <option value="10">10</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                              </select>
+                              <span>per page</span>
+                            </div>
+                            
+                            <div>
+                              Showing {startIndex + 1} to {Math.min(endIndex, sortedReplies.length)} of {sortedReplies.length} macros
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
