@@ -48,6 +48,7 @@ export const useChat = () => {
   const [endedChats, setEndedChats] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
+  const [typingUserImage, setTypingUserImage] = useState(null);
   
   // Refs
   const bottomRef = useRef(null);
@@ -87,6 +88,57 @@ export const useChat = () => {
       window.removeEventListener('storage', handleLogout);
     };
   }, []);
+
+  /**
+   * Listen for typing indicators from clients
+   */
+  useEffect(() => {
+    if (!selectedCustomer) return;
+
+    const handleTyping = (data) => {
+      if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
+        console.log('👤 Client is typing:', data.userName);
+        setIsTyping(true);
+        setTypingUser(data.userName || 'Client');
+        setTypingUserImage(data.userImage || null);
+
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+          setTypingUser(null);
+          setTypingUserImage(null);
+        }, 3000);
+      }
+    };
+
+    const handleStopTyping = (data) => {
+      if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
+        console.log('👤 Client stopped typing');
+
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+
+        setIsTyping(false);
+        setTypingUser(null);
+        setTypingUserImage(null);
+      }
+    };
+
+    socket.on('typing', handleTyping);
+    socket.on('stopTyping', handleStopTyping);
+
+    return () => {
+      socket.off('typing', handleTyping);
+      socket.off('stopTyping', handleStopTyping);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [selectedCustomer]);
 
   /**
    * Fetch chat groups from API with debouncing
@@ -549,6 +601,50 @@ export const useChat = () => {
   }, [messages]);
 
   /**
+   * Handle input change with typing indicator emission
+   */
+  const handleInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setInputMessage(value);
+
+    if (!selectedCustomer || !socket) return;
+
+    const userId = getUserId();
+    if (!userId) return;
+
+    // Emit typing event if text is being entered
+    if (value.length > 0) {
+      socket.emit('typing', {
+        chatGroupId: selectedCustomer.chat_group_id,
+        userName: 'Agent',
+        userId: userId,
+        userType: 'agent',
+      });
+
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set timeout to emit stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('stopTyping', {
+          chatGroupId: selectedCustomer.chat_group_id,
+          userId: userId,
+          userType: 'agent',
+        });
+      }, 2000);
+    } else {
+      // If text is empty, immediately stop typing
+      socket.emit('stopTyping', {
+        chatGroupId: selectedCustomer.chat_group_id,
+        userId: userId,
+        userType: 'agent',
+      });
+    }
+  }, [selectedCustomer, getUserId]);
+
+  /**
    * Auto-resize textarea
    */
   useEffect(() => {
@@ -578,6 +674,7 @@ export const useChat = () => {
     messages,
     inputMessage,
     setInputMessage,
+    handleInputChange,
     
     // Canned messages
     cannedMessages,
@@ -597,6 +694,7 @@ export const useChat = () => {
     endedChats,
     isTyping,
     typingUser,
+    typingUserImage,
     
     // Actions
     fetchChatGroups,
