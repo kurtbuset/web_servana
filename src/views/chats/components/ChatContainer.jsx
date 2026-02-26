@@ -46,6 +46,7 @@ export default function ChatContainer() {
     messages,
     inputMessage,
     setInputMessage,
+    handleInputChange,
     cannedMessages,
     showCannedMessages,
     setShowCannedMessages,
@@ -58,6 +59,7 @@ export default function ChatContainer() {
     endedChats,
     isTyping,
     typingUser,
+    typingUserImage,
     selectCustomer,
     sendMessage,
     endChat,
@@ -126,14 +128,6 @@ export default function ChatContainer() {
 
   const cancelEndChat = () => {
     setShowEndChatModal(false);
-  };
-
-  const handleInputChange = (e) => {
-    setInputMessage(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
   };
 
   const handleSendMessage = () => {
@@ -300,6 +294,7 @@ export default function ChatContainer() {
             cannedMessages={cannedMessages}
             isTyping={isTyping}
             typingUser={typingUser}
+            typingUserImage={typingUserImage}
             hasMoreMessages={hasMoreMessages}
             isLoadingMore={isLoadingMore}
             openDropdown={openDropdown}
