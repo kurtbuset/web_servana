@@ -56,6 +56,12 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
     const onlineCount = members.filter(member => {
       const status = getUserStatus(member.sys_user_id);
       
+      console.log(`👤 Checking user ${member.sys_user_id}:`, {
+        socketStatus: status.status,
+        lastSeen: status.lastSeen,
+        hasStatus: !!status
+      });
+      
       // Trust the socket status if available, otherwise calculate from lastSeen
       const socketStatus = status.status;
       const lastSeenDate = status.lastSeen;
@@ -70,9 +76,11 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
         isOnline = false;
       }
       
+      console.log(`  → User ${member.sys_user_id} is ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
       return isOnline;
     }).length;
     
+    console.log(`📊 Total online members: ${onlineCount} out of ${members.length}`);
     return onlineCount;
   };
   
@@ -85,6 +93,9 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
   // Force re-render when userStatuses changes
   React.useEffect(() => {
     if (currentDepartment && userStatuses.size > 0) {
+      console.log('🔄 DepartmentUsersPanel: userStatuses changed, size:', userStatuses.size);
+      console.log('🔄 Current department:', currentDepartment.dept_name);
+      console.log('🔄 Online members count:', getOnlineMembersCount(currentDepartment.members));
       forceUpdate();
     }
   }, [userStatuses, currentDepartment]);
@@ -106,9 +117,9 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
     setLoading(true);
     setError(null);
     try {
-      // Fetch users for all departments
+      // Fetch users for all departments using the public view-members endpoint
       const promises = departments.map(dept => 
-        api.get(`/departments/${dept.dept_id}/members`, { withCredentials: true })
+        api.get(`/departments/${dept.dept_id}/view-members`, { withCredentials: true })
           .then(res => {
             const members = res.data.members || [];
             
@@ -120,7 +131,14 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
             };
           })
           .catch(err => {
-            console.error(`Error fetching members for ${dept.dept_name}:`, err);
+            console.error(`❌ Error fetching members for ${dept.dept_name}:`, err);
+            console.error('Error details:', err.response?.data || err.message);
+            
+            // Check if it's a permission error
+            if (err.response?.status === 403) {
+              console.error('🚫 Permission denied - user cannot view department members');
+            }
+            
             return {
               ...dept,
               members: [],
@@ -137,8 +155,14 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
       // Update cache
       departmentDataCache = results;
       lastFetchTime = Date.now();
+      
+      console.log('✅ Fetched department data:', results.map(d => ({
+        name: d.dept_name,
+        members: d.totalMembers,
+        hasError: d.error
+      })));
     } catch (err) {
-      console.error('Error fetching department users:', err);
+      console.error('❌ Error fetching department users:', err);
       setError('Failed to load department users');
     } finally {
       setLoading(false);

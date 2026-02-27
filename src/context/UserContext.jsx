@@ -122,7 +122,7 @@ export const UserProvider = ({ children }) => {
 
     // Wait for socket to connect, then emit userOnline
     const handleConnect = () => {
-      // console.log('✅ Socket connected, emitting userOnline for user:', userId);
+      console.log('✅ Socket connected, emitting userOnline for user:', userId);
       
       // Emit that current user is online
       socket.emit('userOnline', {
@@ -133,11 +133,12 @@ export const UserProvider = ({ children }) => {
 
       // Request list of online users
       socket.emit('getOnlineUsers');
+      console.log('📤 Requested online users list');
     };
 
     // Listen for online users list
     const handleOnlineUsersList = (users) => {
-      // console.log('📋 Received online users list:', users);
+      console.log('📋 Received online users list:', users);
       const statusMap = new Map();
       users.forEach(user => {
         statusMap.set(user.userId, {
@@ -146,14 +147,16 @@ export const UserProvider = ({ children }) => {
         });
       });
       setUserStatuses(statusMap);
+      console.log('✅ Updated userStatuses Map, size:', statusMap.size);
     };
 
     // Listen for user status changes
     const handleUserStatusChanged = ({ userId, status, lastSeen }) => {
-      // console.log('🔄 User status changed:', { userId, status, lastSeen });
+      console.log('🔄 User status changed:', { userId, status, lastSeen });
       setUserStatuses(prev => {
         const newMap = new Map(prev);
         newMap.set(userId, { status, lastSeen: new Date(lastSeen) });
+        console.log('✅ Updated status for user', userId, 'to', status, '- Map size:', newMap.size);
         return newMap;
       });
     };

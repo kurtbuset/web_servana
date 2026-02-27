@@ -210,7 +210,7 @@ export default function Profile() {
   const fetchDepartmentMembers = async (departmentId) => {
     try {
       setLoadingMembers(true);
-      const res = await api.get(`/department/${departmentId}/members`, { withCredentials: true });
+      const res = await api.get(`/departments/${departmentId}/view-members`, { withCredentials: true });
       setDepartmentMembers(res.data.members || []);
     } catch (error) {
       console.error("Failed to fetch department members:", error);
