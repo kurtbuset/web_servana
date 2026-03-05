@@ -217,7 +217,8 @@ export const useChat = () => {
    * Handle real-time customer list updates
    */
   const handleCustomerListUpdate = useCallback((updateData) => {
-    if (updateData.type === 'move_to_top') {
+    console.log(updateData)
+    if (updateData.type === 'move_to_top' || updateData.type === 'new_assignment') {
       const { customer, department_id } = updateData.data;
       
       setDepartmentCustomers((prevDeptCustomers) => {
@@ -240,6 +241,11 @@ export const useChat = () => {
         
         // Add customer to the beginning of the array (top of list)
         updatedDeptCustomers[departmentName].unshift(customer);
+        
+        // Log for new assignments
+        if (updateData.type === 'new_assignment') {
+          console.log(`✅ New chat assigned: ${customer.name} (${customer.chat_group_id})`);
+        }
         
         return updatedDeptCustomers;
       });

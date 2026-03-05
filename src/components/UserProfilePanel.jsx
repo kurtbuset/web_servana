@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { LogOut } from "react-feather";
 import api from "../api";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
+import { ProfileService } from "../services/profile.service";
+import socket from "../socket";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user
@@ -15,6 +17,55 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [agentStatus, setAgentStatus] = useState(userData?.agent_status || 'offline');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [hasFetchedStatus, setHasFetchedStatus] = useState(false);
+
+  // Fetch agent status only once when panel opens
+  useEffect(() => {
+    const fetchAgentStatus = async () => {
+      if (isOpen && userData?.role_name === 'Agent' && !hasFetchedStatus) {
+        try {
+          const response = await ProfileService.getAgentStatus();
+          setAgentStatus(response.agent_status);
+          setHasFetchedStatus(true);
+        } catch (error) {
+          console.error('❌ Error fetching agent status:', error);
+        }
+      }
+    };
+
+    fetchAgentStatus();
+  }, [isOpen, userData?.role_name, hasFetchedStatus]);
+
+  // Reset fetch flag when panel closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasFetchedStatus(false);
+    }
+  }, [isOpen]);
+
+  // Update local state when userData changes
+  useEffect(() => {
+    if (userData?.agent_status) {
+      setAgentStatus(userData.agent_status);
+    }
+  }, [userData?.agent_status]);
+
+  // Listen for agent status changes from Socket.IO
+  useEffect(() => {
+    const handleAgentStatusChanged = (data) => {
+      if (data.userId === userData?.sys_user_id) {
+        setAgentStatus(data.agent_status);
+      }
+    };
+
+    socket.on('agentStatusChanged', handleAgentStatusChanged);
+
+    return () => {
+      socket.off('agentStatusChanged', handleAgentStatusChanged);
+    };
+  }, [userData?.sys_user_id]);
 
   if (!userData) return null;
 
@@ -30,9 +81,8 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const phone = userData.profile?.prof_phone;
   const address = userData.profile?.prof_address;
   const dob = userData.profile?.prof_dob;
-  const role = userData.role?.role_name;
+  const role = userData.role_name;
   const departments = userData.departments || [];
-  
   // Debug log to see userData structure
   // console.log("UserProfilePanel - userData:", userData);
   // console.log("UserProfilePanel - departments:", departments);
@@ -40,6 +90,31 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const handleViewFullProfile = () => {
     onClose();
     navigate("/profile");
+  };
+
+  const handleToggleAgentStatus = async () => {
+    try {
+      setIsUpdatingStatus(true);
+      
+      // Toggle between accepting_chats and not_accepting_chats
+      const newStatus = agentStatus === 'accepting_chats' ? 'not_accepting_chats' : 'accepting_chats';
+      
+      // Update via REST API
+      await ProfileService.updateAgentStatus(newStatus);
+      
+      // Update local state
+      setAgentStatus(newStatus);
+      
+      // Also emit via Socket.IO for real-time updates
+      socket.emit('updateAgentStatus', { agent_status: newStatus });
+      
+      console.log(`✅ Agent status updated to: ${newStatus}`);
+    } catch (error) {
+      console.error('❌ Error updating agent status:', error);
+      // Optionally show error toast/notification
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -224,6 +299,44 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
               <span className="px-4 text-xs font-medium uppercase tracking-wider" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-secondary)' }}>Quick Actions</span>
             </div>
           </div>
+
+          {/* Agent Status Toggle - Only show for agents */}
+          {role === 'Agent' && (
+            <button
+              onClick={handleToggleAgentStatus}
+              disabled={isUpdatingStatus}
+              className="w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all group border-2 shadow-sm hover:shadow-md relative overflow-hidden mb-3"
+              style={{ 
+                backgroundColor: agentStatus === 'accepting_chats' ? (isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4') : 'var(--bg-tertiary)', 
+                borderColor: agentStatus === 'accepting_chats' ? (isDark ? 'rgba(34, 197, 94, 0.4)' : '#86efac') : 'var(--border-color)',
+                color: 'var(--text-primary)',
+                opacity: isUpdatingStatus ? 0.6 : 1
+              }}
+            >
+              <div className="flex items-center gap-3 relative z-10">
+                <svg 
+                  className={`w-5 h-5 group-hover:scale-110 transition-transform ${agentStatus === 'accepting_chats' ? 'text-green-500' : 'text-gray-500'}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <div className="text-left">
+                  <div className="text-sm font-semibold">
+                    {agentStatus === 'accepting_chats' ? 'Accepting Chats' : 'Not Accepting Chats'}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {agentStatus === 'accepting_chats' ? 'Available for new conversations' : 'Not available for new chats'}
+                  </div>
+                </div>
+              </div>
+              {/* Toggle Switch */}
+              <div className={`relative w-12 h-6 rounded-full transition-colors ${agentStatus === 'accepting_chats' ? 'bg-green-500' : 'bg-gray-300'}`}>
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${agentStatus === 'accepting_chats' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+              </div>
+            </button>
+          )}
 
           {/* Theme Toggle */}
           <button

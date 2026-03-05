@@ -362,7 +362,8 @@ export const useQueues = () => {
     // Listen for real-time customer list updates
     const handleCustomerListUpdate = (updateData) => {
       console.log('Received customerListUpdate:', updateData);
-      if (updateData.type === 'move_to_top') {
+      
+      if (updateData.type === 'move_to_top' || updateData.type === 'new_assignment') {
         const { customer } = updateData.data;
         
         setDepartmentCustomers((prevDeptCustomers) => {
@@ -385,6 +386,11 @@ export const useQueues = () => {
           
           // Add customer to the beginning of the array (top of list)
           updatedDeptCustomers[departmentName].unshift(customer);
+          
+          // Log for new assignments
+          if (updateData.type === 'new_assignment') {
+            console.log(`✅ New chat assigned: ${customer.name} (${customer.chat_group_id})`);
+          }
           
           return updatedDeptCustomers;
         });
