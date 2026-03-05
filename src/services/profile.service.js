@@ -46,4 +46,23 @@ export class ProfileService {
     });
     return response.data;
   }
+
+  /**
+   * Get agent status
+   * @returns {Promise<Object>} Object containing agent_status
+   */
+  static async getAgentStatus() {
+    const response = await api.get('/profile/agent-status');
+    return response.data;
+  }
+
+  /**
+   * Update agent status
+   * @param {string} agent_status - Agent status (accepting_chats, not_accepting_chats, offline)
+   * @returns {Promise<Object>} Update result
+   */
+  static async updateAgentStatus(agent_status) {
+    const response = await api.put('/profile/agent-status', { agent_status });
+    return response.data;
+  }
 }
