@@ -42,18 +42,18 @@ const navSections = [
   {
     title: "Communication",
     items: [
-      { 
-        to: ROUTES.QUEUES, 
-        icon: Layers, 
-        label: "Queues", 
-        permission: "priv_can_view_message", 
-        showBadge: true, 
-        badgeKey: "pendingChats"
-      },
+      // { 
+      //   to: ROUTES.QUEUES, 
+      //   icon: Layers, 
+      //   label: "Queues", 
+      //   permission: "priv_can_view_message", 
+      //   showBadge: true, 
+      //   badgeKey: "pendingChats"
+      // },
       { 
         to: ROUTES.CHATS, 
         icon: MessageSquare, 
-        label: "Active Chats", 
+        label: "Chats", 
         permission: "priv_can_view_message", 
         showBadge: true, 
         badgeKey: "activeChats"

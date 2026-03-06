@@ -58,11 +58,12 @@ export class ProfileService {
 
   /**
    * Update agent status
+   * @deprecated Use Socket.IO event 'updateAgentStatus' via UserStatusContext instead
    * @param {string} agent_status - Agent status (accepting_chats, not_accepting_chats, offline)
    * @returns {Promise<Object>} Update result
    */
   static async updateAgentStatus(agent_status) {
-    const response = await api.put('/profile/agent-status', { agent_status });
-    return response.data;
+    console.warn('⚠️ ProfileService.updateAgentStatus is deprecated. Use UserStatusContext.updateAgentStatus instead.');
+    throw new Error('This method is deprecated. Use Socket.IO event via UserStatusContext.updateAgentStatus instead.');
   }
 }

@@ -62,6 +62,7 @@ export default function ChatContainer() {
     typingUserImage,
     selectCustomer,
     sendMessage,
+    acceptQueuedChat,
     endChat,
     transferChat,
     bottomRef,
@@ -320,6 +321,7 @@ export default function ChatContainer() {
             onTransfer={handleTransferClick}
             onProfileClick={handleProfileClick}
             onToggleDepartmentPanel={toggleDepartmentPanel}
+            onAcceptChat={acceptQueuedChat}
           />
         </div>
       </div>

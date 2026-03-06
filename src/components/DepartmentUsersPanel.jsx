@@ -1,5 +1,6 @@
   import React, { useState, useEffect, useMemo } from "react";
 import { useUser } from "../context/UserContext";
+import { useUserStatus } from "../context/UserStatusContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatLastSeen } from "../utils/timeUtils";
 import { getProfilePictureUrl } from "../utils/imageUtils";
@@ -31,7 +32,8 @@ const CACHE_DURATION = 60000; // 1 minute cache
  * ```
  */
 const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown = false }) => {
-  const { userData, getUserStatus, userStatuses } = useUser();
+  const { userData } = useUser();
+  const { getAgentStatus, agentStatuses } = useUserStatus();
   const { isDark } = useTheme();
   const [departmentsData, setDepartmentsData] = useState(departmentDataCache);
   const [loading, setLoading] = useState(false);
@@ -42,35 +44,21 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
   const [previousUserId, setPreviousUserId] = useState(null); // Track previous user to avoid re-animation
   
   // Convert Map to array for dependency tracking
-  const userStatusesArray = React.useMemo(() => {
-    return Array.from(userStatuses.entries());
-  }, [userStatuses]);
+  const agentStatusesArray = React.useMemo(() => {
+    return Array.from(agentStatuses.entries());
+  }, [agentStatuses]);
 
   const departments = userData?.departments || [];
   const currentDepartment = departmentsData[currentDeptIndex];
   
-  // Calculate online members count based on real-time status
+  // Calculate online members count based on agent status only
   const getOnlineMembersCount = (members) => {
     if (!members) return 0;
     
     const onlineCount = members.filter(member => {
-      const status = getUserStatus(member.sys_user_id);
-      
-      // Trust the socket status if available, otherwise calculate from lastSeen
-      const socketStatus = status.status;
-      const lastSeenDate = status.lastSeen;
-      
-      let isOnline;
-      if (socketStatus) {
-        isOnline = socketStatus === 'online';
-      } else if (lastSeenDate) {
-        const diffMs = Date.now() - new Date(lastSeenDate).getTime();
-        isOnline = diffMs < 45000;
-      } else {
-        isOnline = false;
-      }
-      
-      return isOnline;
+      // Use agent status for all users
+      const agentStatus = getAgentStatus(member.sys_user_id);
+      return agentStatus.agentStatus === 'accepting_chats' || agentStatus.agentStatus === 'not_accepting_chats';
     }).length;
     
     return onlineCount;
@@ -82,12 +70,12 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
     onlineMembers: getOnlineMembersCount(currentDepartment.members)
   } : null;
 
-  // Force re-render when userStatuses changes
+  // Force re-render when agentStatuses changes
   React.useEffect(() => {
-    if (currentDepartment && userStatuses.size > 0) {
+    if (currentDepartment && agentStatuses.size > 0) {
       forceUpdate();
     }
-  }, [userStatuses, currentDepartment]);
+  }, [agentStatuses, currentDepartment]);
 
   // Only fetch data when panel is open
   useEffect(() => {
@@ -369,38 +357,29 @@ export default DepartmentUsersPanel;
 
 /**
  * UserListWithSections - Discord-style user list with ONLINE/OFFLINE sections
+ * For agents: Uses agent status (accepting_chats, not_accepting_chats, offline)
+ * For non-agents: Uses user status (online, offline)
  */
 function UserListWithSections({ members, isDark, onUserClick }) {
-  const { getUserStatus, userStatuses } = useUser();
+  const { getAgentStatus, agentStatuses } = useUserStatus();
   
   // Convert Map to array for dependency tracking
-  const userStatusesArray = React.useMemo(() => {
-    return Array.from(userStatuses.entries());
-  }, [userStatuses]);
+  const agentStatusesArray = React.useMemo(() => {
+    return Array.from(agentStatuses.entries());
+  }, [agentStatuses]);
   
-  // Separate users into online and offline
+  // Separate users into online and offline based on agent status only
   const { onlineUsers, offlineUsers } = React.useMemo(() => {
     const online = [];
     const offline = [];
     
     members.forEach(member => {
-      const status = getUserStatus(member.sys_user_id);
+      // All users are treated as agents - use agent status
+      const agentStatus = getAgentStatus(member.sys_user_id);
       
-      // Trust the socket status if available, otherwise calculate from lastSeen
-      const socketStatus = status.status; // 'online' or 'offline' from socket
-      const lastSeenDate = status.lastSeen;
-      
-      let isOnline;
-      if (socketStatus) {
-        isOnline = socketStatus === 'online';
-      } else if (lastSeenDate) {
-        const now = Date.now();
-        const lastSeenTime = new Date(lastSeenDate).getTime();
-        const diffMs = now - lastSeenTime;
-        isOnline = diffMs < 45000;
-      } else {
-        isOnline = false;
-      }
+      // Agent is considered "online" if accepting_chats or not_accepting_chats
+      const isOnline = agentStatus.agentStatus === 'accepting_chats' || 
+                       agentStatus.agentStatus === 'not_accepting_chats';
       
       if (isOnline) {
         online.push(member);
@@ -423,7 +402,7 @@ function UserListWithSections({ members, isDark, onUserClick }) {
     });
     
     return { onlineUsers: online, offlineUsers: offline };
-  }, [members, getUserStatus, userStatusesArray]);
+  }, [members, getAgentStatus, agentStatusesArray]);
   
   return (
     <div className="space-y-3">
@@ -464,9 +443,10 @@ function UserListWithSections({ members, isDark, onUserClick }) {
 
 /**
  * UserCard - Individual user card component (compact version)
+ * Displays agent status only (accepting_chats, not_accepting_chats, offline)
  */
 function UserCard({ user, isDark, onClick }) {
-  const { getUserStatus, userStatuses } = useUser();
+  const { getAgentStatus, agentStatuses } = useUserStatus();
   const [currentTime, setCurrentTime] = React.useState(Date.now());
   
   // Update current time every 10 seconds to refresh "X mins ago" text
@@ -478,30 +458,32 @@ function UserCard({ user, isDark, onClick }) {
     return () => clearInterval(interval);
   }, []);
   
-  // Get fresh status on every render and when userStatuses changes
-  const userStatus = React.useMemo(() => {
-    return getUserStatus(user.sys_user_id);
-  }, [getUserStatus, user.sys_user_id, userStatuses]);
+  // Get fresh agent status on every render
+  const agentStatus = React.useMemo(() => {
+    return getAgentStatus(user.sys_user_id);
+  }, [getAgentStatus, user.sys_user_id, agentStatuses]);
   
-  // Trust the socket status if available, otherwise calculate from lastSeen
-  const socketStatus = userStatus.status; // 'online' or 'offline' from socket
-  const socketLastSeen = userStatus.lastSeen;
+  // Determine status color and text based on agent status only
+  let statusColor = 'bg-gray-400'; // Default offline
+  let statusText = 'Offline';
   
-  // If socket provides explicit status, use it. Otherwise calculate from timestamp.
-  let isOnline;
-  if (socketStatus) {
-    isOnline = socketStatus === 'online';
-  } else if (socketLastSeen) {
-    const now = Date.now();
-    const socketTime = new Date(socketLastSeen).getTime();
-    const diffMs = now - socketTime;
-    isOnline = diffMs < 45000;
-  } else {
-    isOnline = false;
+  const displayLastSeen = agentStatus.lastSeen || (user.last_seen ? new Date(user.last_seen) : null);
+  
+  switch (agentStatus.agentStatus) {
+    case 'accepting_chats':
+      statusColor = 'bg-green-500';
+      statusText = 'Accepting Chats';
+      break;
+    case 'not_accepting_chats':
+      statusColor = 'bg-red-500';
+      statusText = 'Not Accepting';
+      break;
+    case 'offline':
+    default:
+      statusColor = 'bg-gray-400';
+      statusText = displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline';
+      break;
   }
-  
-  // For display text: Use socket data if available, otherwise fall back to database
-  const displayLastSeen = socketLastSeen || (user.last_seen ? new Date(user.last_seen) : null);
   
   // Construct full name from profile data
   const fullName = [
@@ -538,7 +520,7 @@ function UserCard({ user, isDark, onClick }) {
           className="w-8 h-8 rounded-full object-cover"
         />
         <div 
-          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 rounded-full`} 
+          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${statusColor} border-2 rounded-full`} 
           style={{ borderColor: isDark ? '#2b2d31' : '#f2f3f5' }}
         ></div>
       </div>
@@ -548,8 +530,15 @@ function UserCard({ user, isDark, onClick }) {
         <h4 className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
           {displayName}
         </h4>
-        <p className="text-xs truncate" style={{ color: isOnline ? '#10b981' : 'var(--text-secondary)' }}>
-          {isOnline ? 'online' : (displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline')}
+        <p 
+          className="text-xs truncate" 
+          style={{ 
+            color: statusColor === 'bg-green-500' ? '#10b981' : 
+                   statusColor === 'bg-red-500' ? '#ef4444' : 
+                   'var(--text-secondary)' 
+          }}
+        >
+          {statusText}
         </p>
       </div>
     </div>
@@ -559,31 +548,37 @@ function UserCard({ user, isDark, onClick }) {
 
 /**
  * MiniProfileModal - Discord-style mini profile popup
+ * Displays agent status only (accepting_chats, not_accepting_chats, offline)
  */
 function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
-  const { getUserStatus } = useUser();
+  const { getAgentStatus } = useUserStatus();
   const [position, setPosition] = React.useState({ top: 0, left: 0 });
   const modalRef = React.useRef(null);
   const [isMobile, setIsMobile] = React.useState(false);
   
-  const userStatus = getUserStatus(user.sys_user_id);
+  const agentStatus = getAgentStatus(user.sys_user_id);
   
-  // Trust the socket status if available, otherwise calculate from lastSeen
-  const socketStatus = userStatus.status;
-  const socketLastSeen = userStatus.lastSeen;
+  // Determine status color and text based on agent status only
+  let statusColor = 'bg-gray-400'; // Default offline
+  let statusText = 'Offline';
   
-  let isOnline;
-  if (socketStatus) {
-    isOnline = socketStatus === 'online';
-  } else if (socketLastSeen) {
-    const diffMs = Date.now() - new Date(socketLastSeen).getTime();
-    isOnline = diffMs < 45000;
-  } else {
-    isOnline = false;
+  const displayLastSeen = agentStatus.lastSeen || (user.last_seen ? new Date(user.last_seen) : null);
+  
+  switch (agentStatus.agentStatus) {
+    case 'accepting_chats':
+      statusColor = 'bg-green-500';
+      statusText = 'Accepting Chats';
+      break;
+    case 'not_accepting_chats':
+      statusColor = 'bg-red-500';
+      statusText = 'Not Accepting';
+      break;
+    case 'offline':
+    default:
+      statusColor = 'bg-gray-400';
+      statusText = displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline';
+      break;
   }
-  
-  // For display text: Use socket data if available, otherwise fall back to database
-  const displayLastSeen = socketLastSeen || (user.last_seen ? new Date(user.last_seen) : null);
   
   const fullName = [
     user.profile?.prof_firstname,
@@ -689,7 +684,7 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
             />
           </div>
           <div 
-            className={`absolute bottom-0.5 right-0.5 w-4 h-4 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-[3px] rounded-full`}
+            className={`absolute bottom-0.5 right-0.5 w-4 h-4 ${statusColor} border-[3px] rounded-full`}
             style={{ borderColor: 'var(--card-bg)' }}
           />
         </div>
@@ -699,8 +694,15 @@ function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
           <h3 className="text-base font-bold truncate" style={{ color: 'var(--text-primary)' }}>
             {displayName}
           </h3>
-          <p className="text-xs mt-0.5" style={{ color: isOnline ? '#10b981' : 'var(--text-secondary)' }}>
-            {isOnline ? 'online' : (displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline')}
+          <p 
+            className="text-xs mt-0.5" 
+            style={{ 
+              color: statusColor === 'bg-green-500' ? '#10b981' : 
+                     statusColor === 'bg-red-500' ? '#ef4444' : 
+                     'var(--text-secondary)' 
+            }}
+          >
+            {statusText}
           </p>
         </div>
         

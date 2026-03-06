@@ -21,7 +21,6 @@ const DepartmentScreen = lazy(() => import("./views/departments/DepartmentScreen
 const ManageAgentsScreen = lazy(() => import("./views/agents/ManageAgentsScreen.jsx"));
 const RolesScreen = lazy(() => import("./views/roles/RolesScreen.jsx"));
 const ChangeRolesScreen = lazy(() => import("./views/change-roles/ChangeRolesScreen.jsx"));
-const QueuesScreen = lazy(() => import("./views/queues/QueuesScreen.jsx"));
 const AutoRepliesScreen = lazy(() => import("./views/auto-replies/AutoRepliesScreen.jsx"));
 const MacrosAgentsScreen = lazy(() => import("./views/macros/MacrosAgentsScreen.jsx"));
 const MacrosClientsScreen = lazy(() => import("./views/macros/MacrosClientsScreen.jsx"));
@@ -171,17 +170,6 @@ function AppNavigation() {
           element={
             <ProtectedRoute>
               <DashboardScreen />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/Queues"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
-                <QueuesScreen />
-              </PermissionRoute>
             </ProtectedRoute>
           }
         />

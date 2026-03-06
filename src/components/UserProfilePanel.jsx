@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useUserStatus } from "../context/UserStatusContext";
 import { LogOut } from "react-feather";
 import api from "../api";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
-import { ProfileService } from "../services/profile.service";
 import socket from "../socket";
 
 /**
@@ -16,56 +16,16 @@ import socket from "../socket";
 export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
+  const { getAgentStatus, updateAgentStatus } = useUserStatus();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [agentStatus, setAgentStatus] = useState(userData?.agent_status || 'offline');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [hasFetchedStatus, setHasFetchedStatus] = useState(false);
 
-  // Fetch agent status only once when panel opens
-  useEffect(() => {
-    const fetchAgentStatus = async () => {
-      if (isOpen && userData?.role_name === 'Agent' && !hasFetchedStatus) {
-        try {
-          const response = await ProfileService.getAgentStatus();
-          setAgentStatus(response.agent_status);
-          setHasFetchedStatus(true);
-        } catch (error) {
-          console.error('❌ Error fetching agent status:', error);
-        }
-      }
-    };
+  // Get agent status from context (real-time)
+  const agentStatusData = getAgentStatus(userData?.sys_user_id);
+  const agentStatus = agentStatusData.agentStatus || 'offline';
 
-    fetchAgentStatus();
-  }, [isOpen, userData?.role_name, hasFetchedStatus]);
-
-  // Reset fetch flag when panel closes
-  useEffect(() => {
-    if (!isOpen) {
-      setHasFetchedStatus(false);
-    }
-  }, [isOpen]);
-
-  // Update local state when userData changes
-  useEffect(() => {
-    if (userData?.agent_status) {
-      setAgentStatus(userData.agent_status);
-    }
-  }, [userData?.agent_status]);
-
-  // Listen for agent status changes from Socket.IO
-  useEffect(() => {
-    const handleAgentStatusChanged = (data) => {
-      if (data.userId === userData?.sys_user_id) {
-        setAgentStatus(data.agent_status);
-      }
-    };
-
-    socket.on('agentStatusChanged', handleAgentStatusChanged);
-
-    return () => {
-      socket.off('agentStatusChanged', handleAgentStatusChanged);
-    };
-  }, [userData?.sys_user_id]);
+  // Note: Agent status is now managed by UserStatusContext via Socket.IO
+  // No need to fetch or listen for status changes here
 
   if (!userData) return null;
 
@@ -99,16 +59,10 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
       // Toggle between accepting_chats and not_accepting_chats
       const newStatus = agentStatus === 'accepting_chats' ? 'not_accepting_chats' : 'accepting_chats';
       
-      // Update via REST API
-      await ProfileService.updateAgentStatus(newStatus);
+      // Update via Socket.IO (handled by UserStatusContext)
+      updateAgentStatus(newStatus);
       
-      // Update local state
-      setAgentStatus(newStatus);
-      
-      // Also emit via Socket.IO for real-time updates
-      socket.emit('updateAgentStatus', { agent_status: newStatus });
-      
-      console.log(`✅ Agent status updated to: ${newStatus}`);
+      console.log(`✅ Agent status update requested: ${newStatus}`);
     } catch (error) {
       console.error('❌ Error updating agent status:', error);
       // Optionally show error toast/notification
@@ -119,14 +73,16 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
 
   const handleLogout = async () => {
     try {
+      // Emit agent offline event before logout
+      if (userData?.sys_user_id && socket.connected) {
+        socket.emit('agentOffline', { userId: userData.sys_user_id });
+        console.log('📡 Emitted agentOffline event');
+      }
+      
       await api.post("/auth/logout", {}, { withCredentials: true });
     } catch (error) {
       console.error("Logout API call failed:", error);
     } finally {
-      // Always clear local storage and redirect, even if API fails
-      localStorage.removeItem("token");
-      localStorage.removeItem("userData");
-      localStorage.setItem("logout", Date.now());
       navigate("/");
     }
   };
