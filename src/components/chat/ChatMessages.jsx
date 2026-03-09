@@ -14,6 +14,7 @@ export default function ChatMessages({
   isMobile,
   isTyping = false,
   typingUser = null,
+  typingUserImage = null,
   hasMoreMessages = true,
   isLoadingMore = false,
 }) {
@@ -201,7 +202,10 @@ export default function ChatMessages({
         })}
 
         {isTyping && typingUser && (
-          <TypingIndicator userName={typingUser} />
+          <TypingIndicator 
+            userName={typingUser} 
+            userImage={typingUserImage}
+          />
         )}
 
         {chatEnded && (

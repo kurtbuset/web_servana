@@ -18,6 +18,7 @@ export default function ChatMainArea({
   cannedMessages,
   isTyping,
   typingUser,
+  typingUserImage,
   hasMoreMessages,
   isLoadingMore,
   openDropdown,
@@ -78,6 +79,7 @@ export default function ChatMainArea({
             isMobile={isMobile}
             isTyping={isTyping}
             typingUser={typingUser}
+            typingUserImage={typingUserImage}
             hasMoreMessages={hasMoreMessages}
             isLoadingMore={isLoadingMore}
           />
