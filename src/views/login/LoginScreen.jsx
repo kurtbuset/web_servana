@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -7,6 +7,7 @@ import LoginHeader from "./components/LoginHeader";
 import LoginForm from "./components/LoginForm";
 import BrandingPanel from "./components/BrandingPanel";
 import LoginAnimations from "./components/LoginAnimations";
+import { showWarning } from "../../utils/toast";
 
 /**
  * LoginScreen - Authentication screen
@@ -26,6 +27,19 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+
+  // Check for session expiry message
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reason = urlParams.get('reason');
+    
+    if (reason === 'session_expired') {
+      showWarning('Your session expired due to inactivity. Please log in again.');
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, []);
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 

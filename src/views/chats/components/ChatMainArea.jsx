@@ -1,6 +1,7 @@
 import ChatHeader from "../../../components/chat/ChatHeader";
 import ChatMessages from "../../../components/chat/ChatMessages";
 import MessageInput from "../../../components/chat/MessageInput";
+import AcceptChatButton from "../../../components/chat/AcceptChatButton";
 import ChatMainEmpty from "./ChatMainEmpty";
 
 /**
@@ -41,7 +42,10 @@ export default function ChatMainArea({
   onTransfer,
   onProfileClick,
   onToggleDepartmentPanel,
+  onAcceptChat,
 }) {
+  const isQueuedChat = selectedCustomer?.chat_type === 'queued';
+  
   return (
     <div
       className={`${
@@ -56,7 +60,7 @@ export default function ChatMainArea({
             isMobile={isMobile}
             onBack={onBack}
             showAcceptButton={false}
-            showMenu={true}
+            showMenu={!isQueuedChat}
             chatEnded={chatEnded}
             menuOpen={openDropdown === "customerMenu"}
             onMenuToggle={onMenuToggle}
@@ -84,20 +88,27 @@ export default function ChatMainArea({
             isLoadingMore={isLoadingMore}
           />
 
-          <MessageInput
-            inputMessage={inputMessage}
-            onInputChange={onInputChange}
-            onSendMessage={onSendMessage}
-            textareaRef={textareaRef}
-            showCannedMessages={showCannedMessages}
-            onToggleCannedMessages={onToggleCannedMessages}
-            cannedMessages={cannedMessages}
-            onSelectCannedMessage={onSelectCannedMessage}
-            disabled={!canMessage || chatEnded}
-            disabledMessage={!canMessage ? "You don't have permission to reply/Chat" : "Message"}
-            chatEnded={chatEnded}
-            canUseCannedMessages={canUseCannedMessages}
-          />
+          {isQueuedChat ? (
+            <AcceptChatButton 
+              onAccept={() => onAcceptChat && onAcceptChat(selectedCustomer.chat_group_id)}
+              customer={selectedCustomer}
+            />
+          ) : (
+            <MessageInput
+              inputMessage={inputMessage}
+              onInputChange={onInputChange}
+              onSendMessage={onSendMessage}
+              textareaRef={textareaRef}
+              showCannedMessages={showCannedMessages}
+              onToggleCannedMessages={onToggleCannedMessages}
+              cannedMessages={cannedMessages}
+              onSelectCannedMessage={onSelectCannedMessage}
+              disabled={!canMessage || chatEnded}
+              disabledMessage={!canMessage ? "You don't have permission to reply/Chat" : "Message"}
+              chatEnded={chatEnded}
+              canUseCannedMessages={canUseCannedMessages}
+            />
+          )}
         </>
       ) : (
         <ChatMainEmpty endedChats={endedChats} />

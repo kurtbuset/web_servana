@@ -27,7 +27,7 @@ export default function ChatSidebar({
       } w-full md:w-[320px] lg:w-[360px] md:rounded-xl shadow-sm border-0 md:border overflow-hidden flex flex-col`}
       style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
     >
-      <ChatSidebarHeader customerCount={filteredCustomers.length} />
+      <ChatSidebarHeader customerCount={filteredCustomers.length} title="My chats" />
 
       <DepartmentFilter
         departments={departments}
