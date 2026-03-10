@@ -1,20 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChatService } from '../services/chat.service';
+import QueueService from '../services/queue.service';
 import { useUser } from '../context/UserContext';
 import toast from '../utils/toast';
-import socket from '../socket';
+import { useChatSocket } from './useChatSocket';
+import { useTyping } from './useTyping';
+import { useCustomerListUpdates } from './useCustomerListUpdates';
 
 /**
- * useChat hook manages chat state and real-time Socket.IO communication
+ * useChat hook manages chat state and data
  * 
  * Features:
  * - Fetch chat groups and messages
- * - Real-time message updates via Socket.IO
  * - Canned messages management
  * - Message pagination (load more)
  * - Department filtering
- * - Send messages via Socket.IO
- * - Auto-connect/disconnect Socket.IO
+ * - Pure state management (no socket logic)
  * 
  * @returns {Object} Chat state and actions
  */
@@ -46,102 +47,25 @@ export const useChat = () => {
   const [error, setError] = useState(null);
   const [chatEnded, setChatEnded] = useState(false);
   const [endedChats, setEndedChats] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingUser, setTypingUser] = useState(null);
-  const [typingUserImage, setTypingUserImage] = useState(null);
   
   // Refs
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
   const fetchInProgressRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
   const loadMessagesInProgressRef = useRef(false);
   const FETCH_COOLDOWN = 1000; // 1 second cooldown between fetches
 
-  /**
-   * Connect to Socket.IO on mount and handle logout events
-   */
-  useEffect(() => {
-    socket.connect();
-    console.log('Socket connected');
-
-    // Listen for logout events to reconnect socket with fresh cookies
-    const handleLogout = () => {
-      console.log('Logout detected - reconnecting socket');
-      socket.disconnect();
-      // Small delay to ensure cookies are cleared
-      setTimeout(() => {
-        socket.connect();
-      }, 100);
-    };
-
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'logout') {
-        handleLogout();
-      }
-    });
-
-    return () => {
-      socket.disconnect();
-      console.log('Socket disconnected');
-      window.removeEventListener('storage', handleLogout);
-    };
-  }, []);
-
-  /**
-   * Listen for typing indicators from clients
-   */
-  useEffect(() => {
-    if (!selectedCustomer) return;
-
-    const handleTyping = (data) => {
-      if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
-        console.log('👤 Client is typing:', data.userName);
-        setIsTyping(true);
-        setTypingUser(data.userName || 'Client');
-        setTypingUserImage(data.userImage || null);
-
-        if (typingTimeoutRef.current) {
-          clearTimeout(typingTimeoutRef.current);
-        }
-
-        typingTimeoutRef.current = setTimeout(() => {
-          setIsTyping(false);
-          setTypingUser(null);
-          setTypingUserImage(null);
-        }, 3000);
-      }
-    };
-
-    const handleStopTyping = (data) => {
-      if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
-        console.log('👤 Client stopped typing');
-
-        if (typingTimeoutRef.current) {
-          clearTimeout(typingTimeoutRef.current);
-        }
-
-        setIsTyping(false);
-        setTypingUser(null);
-        setTypingUserImage(null);
-      }
-    };
-
-    socket.on('typing', handleTyping);
-    socket.on('stopTyping', handleStopTyping);
-
-    return () => {
-      socket.off('typing', handleTyping);
-      socket.off('stopTyping', handleStopTyping);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, [selectedCustomer]);
+  // Initialize customer list update handlers
+  const { handleCustomerListUpdate } = useCustomerListUpdates(
+    setDepartmentCustomers,
+    setSelectedCustomer,
+    getUserId
+  );
 
   /**
    * Fetch chat groups from API with debouncing
+   * Fetches both active chats (assigned to me) and queued chats (in my departments)
    */
   const fetchChatGroups = useCallback(async () => {
     // Prevent simultaneous requests
@@ -163,14 +87,49 @@ export const useChat = () => {
     setError(null);
     
     try {
-      const chatGroups = await ChatService.getChatGroups();
+      // Fetch both active and queued chats in parallel
+      const [activeChatGroups, queuedChatGroups] = await Promise.all([
+        ChatService.getChatGroups(),
+        QueueService.getQueuedChats()
+      ]);
+
       const deptMap = {};
 
-      chatGroups.forEach((group) => {
+      // Process active chats (assigned to me)
+      activeChatGroups.forEach((group) => {
         const dept = group.department;
         if (!deptMap[dept]) deptMap[dept] = [];
-        const customerWithDept = { ...group.customer, department: dept };
+        const customerWithDept = { 
+          ...group.customer, 
+          department: dept,
+          chat_type: 'active', // Mark as active chat
+          status: 'active'
+        };
         deptMap[dept].push(customerWithDept);
+      });
+
+      // Process queued chats (in my departments)
+      queuedChatGroups.forEach((group) => {
+        const dept = group.department;
+        if (!deptMap[dept]) deptMap[dept] = [];
+        const customerWithDept = { 
+          ...group.customer, 
+          department: dept,
+          chat_type: 'queued', // Mark as queued chat
+          status: group.customer.status || 'queued'
+        };
+        deptMap[dept].push(customerWithDept);
+      });
+
+      // Sort each department's chats: active first, then queued
+      Object.keys(deptMap).forEach(dept => {
+        deptMap[dept].sort((a, b) => {
+          // Active chats first
+          if (a.chat_type === 'active' && b.chat_type === 'queued') return -1;
+          if (a.chat_type === 'queued' && b.chat_type === 'active') return 1;
+          // Within same type, sort by time (most recent first)
+          return 0;
+        });
       });
 
       setDepartmentCustomers(deptMap);
@@ -191,66 +150,54 @@ export const useChat = () => {
   }, []);
 
   /**
-   * Listen for chat group updates via Socket.IO
+   * Handle message received from socket
    */
-  useEffect(() => {
-    fetchChatGroups(); // Initial load
+  const handleMessageReceived = useCallback((msg, currentUserId) => {
+    setMessages((prev) => {
+      const exists = prev.some((m) => m.id === msg.chat_id);
+      if (exists) return prev;
 
-    socket.on('updateChatGroups', () => {
-      console.log('Received updateChatGroups from server');
-      fetchChatGroups();
+      return [
+        ...prev,
+        {
+          id: msg.chat_id,
+          sender: msg.sender_type === 'agent' && msg.sender_id === currentUserId ? 'user' : 'system',
+          content: msg.chat_body,
+          timestamp: msg.chat_created_at,
+          sender_name: msg.sender_name || 'Unknown',
+          sender_type: msg.sender_type || 'system',
+          sender_image: msg.sender_image || null,
+          displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ];
     });
+  }, []);
 
-    // Listen for real-time customer list updates
-    socket.on('customerListUpdate', (updateData) => {
-      console.log('Received customerListUpdate:', updateData);
-      handleCustomerListUpdate(updateData);
-    });
+  // Initialize socket connection and listeners
+  const { sendMessage: socketSendMessage } = useChatSocket({
+    selectedCustomer,
+    getUserId,
+    onMessageReceived: handleMessageReceived,
+    onCustomerListUpdate: handleCustomerListUpdate,
+  });
 
-    return () => {
-      socket.off('updateChatGroups');
-      socket.off('customerListUpdate');
-    };
-  }, [fetchChatGroups]);
+  // Initialize typing indicators
+  const {
+    isTyping,
+    typingUser,
+    typingUserImage,
+    handleTypingWithTimeout,
+  } = useTyping(selectedCustomer, getUserId);
 
   /**
-   * Handle real-time customer list updates
+   * Initial fetch on mount
    */
-  const handleCustomerListUpdate = useCallback((updateData) => {
-    console.log(updateData)
-    if (updateData.type === 'move_to_top' || updateData.type === 'new_assignment') {
-      const { customer, department_id } = updateData.data;
-      
-      setDepartmentCustomers((prevDeptCustomers) => {
-        const updatedDeptCustomers = { ...prevDeptCustomers };
-        
-        // Find the customer in all departments and remove them
-        Object.keys(updatedDeptCustomers).forEach((dept) => {
-          updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
-            (existingCustomer) => existingCustomer.chat_group_id !== customer.chat_group_id
-          );
-        });
-        
-        // Find the department name for this customer
-        const departmentName = customer.department || 'Unknown';
-        
-        // Add the customer to the top of their department
-        if (!updatedDeptCustomers[departmentName]) {
-          updatedDeptCustomers[departmentName] = [];
-        }
-        
-        // Add customer to the beginning of the array (top of list)
-        updatedDeptCustomers[departmentName].unshift(customer);
-        
-        // Log for new assignments
-        if (updateData.type === 'new_assignment') {
-          console.log(`✅ New chat assigned: ${customer.name} (${customer.chat_group_id})`);
-        }
-        
-        return updatedDeptCustomers;
-      });
-    }
-  }, []);
+  useEffect(() => {
+    fetchChatGroups();
+  }, [fetchChatGroups]);
 
   /**
    * Fetch canned messages for current user's role
@@ -272,7 +219,7 @@ export const useChat = () => {
       console.error('Failed to load canned messages:', err);
       // Don't show error toast for canned messages - not critical
     }
-  }, []); // Remove hasPermission dependency to prevent spam
+  }, [hasPermission]);
 
   /**
    * Load canned messages on mount only
@@ -284,90 +231,7 @@ export const useChat = () => {
     } else {
       setCannedMessages([]);
     }
-  }, []); // Empty dependency array - only run once on mount
-
-  /**
-   * Join chat group and listen for messages when customer is selected
-   */
-  useEffect(() => {
-    if (!selectedCustomer) return;
-
-    const userId = getUserId();
-    if (!userId) {
-      console.warn('No user ID available, cannot join chat group');
-      return;
-    }
-
-    // Track current room to prevent duplicate joins
-    const currentRoomId = selectedCustomer.chat_group_id;
-
-    // Leave previous room if agent was in another room
-    socket.emit('leavePreviousRoom');
-
-    // Join new chat group with user info
-    socket.emit('joinChatGroup', {
-      groupId: currentRoomId,
-      userType: 'agent',
-      userId: userId
-    });
-
-    console.log(`Agent ${userId} switching to chat_group ${currentRoomId}`);
-
-    const handleReceiveMessage = (msg) => {
-      // Clear typing indicator when message is received
-      setIsTyping(false);
-      setTypingUser(null);
-
-      setMessages((prev) => {
-        const exists = prev.some((m) => m.id === msg.chat_id);
-        if (exists) return prev;
-
-        return [
-          ...prev,
-          {
-            id: msg.chat_id,
-            sender: msg.sender_type === 'agent' && msg.sender_id === userId ? 'user' : 'system',
-            content: msg.chat_body,
-            timestamp: msg.chat_created_at,
-            sender_name: msg.sender_name || 'Unknown',
-            sender_type: msg.sender_type || 'system',
-            sender_image: msg.sender_image || null,
-            displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-          },
-        ];
-      });
-    };
-
-    const handleUserJoined = (data) => {
-      console.log(`${data.userType} joined chat_group ${data.chatGroupId}`);
-    };
-
-    const handleUserLeft = (data) => {
-      console.log(`${data.userType} left chat_group ${data.chatGroupId}`);
-    };
-
-    socket.on('receiveMessage', handleReceiveMessage);
-    socket.on('userJoined', handleUserJoined);
-    socket.on('userLeft', handleUserLeft);
-
-    return () => {
-      socket.off('receiveMessage', handleReceiveMessage);
-      socket.off('userJoined', handleUserJoined);
-      socket.off('userLeft', handleUserLeft);
-      
-      // Leave room when component unmounts or customer changes
-      socket.emit('leaveRoom', {
-        roomId: currentRoomId,
-        userType: 'agent',
-        userId: userId
-      });
-      
-      console.log(`Agent ${userId} leaving chat_group ${currentRoomId}`);
-    };
-  }, [selectedCustomer?.chat_group_id]); // Only depend on chat_group_id, not the whole object or getUserId
+  }, [hasPermission, fetchCannedMessages]);
 
   /**
    * Determine frontend sender type for message display
@@ -484,15 +348,9 @@ export const useChat = () => {
     // Clear input immediately for better UX
     setInputMessage('');
 
-    // Emit via socket - message will be added to UI when we receive it back
-    console.log('Sending to group:', selectedCustomer.chat_group_id);
-    socket.emit('sendMessage', {
-      chat_body: trimmedMessage,
-      chat_group_id: selectedCustomer.chat_group_id,
-      sys_user_id: getUserId(),
-      client_id: null,
-    });
-  }, [inputMessage, selectedCustomer, hasPermission, getUserId]);
+    // Send via socket
+    socketSendMessage(trimmedMessage, selectedCustomer.chat_group_id, getUserId());
+  }, [inputMessage, selectedCustomer, hasPermission, getUserId, socketSendMessage]);
 
   /**
    * End the current chat
@@ -591,6 +449,64 @@ export const useChat = () => {
   }, [selectedCustomer, departmentCustomers]);
 
   /**
+   * Accept/Take a queued chat (assign to current agent)
+   * @param {number} chatGroupId - Chat group ID
+   */
+  const acceptQueuedChat = useCallback(async (chatGroupId) => {
+    try {
+      const response = await QueueService.acceptChat(chatGroupId);
+      
+      if (response.success) {
+        toast.success("Chat accepted successfully");
+        
+        // Update the chat from queued to active in local state
+        setDepartmentCustomers((prevDeptCustomers) => {
+          const updatedDeptCustomers = { ...prevDeptCustomers };
+          let acceptedCustomer = null;
+          
+          Object.keys(updatedDeptCustomers).forEach((dept) => {
+            updatedDeptCustomers[dept] = updatedDeptCustomers[dept].map((customer) => {
+              if (customer.chat_group_id === chatGroupId) {
+                acceptedCustomer = {
+                  ...customer,
+                  chat_type: 'active',
+                  status: 'active'
+                };
+                return acceptedCustomer;
+              }
+              return customer;
+            });
+            
+            // Re-sort: active chats first
+            updatedDeptCustomers[dept].sort((a, b) => {
+              if (a.chat_type === 'active' && b.chat_type === 'queued') return -1;
+              if (a.chat_type === 'queued' && b.chat_type === 'active') return 1;
+              return 0;
+            });
+          });
+          
+          // Update selected customer if it's the one we just accepted
+          if (acceptedCustomer && selectedCustomer?.chat_group_id === chatGroupId) {
+            setSelectedCustomer(acceptedCustomer);
+          }
+          
+          return updatedDeptCustomers;
+        });
+        
+        // Refresh to get updated data
+        fetchChatGroups();
+        
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error accepting queued chat:", err);
+      toast.error("Failed to accept chat");
+      return false;
+    }
+  }, [fetchChatGroups, selectedCustomer]);
+
+  /**
    * Clear selected customer
    */
   const clearSelection = useCallback(() => {
@@ -613,42 +529,9 @@ export const useChat = () => {
     const value = e.target.value;
     setInputMessage(value);
 
-    if (!selectedCustomer || !socket) return;
-
-    const userId = getUserId();
-    if (!userId) return;
-
-    // Emit typing event if text is being entered
-    if (value.length > 0) {
-      socket.emit('typing', {
-        chatGroupId: selectedCustomer.chat_group_id,
-        userName: 'Agent',
-        userId: userId,
-        userType: 'agent',
-      });
-
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      // Set timeout to emit stop typing after 2 seconds of inactivity
-      typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('stopTyping', {
-          chatGroupId: selectedCustomer.chat_group_id,
-          userId: userId,
-          userType: 'agent',
-        });
-      }, 2000);
-    } else {
-      // If text is empty, immediately stop typing
-      socket.emit('stopTyping', {
-        chatGroupId: selectedCustomer.chat_group_id,
-        userId: userId,
-        userType: 'agent',
-      });
-    }
-  }, [selectedCustomer, getUserId]);
+    // Emit typing indicator
+    handleTypingWithTimeout(value.length > 0);
+  }, [handleTypingWithTimeout]);
 
   /**
    * Auto-resize textarea
@@ -706,7 +589,7 @@ export const useChat = () => {
     fetchChatGroups,
     selectCustomer,
     sendMessage,
-    
+    acceptQueuedChat,
     endChat,
     transferChat,
     clearSelection,

@@ -15,6 +15,14 @@ class RoleService {
   }
 
   /**
+   * Get all roles (alias for getRoles for consistency)
+   * @returns {Promise<Array>} Array of roles with permissions
+   */
+  static async getAllRoles() {
+    return this.getRoles();
+  }
+
+  /**
    * Get role ID by role name
    * @param {string} roleName - Role name (e.g., "Agent", "Client")
    * @returns {Promise<number>} Role ID
@@ -145,3 +153,4 @@ class RoleService {
 }
 
 export default RoleService;
+export { RoleService };

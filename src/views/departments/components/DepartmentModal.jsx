@@ -7,12 +7,15 @@ export default function DepartmentModal({
   isOpen,
   isEdit,
   departmentName,
-  canEditDepartment,
+  canAddDepartments,
+  canEditDepartments,
   isDark,
   onNameChange,
   onSave,
   onClose
 }) {
+  const hasPermission = isEdit ? canEditDepartments : canAddDepartments;
+  
   return (
     <Modal
       isOpen={isOpen}
@@ -29,7 +32,7 @@ export default function DepartmentModal({
           label: 'Save',
           onClick: onSave,
           variant: 'primary',
-          disabled: !canEditDepartment || !departmentName.trim()
+          disabled: !hasPermission || !departmentName.trim()
         }
       ]}
     >

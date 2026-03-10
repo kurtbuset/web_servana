@@ -4,12 +4,12 @@ import {
   Routes,
   Route,
   Navigate,
-  useLocation,
 } from "react-router-dom";
 import api from "../src/api";
 import { useUser } from "./context/UserContext";
 import { useTheme } from "./context/ThemeContext";
 import LoadingSpinner from "./components/LoadingSpinner";
+import RolePreviewBanner from "./components/RolePreviewBanner";
 
 // Critical path - load immediately
 import LoginScreen from "./views/login/LoginScreen.jsx";
@@ -21,7 +21,6 @@ const DepartmentScreen = lazy(() => import("./views/departments/DepartmentScreen
 const ManageAgentsScreen = lazy(() => import("./views/agents/ManageAgentsScreen.jsx"));
 const RolesScreen = lazy(() => import("./views/roles/RolesScreen.jsx"));
 const ChangeRolesScreen = lazy(() => import("./views/change-roles/ChangeRolesScreen.jsx"));
-const QueuesScreen = lazy(() => import("./views/queues/QueuesScreen.jsx"));
 const AutoRepliesScreen = lazy(() => import("./views/auto-replies/AutoRepliesScreen.jsx"));
 const MacrosAgentsScreen = lazy(() => import("./views/macros/MacrosAgentsScreen.jsx"));
 const MacrosClientsScreen = lazy(() => import("./views/macros/MacrosClientsScreen.jsx"));
@@ -36,14 +35,15 @@ import { ToastContainer } from "./components/ui";
 /**
  * PermissionRoute: Redirect to Dashboard if user doesn't have required permission
  */
-function PermissionRoute({ children, permission }) {
+function PermissionRoute({ children, permission, fallbackPermission }) {
   const { hasPermission, loading } = useUser();
 
   if (loading) {
     return <LoadingSpinner variant="page" message="Checking permissions..." />;
   }
 
-  if (permission && !hasPermission(permission)) {
+  if (permission && !hasPermission(permission) && (!fallbackPermission || !hasPermission(fallbackPermission))) {
+    console.log(`🚫 PermissionRoute: Access denied for ${permission}${fallbackPermission ? ` (fallback: ${fallbackPermission})` : ''}`);
     return <Navigate to="/Dashboard" replace />;
   }
 
@@ -151,6 +151,7 @@ function AppNavigation() {
 
   return (
     <Router>
+      <RolePreviewBanner />
       <Suspense fallback={<LoadingSpinner variant="page" message="Loading..." />}>
         <ToastContainer isDark={isDark} />
         <Routes>
@@ -174,17 +175,6 @@ function AppNavigation() {
             </ProtectedRoute>
           }
         />
-
-        <Route
-          path="/Queues"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
-                <QueuesScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/Chats"
           element={
@@ -199,7 +189,7 @@ function AppNavigation() {
           path="/department"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_dept">
+              <PermissionRoute permission="priv_can_view_dept">
                 <DepartmentScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -217,7 +207,7 @@ function AppNavigation() {
           path="/manage-agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_create_account">
+              <PermissionRoute permission="priv_can_view_manage_agents">
                 <ManageAgentsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -227,7 +217,7 @@ function AppNavigation() {
           path="/change-role"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_assign_role">
+              <PermissionRoute permission="priv_can_view_change_roles">
                 <ChangeRolesScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -237,7 +227,7 @@ function AppNavigation() {
           path="/auto-replies"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_auto_reply">
+              <PermissionRoute permission="priv_can_view_auto_reply">
                 <AutoRepliesScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -247,27 +237,18 @@ function AppNavigation() {
           path="/agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission="priv_can_view_macros">
                 <MacrosAgentsScreen />
               </PermissionRoute>
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/clients"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
-                <MacrosClientsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
+       
         <Route
           path="/macros-agents"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission="priv_can_view_macros">
                 <MacrosAgentsScreen />
               </PermissionRoute>
             </ProtectedRoute>
@@ -277,7 +258,7 @@ function AppNavigation() {
           path="/macros-clients"
           element={
             <ProtectedRoute>
-              <PermissionRoute permission="priv_can_use_canned_mess">
+              <PermissionRoute permission="priv_can_view_macros">
                 <MacrosClientsScreen />
               </PermissionRoute>
             </ProtectedRoute>

@@ -12,6 +12,8 @@ export default function AutoReplyTable({
   searchQuery,
   sortBy,
   onSortChange,
+  canEditAutoReplies,
+  canDeleteAutoReplies,
   isDark,
   onEdit,
   onToggleStatus,
@@ -70,6 +72,8 @@ export default function AutoReplyTable({
                   key={reply.auto_reply_id}
                   reply={reply}
                   departmentName={deptName}
+                  canEditAutoReplies={canEditAutoReplies}
+                  canDeleteAutoReplies={canDeleteAutoReplies}
                   isDark={isDark}
                   onEdit={() => onEdit(reply)}
                   onToggleStatus={() => onToggleStatus(reply.auto_reply_id, reply.auto_reply_is_active)}

@@ -63,7 +63,11 @@ export default function ManageAgentsScreen() {
   const { isDark } = useTheme();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
   const canAssignDepartment = hasPermission("priv_can_assign_dept");
-  const canCreateAccount = hasPermission("priv_can_create_account");
+  const canViewAgentsInfo = hasPermission("priv_can_view_agents_info");
+  const canCreateAgentAccount = hasPermission("priv_can_create_agent_account");
+  const canEditManageAgents = hasPermission("priv_can_edit_manage_agents");
+  const canEditDeptManageAgents = hasPermission("priv_can_edit_dept_manage_agents");
+  const canViewAnalyticsManageAgents = hasPermission("priv_can_view_analytics_manage_agents");
 
   const {
     agents,
@@ -159,8 +163,8 @@ export default function ManageAgentsScreen() {
 
   // Handle department toggle in edit view
   const handleDepartmentToggle = async (dept) => {
-    if (!canAssignDepartment) {
-      toast.error("You don't have permission to assign departments");
+    if (!canEditDeptManageAgents) {
+      toast.error("You don't have permission to edit agent department assignments");
       return;
     }
 
@@ -219,8 +223,8 @@ export default function ManageAgentsScreen() {
 
   // Handle toggle active
   const handleToggleActive = async (index) => {
-    if (!canCreateAccount) {
-      toast.error("You don't have permission to modify account status");
+    if (!canEditManageAgents) {
+      toast.error("You don't have permission to modify agent status");
       return;
     }
     await toggleActive(index);
@@ -294,7 +298,8 @@ export default function ManageAgentsScreen() {
                   onAgentClick={handleAgentClick}
                   onAddAgent={() => setIsAddModalOpen(true)}
                   onToggleActive={handleToggleActive}
-                  canCreateAccount={canCreateAccount}
+                  canCreateAgentAccount={canCreateAgentAccount}
+                  canEditManageAgents={canEditManageAgents}
                   isDark={isDark}
                 />
               )}
@@ -306,7 +311,10 @@ export default function ManageAgentsScreen() {
                   onEditDepartment={handleEditDepartment}
                   onViewAnalytics={handleViewAnalytics}
                   onToggleActive={() => handleToggleActive(selectedAgentIndex)}
-                  canCreateAccount={canCreateAccount}
+                  canViewAgentsInfo={canViewAgentsInfo}
+                  canEditManageAgents={canEditManageAgents}
+                  canEditDeptManageAgents={canEditDeptManageAgents}
+                  canViewAnalyticsManageAgents={canViewAnalyticsManageAgents}
                   isDark={isDark}
                 />
               )}
@@ -321,7 +329,7 @@ export default function ManageAgentsScreen() {
                   onSave={handleSaveDepartments}
                   onReset={handleResetDepartments}
                   hasUnsavedChanges={hasUnsavedChanges}
-                  canAssignDepartment={canAssignDepartment}
+                  canEditDeptManageAgents={canEditDeptManageAgents}
                   isDark={isDark}
                   shakeBar={shakeBar}
                 />
@@ -331,6 +339,7 @@ export default function ManageAgentsScreen() {
                 <AnalyticsView
                   agent={selectedAgent}
                   onBack={handleBack}
+                  canViewAnalyticsManageAgents={canViewAnalyticsManageAgents}
                   isDark={isDark}
                 />
               )}
@@ -361,7 +370,7 @@ export default function ManageAgentsScreen() {
   }
 
 // ListView Component - Main accounts list
-function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgentClick, onAddAgent, onToggleActive, canCreateAccount, isDark }) {
+function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgentClick, onAddAgent, onToggleActive, canCreateAgentAccount, canEditManageAgents, isDark }) {
   const [sortBy, setSortBy] = useState('default');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -439,13 +448,13 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
           {/* Add Button */}
           <button
             onClick={onAddAgent}
-            disabled={!canCreateAccount}
+            disabled={!canCreateAgentAccount}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-              canCreateAccount
+              canCreateAgentAccount
                 ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
                 : "cursor-not-allowed"
             }`}
-            style={!canCreateAccount ? {
+            style={!canCreateAgentAccount ? {
               backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
               color: isDark ? '#9ca3af' : '#6b7280'
             } : {}}
@@ -529,7 +538,7 @@ function ListView({ searchQuery, setSearchQuery, filteredAgents, loading, onAgen
                               e.stopPropagation();
                               onToggleActive(actualIdx);
                             }} 
-                            disabled={!canCreateAccount} 
+                            disabled={!canEditManageAgents} 
                           />
                         </td>
                         <td className="py-2 px-3">

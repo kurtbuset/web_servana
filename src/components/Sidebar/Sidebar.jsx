@@ -16,6 +16,7 @@ import {
 import { HiOfficeBuilding } from "react-icons/hi";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "../../../src/context/UserContext";
+import { useRolePreview } from "../../../src/context/RolePreviewContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
@@ -42,18 +43,18 @@ const navSections = [
   {
     title: "Communication",
     items: [
-      { 
-        to: ROUTES.QUEUES, 
-        icon: Layers, 
-        label: "Queues", 
-        permission: "priv_can_view_message", 
-        showBadge: true, 
-        badgeKey: "pendingChats"
-      },
+      // { 
+      //   to: ROUTES.QUEUES, 
+      //   icon: Layers, 
+      //   label: "Queues", 
+      //   permission: "priv_can_view_message", 
+      //   showBadge: true, 
+      //   badgeKey: "pendingChats"
+      // },
       { 
         to: ROUTES.CHATS, 
         icon: MessageSquare, 
-        label: "Active Chats", 
+        label: "Chats", 
         permission: "priv_can_view_message", 
         showBadge: true, 
         badgeKey: "activeChats"
@@ -67,13 +68,13 @@ const navSections = [
         to: ROUTES.DEPARTMENTS, 
         icon: HiOfficeBuilding, 
         label: "Departments", 
-        permission: "priv_can_manage_dept"
+        permission: "priv_can_view_dept"
       },
       { 
         to: ROUTES.AUTO_REPLIES, 
         icon: Cpu, 
         label: "Auto-Replies", 
-        permission: "priv_can_manage_auto_reply"
+        permission: "priv_can_view_auto_reply"
       }
     ]
   },
@@ -84,13 +85,13 @@ const navSections = [
         to: ROUTES.MANAGE_AGENTS, 
         icon: Headphones, 
         label: "Manage Agents", 
-        permission: "priv_can_create_account"
+        permission: "priv_can_view_manage_agents"
       },
       { 
         to: ROUTES.CHANGE_ROLE, 
         icon: UserCheck, 
         label: "Change Roles", 
-        permission: "priv_can_assign_role"
+        permission: "priv_can_view_change_roles"
       }
     ]
   },
@@ -101,13 +102,13 @@ const navSections = [
         to: ROUTES.MACROS_AGENTS, 
         icon: MessageCircle, 
         label: "Agent Macros", 
-        permission: "priv_can_use_canned_mess"
+        permission: "priv_can_view_macros"
       },
       { 
         to: ROUTES.MACROS_CLIENTS, 
         icon: FileText, 
         label: "Client Macros", 
-        permission: "priv_can_use_canned_mess"
+        permission: "priv_can_view_macros"
       }
     ]
   },
@@ -266,12 +267,26 @@ SectionHeader.displayName = 'SectionHeader';
 const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   const location = useLocation();
   const { userData, hasPermission } = useUser();
+  const { previewMode, previewPermissions } = useRolePreview();
   const { isDark } = useTheme();
   const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
   const [counts, setCounts] = useState({
     pendingChats: 0,
     activeChats: 0
   });
+  
+  // Force re-render when preview mode changes
+  const [, forceUpdate] = useState({});
+  
+  useEffect(() => {
+    const handlePreviewChange = () => {
+      console.log('🔄 Sidebar: Preview mode changed, forcing re-render');
+      forceUpdate({});
+    };
+    
+    window.addEventListener('rolePreviewChanged', handlePreviewChange);
+    return () => window.removeEventListener('rolePreviewChanged', handlePreviewChange);
+  }, []);
   
   // Persist collapse state in localStorage (desktop only)
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -469,6 +484,11 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
 
   // Filter navigation sections based on permissions - memoize to prevent recalculation
   const visibleNavSections = useMemo(() => {
+    console.log('🔄 Sidebar: Recalculating visible nav sections', {
+      previewMode,
+      hasPreviewPermissions: !!previewPermissions
+    });
+    
     return navSections.map(section => ({
       ...section,
       items: section.items.filter(item => {
@@ -477,11 +497,41 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
           return true;
         }
         
-        // Check permission
-        return hasPermission(item.permission);
+        // Check permission (will use preview permissions if in preview mode)
+        const hasAccess = hasPermission(item.permission) || 
+                         (item.fallbackPermission && hasPermission(item.fallbackPermission));
+        console.log(`  📋 ${item.label}: ${hasAccess ? '✅' : '❌'} (${item.permission}${item.fallbackPermission ? ` or ${item.fallbackPermission}` : ''})`);
+        
+        // Special debug for Change Roles
+        if (item.label === 'Change Roles') {
+          console.log(`  👥 Change Roles permission check:`, {
+            permission: item.permission,
+            fallbackPermission: item.fallbackPermission,
+            hasMainPermission: hasPermission(item.permission),
+            hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
+            hasAccess,
+            previewMode,
+            previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
+          });
+        }
+        
+        // Special debug for Departments
+        if (item.label === 'Departments') {
+          console.log(`  🏢 Departments permission check:`, {
+            permission: item.permission,
+            fallbackPermission: item.fallbackPermission,
+            hasMainPermission: hasPermission(item.permission),
+            hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
+            hasAccess,
+            previewMode,
+            previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
+          });
+        }
+        
+        return hasAccess;
       })
     })).filter(section => section.items.length > 0); // Only show sections with visible items
-  }, [hasPermission]);
+  }, [hasPermission, previewMode, previewPermissions]);
 
   return (
     <>

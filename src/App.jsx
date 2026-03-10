@@ -6,19 +6,25 @@ import { UserProvider } from "../src/context/UserContext.jsx";
 import { ThemeProvider } from "../src/context/ThemeContext.jsx";
 import { UnsavedChangesProvider } from "../src/context/UnsavedChangesContext.jsx";
 import { DepartmentPanelProvider } from "../src/context/DepartmentPanelContext.jsx";
+import { UserStatusProvider } from './context/UserStatusContext.jsx';
+import { RolePreviewProvider } from './context/RolePreviewContext.jsx';
 
 function App() {
-    return (
-      <ThemeProvider>
-        <UserProvider>
-          <UnsavedChangesProvider>
-            <DepartmentPanelProvider>
-              <AppNavigation />
-            </DepartmentPanelProvider>
-          </UnsavedChangesProvider>
-        </UserProvider>
-      </ThemeProvider>
-    );
+  return (
+    <ThemeProvider>
+      <UserProvider>
+        <RolePreviewProvider>
+          <UserStatusProvider>
+            <UnsavedChangesProvider>
+              <DepartmentPanelProvider>
+                <AppNavigation />
+              </DepartmentPanelProvider>
+            </UnsavedChangesProvider>
+          </UserStatusProvider>
+        </RolePreviewProvider>
+      </UserProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;

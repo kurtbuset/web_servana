@@ -12,6 +12,20 @@ export default function CustomerList({
   endedChats = [],
 }) {
   const { isDark } = useTheme();
+
+  // Calculate wait time for queued chats
+  const getWaitTime = (customer) => {
+    if (!customer.created_at) return null;
+    
+    const createdAt = new Date(customer.created_at);
+    const now = new Date();
+    const diffMs = now - createdAt;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins === 1) return '1 min';
+    return `${diffMins} mins`;
+  };
   
   const getStatusBadge = (customer) => {
     if (customer.status === "queued") {
@@ -50,17 +64,20 @@ export default function CustomerList({
       {customers.map((customer) => {
         const isEnded = endedChats.some((chat) => chat.id === customer.id);
         const isSelected = selectedCustomer?.id === customer.id;
+        const isQueued = customer.chat_type === 'queued';
+        const waitTime = isQueued ? getWaitTime(customer) : null;
 
         return (
           <div
             key={customer.id}
-            onClick={() => onCustomerClick(customer)}
-            className={`flex items-center gap-2 px-2 sm:px-2.5 py-1.5 sm:py-2 border rounded-lg cursor-pointer transition-all duration-200 mb-1 sm:mb-1.5 hover:shadow-md group ${
+            className={`flex items-center gap-2 px-2 sm:px-2.5 py-1.5 sm:py-2 border rounded-lg transition-all duration-200 mb-1 sm:mb-1.5 group ${
               isSelected
                 ? "border-[#6237A0] shadow-md"
                 : isEnded
                 ? "opacity-70"
-                : "hover:border-[#6237A0]"
+                : isQueued
+                ? "hover:border-yellow-500 hover:shadow-md"
+                : "hover:border-[#6237A0] hover:shadow-md"
             }`}
             style={
               isSelected 
@@ -69,6 +86,11 @@ export default function CustomerList({
                       ? 'linear-gradient(to right, rgba(139, 92, 246, 0.25), rgba(139, 92, 246, 0.15))' 
                       : 'linear-gradient(to right, #E6DCF7, #F0EBFF)',
                     borderColor: '#6237A0'
+                  }
+                : isQueued
+                ? {
+                    backgroundColor: isDark ? 'rgba(234, 179, 8, 0.1)' : 'rgba(254, 252, 232, 1)',
+                    borderColor: isDark ? 'rgba(234, 179, 8, 0.3)' : 'rgba(250, 204, 21, 0.3)'
                   }
                 : isEnded 
                 ? {
@@ -81,29 +103,37 @@ export default function CustomerList({
                   }
             }
             onMouseEnter={(e) => {
-              if (!isSelected && !isEnded) {
+              if (!isSelected && !isEnded && !isQueued) {
                 e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(245, 243, 255, 0.3)';
               }
             }}
             onMouseLeave={(e) => {
-              if (!isSelected && !isEnded) {
+              if (!isSelected && !isEnded && !isQueued) {
                 e.currentTarget.style.backgroundColor = 'var(--card-bg)';
               }
             }}
           >
             {/* Avatar with status indicator */}
-            <div className="relative flex-shrink-0">
+            <div 
+              className="relative flex-shrink-0 cursor-pointer"
+              onClick={() => onCustomerClick(customer)}
+            >
               <img
                 src={customer.profile || "profile_picture/DefaultProfile.jpg"}
                 alt="profile"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-white shadow-sm"
               />
               {!isEnded && (
-                <div className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 border border-white rounded-full"></div>
+                <div className={`absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 border border-white rounded-full ${
+                  isQueued ? 'bg-yellow-500' : 'bg-green-500'
+                }`}></div>
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div 
+              className="flex-1 min-w-0 cursor-pointer"
+              onClick={() => onCustomerClick(customer)}
+            >
               {/* Department and Status Badges */}
               <div className="flex items-center gap-1 mb-0.5 flex-wrap">
                 <span className="text-[7px] sm:text-[8px] font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-full whitespace-nowrap border border-purple-200">
@@ -130,7 +160,7 @@ export default function CustomerList({
                 {customer.name}
               </p>
 
-              {/* Phone Number and Time */}
+              {/* Phone Number and Time/Wait Time */}
               <div className="flex justify-between items-center gap-1.5">
                 <p
                   className={`text-[9px] sm:text-[10px] truncate ${
@@ -148,17 +178,31 @@ export default function CustomerList({
                 >
                   {customer.number}
                 </p>
-                <span 
-                  className="text-[8px] sm:text-[9px] whitespace-nowrap flex items-center gap-0.5" 
-                  style={{ 
-                    color: isSelected && isDark ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)' 
-                  }}
-                >
-                  <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {customer.time}
-                </span>
+                {isQueued && waitTime ? (
+                  <span 
+                    className="text-[8px] sm:text-[9px] whitespace-nowrap flex items-center gap-0.5 font-medium" 
+                    style={{ 
+                      color: isDark ? 'rgba(234, 179, 8, 0.9)' : 'rgba(161, 98, 7, 1)' 
+                    }}
+                  >
+                    <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Waiting {waitTime}
+                  </span>
+                ) : (
+                  <span 
+                    className="text-[8px] sm:text-[9px] whitespace-nowrap flex items-center gap-0.5" 
+                    style={{ 
+                      color: isSelected && isDark ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)' 
+                    }}
+                  >
+                    <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {customer.time}
+                  </span>
+                )}
               </div>
             </div>
           </div>

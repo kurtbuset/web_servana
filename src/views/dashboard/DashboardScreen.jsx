@@ -6,7 +6,6 @@ import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useDashboard } from "../../hooks/useDashboard";
-import { useQueues } from "../../hooks/useQueues";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
 // Import components
@@ -22,21 +21,13 @@ export default function DashboardScreen() {
     const { isDark } = useTheme();
     const navigate = useNavigate();
     const { stats, loading: dashboardLoading } = useDashboard();
-    const { allCustomers, loading: queuesLoading } = useQueues();
     
     // Analytics period state
     const [period, setPeriod] = useState('weekly');
     const { messageAnalytics, responseTimeAnalytics, dashboardStats, loading: analyticsLoading } = useAnalytics(period);
 
-    // Transform queue data for display
-    const queues = allCustomers.map(customer => ({
-        client: customer.client_name || 'Unknown Client',
-        message: customer.last_message || 'No message',
-        department: customer.department || 'General',
-        waitTime: customer.wait_time || 'Just now',
-        timestamp: customer.created_at ? new Date(customer.created_at).toLocaleString() : 'Unknown',
-        chat_group_id: customer.chat_group_id
-    }));
+    // Empty queues array (removed useQueues dependency)
+    const queues = [];
 
     // Prepare chart data for ApexCharts
     const messagesChartData = {
@@ -58,7 +49,7 @@ export default function DashboardScreen() {
     // Use real dashboard stats or fallback to useDashboard hook
     const displayStats = dashboardStats || stats;
 
-    if (dashboardLoading || queuesLoading || analyticsLoading) {
+    if (dashboardLoading || analyticsLoading) {
         return (
             <Layout>
                 <div className="flex items-center justify-center h-full">
