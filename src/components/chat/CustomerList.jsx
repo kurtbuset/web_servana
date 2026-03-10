@@ -123,11 +123,6 @@ export default function CustomerList({
                 alt="profile"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-white shadow-sm"
               />
-              {!isEnded && (
-                <div className={`absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 border border-white rounded-full ${
-                  isQueued ? 'bg-yellow-500' : 'bg-green-500'
-                }`}></div>
-              )}
             </div>
 
             <div 

@@ -86,10 +86,10 @@ class TokenService {
     this.stopAutoRefresh();
     
     // Clear any stored data
-    localStorage.removeItem('user');
+    // localStorage.removeItem('user');
     
     // Emit logout event for other tabs
-    localStorage.setItem('logout', Date.now().toString());
+    // localStorage.setItem('logout', Date.now().toString());
     
     // Redirect to login
     window.location.href = '/login';

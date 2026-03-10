@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
 import tokenService from "../services/token.service";
+import socket from "../socket/index";
 
 const UserContext = createContext();
 
@@ -13,17 +14,11 @@ export const UserProvider = ({ children }) => {
   const fetchUser = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      // Add timestamp to prevent caching issues
       const timestamp = Date.now();
       console.log(`🔄 UserContext - Fetching user data (${forceRefresh ? 'forced refresh' : 'normal'}) at ${timestamp}`);
       
       const data = await ProfileService.getProfile();
       
-      // Debug logging to see what data we're receiving
-      // console.log("🔍 UserContext - Full profile response:", data);
-      // console.log("🔍 UserContext - User role:", data?.role_name);
-      // console.log("🔍 UserContext - User privileges:", data?.privilege);
-      // console.log("🔍 UserContext - Role ID:", data?.role_id);
       
       // Validate role data
       if (!data?.role_name) {
@@ -81,6 +76,33 @@ export const UserProvider = ({ children }) => {
     };
   }, []);
 
+  // Connect socket when user is authenticated
+  useEffect(() => {
+    if (userData?.sys_user_id) {
+      console.log('🔌 Connecting socket for authenticated user:', userData.sys_user_id);
+      
+      // Update socket auth before connecting
+      socket.auth = (cb) => {
+        cb({
+          userId: userData.sys_user_id,
+          timestamp: Date.now()
+        });
+      };
+      
+      socket.connect();
+    } else {
+      console.log('🔌 Disconnecting socket - no authenticated user');
+      socket.disconnect();
+    }
+    
+    return () => {
+      // Disconnect socket on unmount or logout
+      if (socket.connected) {
+        socket.disconnect();
+      }
+    };
+  }, [userData?.sys_user_id]);
+
   // Update user profile
   const updateProfile = async (data) => {
     try {
@@ -113,14 +135,6 @@ export const UserProvider = ({ children }) => {
       
       // Clear all user data and force fresh fetch on next login
       setUserData(null);
-      
-      // Clear any potential cached data in localStorage/sessionStorage
-      localStorage.removeItem('userData');
-      sessionStorage.removeItem('userData');
-      
-      // Trigger storage event to notify other components (like socket)
-      localStorage.setItem('logout', Date.now().toString());
-      localStorage.removeItem('logout');
       
       return { success: true };
     } catch (err) {

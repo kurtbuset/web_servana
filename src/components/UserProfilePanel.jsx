@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import { useUserStatus } from "../context/UserStatusContext";
+import { useAgentStatus } from "../context/AgentStatusContext";
 import { LogOut } from "react-feather";
 import api from "../api";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
-import socket from "../socket";
+import socket from "../socket/index";
+import { setAgentOffline } from "../socket/emitters";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user
@@ -16,13 +17,13 @@ import socket from "../socket";
 export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  const { getAgentStatus, updateAgentStatus } = useUserStatus();
+  const { getAgentStatus, updateAgentStatus } = useAgentStatus();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Get agent status from context (real-time)
   const agentStatusData = getAgentStatus(userData?.sys_user_id);
-  const agentStatus = agentStatusData.agentStatus || 'offline';
+  const agentStatus = agentStatusData.agentStatus || 'not_accepting_chats';
 
   // Note: Agent status is now managed by UserStatusContext via Socket.IO
   // No need to fetch or listen for status changes here
@@ -75,8 +76,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     try {
       // Emit agent offline event before logout
       if (userData?.sys_user_id && socket.connected) {
-        socket.emit('agentOffline', { userId: userData.sys_user_id });
-        console.log('📡 Emitted agentOffline event');
+        setAgentOffline(socket, userData.sys_user_id);
       }
       
       await api.post("/auth/logout", {}, { withCredentials: true });

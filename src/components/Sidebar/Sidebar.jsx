@@ -19,7 +19,7 @@ import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
-import socket from "../../socket";
+import socket from "../../socket/index";
 import { ROUTES } from "../../constants/routes";
 import ScrollContainer from "../ScrollContainer";
 
@@ -274,11 +274,7 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   });
   
   // Persist collapse state in localStorage (desktop only)
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (isMobile) return false; // Never collapse on mobile
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState()
 
   // Ref to track sidebar scroll position
   const sidebarScrollRef = useRef(null);
@@ -325,11 +321,11 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   }, []);
 
   // Save collapse state to localStorage whenever it changes
-  useEffect(() => {
-    if (!isMobile) {
-      localStorage.setItem('sidebarCollapsed', isCollapsed);
-    }
-  }, [isCollapsed, isMobile]);
+  // useEffect(() => {
+  //   if (!isMobile) {
+  //     localStorage.setItem('sidebarCollapsed', isCollapsed);
+  //   }
+  // }, [isCollapsed, isMobile]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed(prev => !prev);
@@ -405,10 +401,8 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   // Fetch initial chat counts and set up WebSocket listeners
   useEffect(() => {
     if (userData) {
-      // Connect socket if not already connected
-      if (!socket.connected) {
-        socket.connect();
-      }
+      // Socket connection is now managed centrally in UserContext
+      // No need to connect here
 
       // Listen for real-time count updates
       socket.on("chatCountsUpdate", (data) => {
@@ -459,13 +453,6 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
       };
     }
   }, [userData]);
-
-  // Debug logging - must be after all other hooks
-  useEffect(() => {
-    if (isMobile) {
-      console.log('Sidebar mobile state changed:', { isMobile, isOpen });
-    }
-  }, [isMobile, isOpen]);
 
   // Filter navigation sections based on permissions - memoize to prevent recalculation
   const visibleNavSections = useMemo(() => {

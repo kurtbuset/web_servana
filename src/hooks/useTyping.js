@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import socket from '../socket';
+import socket from '../socket/index';
+import { registerTypingEvents } from '../socket/events';
+import { emitTyping as emitTypingEmitter, emitStopTyping as emitStopTypingEmitter } from '../socket/emitters';
 
 /**
  * useTyping hook manages typing indicators
@@ -58,12 +60,13 @@ export const useTyping = (selectedCustomer, getUserId) => {
       }
     };
 
-    socket.on('typing', handleTyping);
-    socket.on('stopTyping', handleStopTyping);
+    const cleanup = registerTypingEvents(socket, {
+      onTyping: handleTyping,
+      onStopTyping: handleStopTyping
+    });
 
     return () => {
-      socket.off('typing', handleTyping);
-      socket.off('stopTyping', handleStopTyping);
+      cleanup();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -74,16 +77,15 @@ export const useTyping = (selectedCustomer, getUserId) => {
    * Emit typing event to server
    */
   const emitTyping = useCallback(() => {
-    if (!selectedCustomer || !socket) return;
+    if (!selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) return;
 
-    socket.emit('typing', {
+    emitTypingEmitter(socket, {
       chatGroupId: selectedCustomer.chat_group_id,
       userName: 'Agent',
-      userId: userId,
-      userType: 'agent',
+      userId: userId
     });
   }, [selectedCustomer, getUserId]);
 
@@ -91,15 +93,14 @@ export const useTyping = (selectedCustomer, getUserId) => {
    * Emit stop typing event to server
    */
   const emitStopTyping = useCallback(() => {
-    if (!selectedCustomer || !socket) return;
+    if (!selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) return;
 
-    socket.emit('stopTyping', {
+    emitStopTypingEmitter(socket, {
       chatGroupId: selectedCustomer.chat_group_id,
-      userId: userId,
-      userType: 'agent',
+      userId: userId
     });
   }, [selectedCustomer, getUserId]);
 

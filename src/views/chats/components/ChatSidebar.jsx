@@ -8,7 +8,6 @@ import ChatSidebarEmpty from "./ChatSidebarEmpty";
  */
 export default function ChatSidebar({
   view,
-  isMobile,
   departments,
   selectedDepartment,
   setSelectedDepartment,
