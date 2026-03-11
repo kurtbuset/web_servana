@@ -6,19 +6,19 @@ import { UserProvider } from "../src/context/UserContext.jsx";
 import { ThemeProvider } from "../src/context/ThemeContext.jsx";
 import { UnsavedChangesProvider } from "../src/context/UnsavedChangesContext.jsx";
 import { DepartmentPanelProvider } from "../src/context/DepartmentPanelContext.jsx";
-import { UserStatusProvider } from './context/UserStatusContext.jsx'
+import { AgentStatusProvider } from './context/AgentStatusContext.jsx';
 
 function App() {
   return (
     <ThemeProvider>
       <UserProvider>
-        <UserStatusProvider>
+        <AgentStatusProvider>
           <UnsavedChangesProvider>
             <DepartmentPanelProvider>
               <AppNavigation />
             </DepartmentPanelProvider>
           </UnsavedChangesProvider>
-        </UserStatusProvider>
+        </AgentStatusProvider>
       </UserProvider>
     </ThemeProvider>
   );

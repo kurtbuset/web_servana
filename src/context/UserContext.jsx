@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
 import tokenService from "../services/token.service";
+import socket from "../socket/index";
 
 const UserContext = createContext();
 
@@ -13,17 +14,11 @@ export const UserProvider = ({ children }) => {
   const fetchUser = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      // Add timestamp to prevent caching issues
       const timestamp = Date.now();
       console.log(`🔄 UserContext - Fetching user data (${forceRefresh ? 'forced refresh' : 'normal'}) at ${timestamp}`);
       
       const data = await ProfileService.getProfile();
       
-      // Debug logging to see what data we're receiving
-      // console.log("🔍 UserContext - Full profile response:", data);
-      // console.log("🔍 UserContext - User role:", data?.role_name);
-      // console.log("🔍 UserContext - User privileges:", data?.privilege);
-      // console.log("🔍 UserContext - Role ID:", data?.role_id);
       
       // Validate role data
       if (!data?.role_name) {
@@ -81,6 +76,61 @@ export const UserProvider = ({ children }) => {
     };
   }, []);
 
+  // Connect socket when user is authenticated
+  useEffect(() => {
+    if (userData?.sys_user_id) {
+      console.log('🔌 Connecting socket for authenticated user:', userData.sys_user_id);
+      
+      // Update socket auth before connecting
+      socket.auth = (cb) => {
+        cb({
+          userId: userData.sys_user_id,
+          timestamp: Date.now()
+        });
+      };
+      
+      // Handle disconnect events specific to user context
+      const handleDisconnect = (reason) => {
+        if (reason === 'io server disconnect') {
+          // Server kicked us out - likely auth failure
+          console.error('🚨 Server disconnected socket - checking authentication...');
+          
+          // Check if we still have valid session
+          setTimeout(async () => {
+            try {
+              await fetchUser();
+              if (!userData) {
+                console.error('🚨 Session invalid - user needs to re-login');
+                // Could trigger logout or show re-login modal here
+              }
+            } catch (error) {
+              console.error('🚨 Failed to verify session:', error);
+            }
+          }, 1000);
+        }
+      };
+      
+      socket.on('disconnect', handleDisconnect);
+      socket.connect();
+      
+      return () => {
+        socket.off('disconnect', handleDisconnect);
+      };
+    } else {
+      console.log('🔌 Disconnecting socket - no authenticated user');
+      if (socket.connected) {
+        socket.disconnect();
+      }
+    }
+    
+    return () => {
+      // Disconnect socket on unmount or logout
+      if (socket.connected) {
+        socket.disconnect();
+      }
+    };
+  }, [userData?.sys_user_id]);
+
   // Update user profile
   const updateProfile = async (data) => {
     try {
@@ -113,14 +163,6 @@ export const UserProvider = ({ children }) => {
       
       // Clear all user data and force fresh fetch on next login
       setUserData(null);
-      
-      // Clear any potential cached data in localStorage/sessionStorage
-      localStorage.removeItem('userData');
-      sessionStorage.removeItem('userData');
-      
-      // Trigger storage event to notify other components (like socket)
-      localStorage.setItem('logout', Date.now().toString());
-      localStorage.removeItem('logout');
       
       return { success: true };
     } catch (err) {

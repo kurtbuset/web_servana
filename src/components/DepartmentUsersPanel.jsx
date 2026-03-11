@@ -1,6 +1,6 @@
   import React, { useState, useEffect, useMemo } from "react";
 import { useUser } from "../context/UserContext";
-import { useUserStatus } from "../context/UserStatusContext";
+import { useAgentStatus } from "../context/AgentStatusContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatLastSeen } from "../utils/timeUtils";
 import { getProfilePictureUrl } from "../utils/imageUtils";
@@ -33,7 +33,7 @@ const CACHE_DURATION = 60000; // 1 minute cache
  */
 const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown = false }) => {
   const { userData } = useUser();
-  const { getAgentStatus, agentStatuses } = useUserStatus();
+  const { getAgentStatus, agentStatuses } = useAgentStatus();
   const { isDark } = useTheme();
   const [departmentsData, setDepartmentsData] = useState(departmentDataCache);
   const [loading, setLoading] = useState(false);
@@ -42,11 +42,6 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
   const [, forceUpdate] = React.useReducer(x => x + 1, 0);
   const [selectedUser, setSelectedUser] = useState(null); // For mini profile modal
   const [previousUserId, setPreviousUserId] = useState(null); // Track previous user to avoid re-animation
-  
-  // Convert Map to array for dependency tracking
-  const agentStatusesArray = React.useMemo(() => {
-    return Array.from(agentStatuses.entries());
-  }, [agentStatuses]);
 
   const departments = userData?.departments || [];
   const currentDepartment = departmentsData[currentDeptIndex];
@@ -361,7 +356,7 @@ export default DepartmentUsersPanel;
  * For non-agents: Uses user status (online, offline)
  */
 function UserListWithSections({ members, isDark, onUserClick }) {
-  const { getAgentStatus, agentStatuses } = useUserStatus();
+  const { getAgentStatus, agentStatuses } = useAgentStatus();
   
   // Convert Map to array for dependency tracking
   const agentStatusesArray = React.useMemo(() => {
@@ -446,7 +441,7 @@ function UserListWithSections({ members, isDark, onUserClick }) {
  * Displays agent status only (accepting_chats, not_accepting_chats, offline)
  */
 function UserCard({ user, isDark, onClick }) {
-  const { getAgentStatus, agentStatuses } = useUserStatus();
+  const { getAgentStatus, agentStatuses } = useAgentStatus();
   const [currentTime, setCurrentTime] = React.useState(Date.now());
   
   // Update current time every 10 seconds to refresh "X mins ago" text
@@ -551,7 +546,7 @@ function UserCard({ user, isDark, onClick }) {
  * Displays agent status only (accepting_chats, not_accepting_chats, offline)
  */
 function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
-  const { getAgentStatus } = useUserStatus();
+  const { getAgentStatus } = useAgentStatus();
   const [position, setPosition] = React.useState({ top: 0, left: 0 });
   const modalRef = React.useRef(null);
   const [isMobile, setIsMobile] = React.useState(false);

@@ -13,6 +13,7 @@ export const ROUTES = {
   
   // Chat
   CHATS: '/Chats',
+  RESOLVED_CHATS: '/ResolvedChats',
   QUEUES: '/Queues',
   
   // Management
@@ -54,12 +55,14 @@ export const ROUTE_GROUPS = {
     ROUTES.MACROS_AGENTS,
     ROUTES.MACROS_CLIENTS,
     ROUTES.CHATS,
+    ROUTES.RESOLVED_CHATS,
     ROUTES.QUEUES,
     ROUTES.PROFILE,
   ],
   AGENT: [
     ROUTES.DASHBOARD,
     ROUTES.CHATS,
+    ROUTES.RESOLVED_CHATS,
     ROUTES.QUEUES,
     ROUTES.MACROS_AGENTS,
     ROUTES.PROFILE,
@@ -67,6 +70,7 @@ export const ROUTE_GROUPS = {
   CLIENT: [
     ROUTES.DASHBOARD,
     ROUTES.CHATS,
+    ROUTES.RESOLVED_CHATS,
     ROUTES.MACROS_CLIENTS,
     ROUTES.PROFILE,
   ],
@@ -86,6 +90,11 @@ export const ROUTE_META = {
   },
   [ROUTES.CHATS]: {
     title: 'Chats',
+    requiresAuth: true,
+    roles: ['Admin', 'Agent', 'Client'],
+  },
+  [ROUTES.RESOLVED_CHATS]: {
+    title: 'Resolved Chats',
     requiresAuth: true,
     roles: ['Admin', 'Agent', 'Client'],
   },

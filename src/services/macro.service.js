@@ -54,21 +54,6 @@ class MacroService {
     const response = await api.get('/departments');
     return response.data;
   }
-
-  // Legacy methods for backward compatibility (can be removed later)
-  /**
-   * @deprecated Use getMacrosByRoleType('agent') instead
-   */
-  static async getAgentMacros() {
-    return this.getMacrosByRoleType('agent');
-  }
-
-  /**
-   * @deprecated Use getMacrosByRoleType('client') instead
-   */
-  static async getClientMacros() {
-    return this.getMacrosByRoleType('client');
-  }
 }
 
 export default MacroService;

@@ -1,11 +1,12 @@
 import { useEffect, useCallback } from 'react';
-import socket from '../socket';
+import socket from '../socket/index';
+import { registerChatEvents } from '../socket/events';
+import { joinChatGroup, leavePreviousRoom, leaveRoom, sendMessage as sendMessageEmitter } from '../socket/emitters';
 
 /**
  * useChatSocket hook manages Socket.IO connections and events
  * 
  * Features:
- * - Auto-connect/disconnect Socket.IO
  * - Join/leave chat rooms
  * - Listen for real-time messages
  * - Listen for customer list updates
@@ -18,6 +19,7 @@ import socket from '../socket';
  * @param {Function} params.onCustomerListUpdate - Callback for customer list updates
  * @param {Function} params.onUserJoined - Callback when user joins room
  * @param {Function} params.onUserLeft - Callback when user leaves room
+ * @param {boolean} params.enabled - Whether socket is enabled (default: true)
  * @returns {Object} Socket actions
  */
 export const useChatSocket = ({
@@ -27,13 +29,13 @@ export const useChatSocket = ({
   onCustomerListUpdate,
   onUserJoined,
   onUserLeft,
+  enabled = true,
 }) => {
   /**
-   * Connect to Socket.IO on mount and handle logout events
+   * Handle logout events to reconnect socket with fresh cookies
    */
   useEffect(() => {
-    socket.connect();
-    console.log('Socket connected');
+    if (!enabled) return;
 
     // Listen for logout events to reconnect socket with fresh cookies
     const handleLogout = () => {
@@ -52,35 +54,36 @@ export const useChatSocket = ({
     });
 
     return () => {
-      socket.disconnect();
-      console.log('Socket disconnected');
       window.removeEventListener('storage', handleLogout);
     };
   }, []);
 
   /**
-   * Listen for customer list updates via Socket.IO
+   * Listen for chat events via Socket.IO
    */
   useEffect(() => {
-    const handleCustomerListUpdate = (updateData) => {
-      console.log('Received customerListUpdate:', updateData);
-      if (onCustomerListUpdate) {
-        onCustomerListUpdate(updateData);
-      }
-    };
+    if (!enabled) return;
 
-    socket.on('customerListUpdate', handleCustomerListUpdate);
+    const cleanup = registerChatEvents(socket, {
+      onMessageReceived: (msg) => {
+        const userId = getUserId();
+        if (onMessageReceived) {
+          onMessageReceived(msg, userId);
+        }
+      },
+      onCustomerListUpdate,
+      onUserJoined,
+      onUserLeft
+    });
 
-    return () => {
-      socket.off('customerListUpdate', handleCustomerListUpdate);
-    };
-  }, [onCustomerListUpdate]);
+    return cleanup;
+  }, [getUserId, onMessageReceived, onCustomerListUpdate, onUserJoined, onUserLeft, enabled]);
 
   /**
    * Join chat group and listen for messages when customer is selected
    */
   useEffect(() => {
-    if (!selectedCustomer) return;
+    if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) {
@@ -92,68 +95,30 @@ export const useChatSocket = ({
     const currentRoomId = selectedCustomer.chat_group_id;
 
     // Leave previous room if agent was in another room
-    socket.emit('leavePreviousRoom');
+    leavePreviousRoom(socket);
 
     // Join new chat group with user info
-    socket.emit('joinChatGroup', {
+    joinChatGroup(socket, {
       groupId: currentRoomId,
       userType: 'agent',
       userId: userId
     });
 
-    console.log(`Agent ${userId} switching to chat_group ${currentRoomId}`);
-
-    const handleReceiveMessage = (msg) => {
-      if (onMessageReceived) {
-        onMessageReceived(msg, userId);
-      }
-    };
-
-    const handleUserJoined = (data) => {
-      console.log(`${data.userType} joined chat_group ${data.chatGroupId}`);
-      if (onUserJoined) {
-        onUserJoined(data);
-      }
-    };
-
-    const handleUserLeft = (data) => {
-      console.log(`${data.userType} left chat_group ${data.chatGroupId}`);
-      if (onUserLeft) {
-        onUserLeft(data);
-      }
-    };
-
-    socket.on('receiveMessage', handleReceiveMessage);
-    socket.on('userJoined', handleUserJoined);
-    socket.on('userLeft', handleUserLeft);
-
     return () => {
-      socket.off('receiveMessage', handleReceiveMessage);
-      socket.off('userJoined', handleUserJoined);
-      socket.off('userLeft', handleUserLeft);
-      
       // Leave room when component unmounts or customer changes
-      socket.emit('leaveRoom', {
+      leaveRoom(socket, {
         roomId: currentRoomId,
         userType: 'agent',
         userId: userId
       });
-      
-      console.log(`Agent ${userId} leaving chat_group ${currentRoomId}`);
     };
-  }, [selectedCustomer?.chat_group_id, getUserId, onMessageReceived, onUserJoined, onUserLeft]);
+  }, [selectedCustomer?.chat_group_id, getUserId, enabled]);
 
   /**
    * Send a message via Socket.IO
    */
   const sendMessage = useCallback((messageBody, chatGroupId, userId) => {
-    if (!messageBody || !chatGroupId || !userId) {
-      console.warn('Missing required parameters for sendMessage');
-      return;
-    }
-
-    console.log('Sending to group:', chatGroupId);
-    socket.emit('sendMessage', {
+    sendMessageEmitter(socket, {
       chat_body: messageBody,
       chat_group_id: chatGroupId,
       sys_user_id: userId,
