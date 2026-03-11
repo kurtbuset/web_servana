@@ -1,5 +1,5 @@
-import ConfirmDialog from "../../../components/chat/ConfirmDialog";
-import TransferModal from "../../../components/chat/TransferModal";
+import ConfirmDialog from "./ConfirmDialog";
+import TransferModal from "./TransferModal";
 
 /**
  * ChatModals - All modal dialogs for the chat interface

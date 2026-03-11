@@ -6,7 +6,7 @@ import { UserProvider } from "../src/context/UserContext.jsx";
 import { ThemeProvider } from "../src/context/ThemeContext.jsx";
 import { UnsavedChangesProvider } from "../src/context/UnsavedChangesContext.jsx";
 import { DepartmentPanelProvider } from "../src/context/DepartmentPanelContext.jsx";
-import { AgentStatusProvider } from './context/AgentStatusContext.jsx'
+import { AgentStatusProvider } from './context/AgentStatusContext.jsx';
 
 function App() {
   return (

@@ -1,5 +1,5 @@
-import DepartmentFilter from "../../../components/chat/DepartmentFilter";
-import CustomerList from "../../../components/chat/CustomerList";
+import DepartmentFilter from "./DepartmentFilter";
+import CustomerList from "./CustomerList";
 import ChatSidebarHeader from "./ChatSidebarHeader";
 import ChatSidebarEmpty from "./ChatSidebarEmpty";
 
@@ -11,13 +11,14 @@ export default function ChatSidebar({
   departments,
   selectedDepartment,
   setSelectedDepartment,
-  filteredCustomers,
+  filteredCustomers = [],
   selectedCustomer,
   loading,
   endedChats,
   showDeptDropdown,
   setShowDeptDropdown,
   onCustomerClick,
+  title = "My chats",
 }) {
   return (
     <div
@@ -26,7 +27,7 @@ export default function ChatSidebar({
       } w-full md:w-[320px] lg:w-[360px] md:rounded-xl shadow-sm border-0 md:border overflow-hidden flex flex-col`}
       style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
     >
-      <ChatSidebarHeader customerCount={filteredCustomers.length} title="My chats" />
+      <ChatSidebarHeader customerCount={filteredCustomers?.length || 0} title={title} />
 
       <DepartmentFilter
         departments={departments}
@@ -43,7 +44,7 @@ export default function ChatSidebar({
             title="Loading Chats"
             message="Fetching active conversations..."
           />
-        ) : filteredCustomers.length > 0 ? (
+        ) : filteredCustomers && filteredCustomers.length > 0 ? (
           <CustomerList
             customers={filteredCustomers}
             selectedCustomer={selectedCustomer}

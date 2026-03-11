@@ -121,6 +121,27 @@ class TokenService {
       console.error('Failed to refresh expiring token:', error);
     });
   }
+
+  /**
+   * Handle new token from socket (for mobile clients)
+   * @param {Object} data - New token data
+   */
+  handleNewToken(data) {
+    console.log('🔄 New token received from socket');
+    
+    // For web clients, token is in HTTP-only cookie
+    // For mobile clients, they should store this token
+    if (data.access_token) {
+      console.log('New access token available');
+      
+      // Mobile clients would store this in secure storage
+      // Web clients don't need to do anything (cookie is already set)
+    }
+    
+    if (data.expires_at) {
+      console.log(`New token expires at: ${new Date(data.expires_at * 1000).toLocaleString()}`);
+    }
+  }
 }
 
 export default new TokenService();

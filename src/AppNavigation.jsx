@@ -17,6 +17,7 @@ import LoginScreen from "./views/login/LoginScreen.jsx";
 // Lazy load all other screens
 const DashboardScreen = lazy(() => import("./views/dashboard/DashboardScreen.jsx"));
 const ChatsScreen = lazy(() => import("./views/chats/ChatsScreen.jsx"));
+const ResolvedChatsScreen = lazy(() => import("./views/resolved/ResolvedChatsScreen.jsx"));
 const DepartmentScreen = lazy(() => import("./views/departments/DepartmentScreen.jsx"));
 const ManageAgentsScreen = lazy(() => import("./views/agents/ManageAgentsScreen.jsx"));
 const RolesScreen = lazy(() => import("./views/roles/RolesScreen.jsx"));
@@ -179,6 +180,16 @@ function AppNavigation() {
             <ProtectedRoute>
               <PermissionRoute permission="priv_can_view_message">
                 <ChatsScreen />
+              </PermissionRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ResolvedChats"
+          element={
+            <ProtectedRoute>
+              <PermissionRoute permission="priv_can_view_message">
+                <ResolvedChatsScreen />
               </PermissionRoute>
             </ProtectedRoute>
           }

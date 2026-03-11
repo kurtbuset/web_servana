@@ -19,6 +19,7 @@ import { joinChatGroup, leavePreviousRoom, leaveRoom, sendMessage as sendMessage
  * @param {Function} params.onCustomerListUpdate - Callback for customer list updates
  * @param {Function} params.onUserJoined - Callback when user joins room
  * @param {Function} params.onUserLeft - Callback when user leaves room
+ * @param {boolean} params.enabled - Whether socket is enabled (default: true)
  * @returns {Object} Socket actions
  */
 export const useChatSocket = ({
@@ -28,11 +29,14 @@ export const useChatSocket = ({
   onCustomerListUpdate,
   onUserJoined,
   onUserLeft,
+  enabled = true,
 }) => {
   /**
    * Handle logout events to reconnect socket with fresh cookies
    */
   useEffect(() => {
+    if (!enabled) return;
+
     // Listen for logout events to reconnect socket with fresh cookies
     const handleLogout = () => {
       console.log('Logout detected - reconnecting socket');
@@ -58,6 +62,8 @@ export const useChatSocket = ({
    * Listen for chat events via Socket.IO
    */
   useEffect(() => {
+    if (!enabled) return;
+
     const cleanup = registerChatEvents(socket, {
       onMessageReceived: (msg) => {
         const userId = getUserId();
@@ -71,13 +77,13 @@ export const useChatSocket = ({
     });
 
     return cleanup;
-  }, [getUserId, onMessageReceived, onCustomerListUpdate, onUserJoined, onUserLeft]);
+  }, [getUserId, onMessageReceived, onCustomerListUpdate, onUserJoined, onUserLeft, enabled]);
 
   /**
    * Join chat group and listen for messages when customer is selected
    */
   useEffect(() => {
-    if (!selectedCustomer) return;
+    if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) {
@@ -106,7 +112,7 @@ export const useChatSocket = ({
         userId: userId
       });
     };
-  }, [selectedCustomer?.chat_group_id, getUserId]);
+  }, [selectedCustomer?.chat_group_id, getUserId, enabled]);
 
   /**
    * Send a message via Socket.IO

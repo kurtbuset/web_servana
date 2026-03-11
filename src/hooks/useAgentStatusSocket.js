@@ -8,6 +8,7 @@ import {
   setAgentOnline,
   getAgentStatuses
 } from '../socket/emitters';
+import { registerAgentEvents } from '../socket/events/agent.events';
 
 /**
  * useAgentStatusSocket hook
@@ -24,9 +25,6 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
    * Handle agent statuses list
    */
   const handleAgentStatusesList = (agents) => {
-    console.log('📋 Received agent statuses list:', agents);
-    console.log('📋 Number of agents:', Object.keys(agents || {}).length);
-    
     const statusMap = new Map();
     
     if (!agents) {
@@ -53,18 +51,27 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
       });
     }
     
-    console.log('✅ Loaded agent statuses for', statusMap.size, 'agents');
     setAgentStatuses(statusMap);
   };
 
   /**
    * Handle agent status changes
    */
-  const handleAgentStatusChanged = ({ userId, agentStatus, lastSeen }) => {
-    console.log('🔄 Agent status changed:', { userId, agentStatus, lastSeen });
+  const handleAgentStatusChanged = (data) => {
+    const { userId, agentStatus, lastSeen } = data || {};
+    
+    // Validate data
+    if (!userId || !agentStatus) {
+      console.warn('⚠️ Invalid agent status change data:', data);
+      return;
+    }
+    
     setAgentStatuses(prev => {
       const newMap = new Map(prev);
-      newMap.set(userId, { agentStatus, lastSeen: new Date(lastSeen) });
+      newMap.set(userId, { 
+        agentStatus, 
+        lastSeen: lastSeen ? new Date(lastSeen) : new Date() 
+      });
       return newMap;
     });
   };
@@ -171,15 +178,18 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
       handleConnect();
     }
 
-    // Listen for socket events
+    // Listen for socket events using centralized event registration
     socket.on('connect', handleConnect);
-    socket.on('agentStatusesList', handleAgentStatusesList);
-    socket.on('agentStatusChanged', handleAgentStatusChanged);
+    
+    // Register agent status events with callbacks
+    const cleanupAgentEvents = registerAgentEvents(socket, {
+      onAgentStatusesList: handleAgentStatusesList,
+      onAgentStatusChanged: handleAgentStatusChanged
+    });
 
     return () => {
       socket.off('connect', handleConnect);
-      socket.off('agentStatusesList', handleAgentStatusesList);
-      socket.off('agentStatusChanged', handleAgentStatusChanged);
+      cleanupAgentEvents(); // Cleanup agent events
       
       // Emit that user is going offline
       if (socket.connected){

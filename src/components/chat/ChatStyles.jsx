@@ -1,4 +1,4 @@
-import { useTheme } from "../../../context/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 
 /**
  * ChatStyles - Scoped styles for the chat interface

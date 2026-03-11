@@ -2,6 +2,7 @@
  * Typing Indicator Socket Emitters
  * Functions to emit typing indicator events to the server
  */
+import * as EVENTS from '../constants/events';
 
 /**
  * Emit typing event
@@ -22,7 +23,7 @@ export const emitTyping = (socket, { chatGroupId, userId, userName }) => {
     return;
   }
 
-  socket.emit('typing', {
+  socket.emit(EVENTS.TYPING, {
     chatGroupId,
     userId,
     userName: userName || 'User'
@@ -47,7 +48,7 @@ export const emitStopTyping = (socket, { chatGroupId, userId }) => {
     return;
   }
 
-  socket.emit('stopTyping', {
+  socket.emit(EVENTS.STOP_TYPING, {
     chatGroupId,
     userId
   });

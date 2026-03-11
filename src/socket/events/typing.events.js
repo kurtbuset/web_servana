@@ -2,6 +2,7 @@
  * Typing Indicator Socket Events
  * Handles typing and stop typing events
  */
+import * as EVENTS from '../constants/events';
 
 /**
  * Register typing event listeners
@@ -32,12 +33,12 @@ export const registerTypingEvents = (socket, callbacks = {}) => {
   };
 
   // Register listeners
-  socket.on('typing', handleTyping);
-  socket.on('stopTyping', handleStopTyping);
+  socket.on(EVENTS.TYPING, handleTyping);
+  socket.on(EVENTS.STOP_TYPING, handleStopTyping);
 
   // Return cleanup function
   return () => {
-    socket.off('typing', handleTyping);
-    socket.off('stopTyping', handleStopTyping);
+    socket.off(EVENTS.TYPING, handleTyping);
+    socket.off(EVENTS.STOP_TYPING, handleStopTyping);
   };
 };

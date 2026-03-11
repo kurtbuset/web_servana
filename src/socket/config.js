@@ -24,6 +24,17 @@ export const getAccessTokenFromCookie = () => {
 export const socketConfig = {
   autoConnect: false,
   withCredentials: true, // ✅ Automatically sends HTTP-only cookies
+  
+  // Reconnection strategy
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  randomizationFactor: 0.5,
+  
+  // Timeout settings
+  timeout: 20000,
+  
   auth: (cb) => {
     // Try to get token from cookie (fallback if cookies are not HTTP-only)
     const token = getAccessTokenFromCookie();

@@ -2,6 +2,7 @@
  * Chat Socket Emitters
  * Functions to emit chat-related events to the server
  */
+import * as EVENTS from '../constants/events';
 
 /**
  * Join a chat group
@@ -17,7 +18,7 @@ export const joinChatGroup = (socket, { groupId, userType, userId }) => {
     return;
   }
 
-  socket.emit('joinChatGroup', {
+  socket.emit(EVENTS.JOIN_CHAT_GROUP, {
     groupId,
     userType,
     userId
@@ -36,7 +37,7 @@ export const leavePreviousRoom = (socket) => {
     return;
   }
 
-  socket.emit('leavePreviousRoom');
+  socket.emit(EVENTS.LEAVE_PREVIOUS_ROOM);
 };
 
 /**
@@ -53,7 +54,7 @@ export const leaveRoom = (socket, { roomId, userType, userId }) => {
     return;
   }
 
-  socket.emit('leaveRoom', {
+  socket.emit(EVENTS.LEAVE_ROOM, {
     roomId,
     userType,
     userId
@@ -85,7 +86,7 @@ export const sendMessage = (socket, message) => {
   }
 
   console.log('Sending to chat group:', chat_group_id);
-  socket.emit('sendMessage', {
+  socket.emit(EVENTS.SEND_MESSAGE, {
     chat_body,
     chat_group_id,
     sys_user_id,

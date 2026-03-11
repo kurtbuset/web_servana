@@ -6,20 +6,17 @@ import ChatContainer from "../../components/chat/ChatContainer";
 import "../../App.css";
 
 /**
- * ChatsScreen - Refactored chat interface
+ * ResolvedChatsScreen - Screen for viewing resolved chats
  * 
- * Uses the unified ChatContainer with mode="active"
+ * Uses the unified ChatContainer with mode="resolved"
  * 
  * Features:
- * - Real-time messaging via Socket.IO
- * - Department filtering
- * - Canned messages
+ * - View resolved chat history
+ * - Department filtering for resolved chats
  * - Message pagination (load more)
- * - End chat functionality
- * - Transfer department
  * - Mobile responsive with chat list/conversation views
  */
-export default function ChatsScreen() {
+export default function ResolvedChatsScreen() {
   const { isDark } = useTheme();
 
   return (
@@ -28,7 +25,7 @@ export default function ChatsScreen() {
       <div className="flex flex-col h-full overflow-hidden relative" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <AnimatedBackground isDark={isDark} />
         <div className="flex flex-col h-full overflow-hidden relative z-10">
-          <ChatContainer mode="active" />
+          <ChatContainer mode="resolved" />
         </div>
       </div>
     </Layout>

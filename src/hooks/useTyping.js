@@ -13,9 +13,10 @@ import { emitTyping as emitTypingEmitter, emitStopTyping as emitStopTypingEmitte
  * 
  * @param {Object} selectedCustomer - Currently selected customer
  * @param {Function} getUserId - Function to get current user ID
+ * @param {boolean} enabled - Whether typing is enabled (default: true)
  * @returns {Object} Typing state and actions
  */
-export const useTyping = (selectedCustomer, getUserId) => {
+export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
   const [typingUserImage, setTypingUserImage] = useState(null);
@@ -25,7 +26,7 @@ export const useTyping = (selectedCustomer, getUserId) => {
    * Listen for typing indicators from clients
    */
   useEffect(() => {
-    if (!selectedCustomer) return;
+    if (!enabled || !selectedCustomer) return;
 
     const handleTyping = (data) => {
       if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
@@ -71,13 +72,13 @@ export const useTyping = (selectedCustomer, getUserId) => {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [selectedCustomer]);
+  }, [selectedCustomer, enabled]);
 
   /**
    * Emit typing event to server
    */
   const emitTyping = useCallback(() => {
-    if (!selectedCustomer) return;
+    if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) return;
@@ -87,13 +88,13 @@ export const useTyping = (selectedCustomer, getUserId) => {
       userName: 'Agent',
       userId: userId
     });
-  }, [selectedCustomer, getUserId]);
+  }, [selectedCustomer, getUserId, enabled]);
 
   /**
    * Emit stop typing event to server
    */
   const emitStopTyping = useCallback(() => {
-    if (!selectedCustomer) return;
+    if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) return;

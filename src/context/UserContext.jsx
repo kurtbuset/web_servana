@@ -89,10 +89,38 @@ export const UserProvider = ({ children }) => {
         });
       };
       
+      // Handle disconnect events specific to user context
+      const handleDisconnect = (reason) => {
+        if (reason === 'io server disconnect') {
+          // Server kicked us out - likely auth failure
+          console.error('🚨 Server disconnected socket - checking authentication...');
+          
+          // Check if we still have valid session
+          setTimeout(async () => {
+            try {
+              await fetchUser();
+              if (!userData) {
+                console.error('🚨 Session invalid - user needs to re-login');
+                // Could trigger logout or show re-login modal here
+              }
+            } catch (error) {
+              console.error('🚨 Failed to verify session:', error);
+            }
+          }, 1000);
+        }
+      };
+      
+      socket.on('disconnect', handleDisconnect);
       socket.connect();
+      
+      return () => {
+        socket.off('disconnect', handleDisconnect);
+      };
     } else {
       console.log('🔌 Disconnecting socket - no authenticated user');
-      socket.disconnect();
+      if (socket.connected) {
+        socket.disconnect();
+      }
     }
     
     return () => {

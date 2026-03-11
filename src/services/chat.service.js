@@ -77,4 +77,23 @@ export class ChatService {
     const response = await api.get('/departments');
     return response.data;
   }
+
+  /**
+   * Get resolved chat groups
+   * @returns {Promise<Array>} Array of resolved chat groups
+   */
+  static async getResolvedChatGroups() {
+    const response = await api.get('/chat/resolved-chatgroups');
+    return response.data;
+  }
+
+  /**
+   * Resolve a chat group (mark as resolved)
+   * @param {number} chatGroupId - The ID of the chat group to resolve
+   * @returns {Promise<Object>} The resolved chat group
+   */
+  static async resolveChat(chatGroupId) {
+    const response = await api.patch(`/chat/${chatGroupId}/resolve`);
+    return response.data;
+  }
 }

@@ -2,6 +2,7 @@
  * Agent Socket Emitters
  * Functions to emit agent-related events to the server
  */
+import * as EVENTS from '../constants/events';
 
 /**
  * Update agent status
@@ -20,7 +21,7 @@ export const updateAgentStatus = (socket, agentStatus) => {
     return;
   }
 
-  socket.emit('updateAgentStatus', { agentStatus });
+  socket.emit(EVENTS.UPDATE_AGENT_STATUS, { agentStatus });
   console.log('📡 Emitted updateAgentStatus:', agentStatus);
 };
 
@@ -34,7 +35,7 @@ export const sendAgentHeartbeat = (socket, userId) => {
     return;
   }
 
-  socket.emit('agentHeartbeat', { userId });
+  socket.emit(EVENTS.AGENT_HEARTBEAT, { userId });
   console.log('💓 Agent heartbeat sent');
 };
 
@@ -48,7 +49,7 @@ export const setAgentOffline = (socket, userId) => {
     return;
   }
 
-  socket.emit('agentOffline', { userId });
+  socket.emit(EVENTS.AGENT_OFFLINE, { userId });
   console.log('😴 Agent marked as offline');
 };
 
@@ -64,7 +65,7 @@ export const sendUserHeartbeat = (socket, userId) => {
     return;
   }
 
-  socket.emit('userHeartbeat', { userId });
+  socket.emit(EVENTS.AGENT_HEARTBEAT, { userId });
   console.log('💓 Heartbeat sent (user active)');
 };
 
@@ -78,7 +79,7 @@ export const setUserOffline = (socket, userId) => {
     return;
   }
 
-  socket.emit('userOffline', { userId });
+  socket.emit(EVENTS.AGENT_OFFLINE, { userId });
   console.log('😴 User marked as offline');
 };
 
@@ -93,7 +94,7 @@ export const setAgentOnline = (socket, userId) => {
     return;
   }
 
-  socket.emit('agentOnline', { userId });
+  socket.emit(EVENTS.AGENT_ONLINE, { userId });
   console.log('📡 Agent online, joining department rooms...');
 };
 
@@ -108,5 +109,5 @@ export const getAgentStatuses = (socket) => {
   }
 
   console.log('📡 Requesting agent statuses from server...');
-  socket.emit('getAgentStatuses');
+  socket.emit(EVENTS.GET_AGENT_STATUSES);
 };
