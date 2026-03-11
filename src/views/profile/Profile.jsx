@@ -188,19 +188,13 @@ export default function Profile() {
   // ---------------- LOGOUT ----------------
   const handleLogout = async () => {
     try {
-      const { clearSocket } = await import('../../socket');
-      clearSocket();
-      
       await api.post("/auth/logout", {}, { withCredentials: true });
-      localStorage.removeItem("token");
-      localStorage.removeItem("userData");
-      localStorage.setItem("logout", Date.now());
       setUserData(null);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error?.response?.data || error?.message);
-      localStorage.removeItem("token");
-      localStorage.removeItem("userData");
+      // localStorage.removeItem("token");
+      // localStorage.removeItem("userData");
       setUserData(null);
       navigate("/");
     }

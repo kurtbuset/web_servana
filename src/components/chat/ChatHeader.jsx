@@ -66,11 +66,6 @@ export default function ChatHeader({
               alt="profile"
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-md group-hover:border-[#6237A0] transition-all group-hover:scale-105"
             />
-            {customer.isAccepted || customer.sys_user_id ? (
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
-            ) : (
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-orange-500 border-2 border-white rounded-full animate-pulse"></div>
-            )}
             {/* Hover indicator */}
             <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center">
               <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,48 +86,11 @@ export default function ChatHeader({
                 </span>
               </div>
             )}
-            {(customer.isAccepted || customer.sys_user_id) && (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
-                <span className="text-[10px] sm:text-xs text-green-600 font-medium">
-                  Active Chat
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Actions */}
         <div className="relative flex items-center gap-2 flex-shrink-0">
-          {/* Department Panel Toggle Button */}
-          {onToggleDepartmentPanel && (
-            <button
-              onClick={onToggleDepartmentPanel}
-              className={`p-2 rounded-lg transition-all ${isDepartmentPanelOpen ? 'bg-[#6237A0] text-white' : ''}`}
-              style={!isDepartmentPanelOpen ? { 
-                color: 'var(--text-secondary)',
-                backgroundColor: isDark ? 'rgba(98, 55, 160, 0.1)' : 'transparent'
-              } : {}}
-              onMouseEnter={(e) => {
-                if (!isDepartmentPanelOpen) {
-                  e.currentTarget.style.color = '#6237A0';
-                  e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.2)' : 'rgba(243, 232, 255, 1)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isDepartmentPanelOpen) {
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                  e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.1)' : 'transparent';
-                }
-              }}
-              title="Toggle Team Panel"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </button>
-          )}
-
           {/* Accept Chat Button */}
           {showAcceptButton && !chatEnded && (
             <button

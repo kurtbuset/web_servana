@@ -1,7 +1,7 @@
-import ChatHeader from "../../../components/chat/ChatHeader";
-import ChatMessages from "../../../components/chat/ChatMessages";
-import MessageInput from "../../../components/chat/MessageInput";
-import AcceptChatButton from "../../../components/chat/AcceptChatButton";
+import ChatHeader from "./ChatHeader";
+import ChatMessages from "./ChatMessages";
+import MessageInput from "./MessageInput";
+import AcceptChatButton from "./AcceptChatButton";
 import ChatMainEmpty from "./ChatMainEmpty";
 
 /**

@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "../../../context/ThemeContext";
-import { useUser } from "../../../context/UserContext";
-import { useDepartmentPanel } from "../../../context/DepartmentPanelContext";
-import { useChat } from "../../../hooks/useChat";
-import { ChatService } from "../../../services/chat.service";
-import { groupMessagesByDate } from "../../../utils/dateFormatters";
+import { useTheme } from "../../context/ThemeContext";
+import { useUser } from "../../context/UserContext";
+import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
+import { useChat } from "../../hooks/useChat";
+import { ChatService } from "../../services/chat.service";
+import { groupMessagesByDate } from "../../utils/dateFormatters";
 import ChatModals from "./ChatModals";
 import ChatSidebar from "./ChatSidebar";
 import ChatMainArea from "./ChatMainArea";
-import ProfilePanel from "../../../components/chat/ProfilePanel";
+import ProfilePanel from "./ProfilePanel";
 
 /**
  * ChatContainer - Main container for the chat interface
  * Manages state and business logic, delegates rendering to child components
+ * 
+ * @param {Object} props
+ * @param {string} props.mode - "active" for active chats, "resolved" for resolved chats
  */
-export default function ChatContainer() {
+export default function ChatContainer({ mode = "active" }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [view, setView] = useState("chatList");
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -32,11 +35,14 @@ export default function ChatContainer() {
 
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canMessage = hasPermission("priv_can_message");
-  const canEndChat = hasPermission("priv_can_end_chat");
-  const canTransfer = hasPermission("priv_can_transfer");
-  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess");
+  
+  const isResolvedMode = mode === 'resolved';
+  const canMessage = hasPermission("priv_can_message") && !isResolvedMode;
+  const canEndChat = hasPermission("priv_can_end_chat") && !isResolvedMode;
+  const canTransfer = hasPermission("priv_can_transfer") && !isResolvedMode;
+  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess") && !isResolvedMode;
 
+  // Use unified hook with mode parameter
   const {
     departments,
     selectedDepartment,
@@ -67,7 +73,7 @@ export default function ChatContainer() {
     transferChat,
     bottomRef,
     textareaRef,
-  } = useChat();
+  } = useChat({ mode });
 
   const toggleDropdown = (name) => {
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -195,8 +201,10 @@ export default function ChatContainer() {
     };
   }, []);
 
-  // Handle canned messages click outside
+  // Handle canned messages click outside (only in active mode)
   useEffect(() => {
+    if (isResolvedMode) return;
+
     function handleClickOutside(e) {
       if (!e.target.closest(".canned-dropdown")) {
         setShowCannedMessages(false);
@@ -204,7 +212,7 @@ export default function ChatContainer() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setShowCannedMessages]);
+  }, [setShowCannedMessages, isResolvedMode]);
 
   // Handle scroll for pagination
   useEffect(() => {
@@ -281,6 +289,7 @@ export default function ChatContainer() {
             showDeptDropdown={showDeptDropdown}
             setShowDeptDropdown={setShowDeptDropdown}
             onCustomerClick={handleChatClick}
+            title={mode === "resolved" ? "Resolved Chats" : "My chats"}
           />
 
           <ChatMainArea

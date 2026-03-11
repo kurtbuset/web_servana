@@ -14,7 +14,7 @@ export default function ChatMainEmpty({ endedChats }) {
           No Chat Selected
         </h3>
         <p className="text-xs md:text-sm max-w-xs mx-auto" style={{ color: 'var(--text-secondary)' }}>
-          {endedChats.length > 0
+          {endedChats && endedChats.length > 0
             ? "Select a customer to start a new conversation"
             : "Select a customer to view chat history"}
         </p>

@@ -20,7 +20,6 @@ import { useRolePreview } from "../../../src/context/RolePreviewContext";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
-import socket from "../../socket";
 import { ROUTES } from "../../constants/routes";
 import ScrollContainer from "../ScrollContainer";
 
@@ -58,6 +57,13 @@ const navSections = [
         permission: "priv_can_view_message", 
         showBadge: true, 
         badgeKey: "activeChats"
+      },
+      { 
+        to: ROUTES.RESOLVED_CHATS, 
+        icon: MessageSquare, 
+        label: "Resolved Chats", 
+        permission: "priv_can_view_message", 
+        showBadge: false
       }
     ]
   },
@@ -289,11 +295,7 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   }, []);
   
   // Persist collapse state in localStorage (desktop only)
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (isMobile) return false; // Never collapse on mobile
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState()
 
   // Ref to track sidebar scroll position
   const sidebarScrollRef = useRef(null);
@@ -340,11 +342,11 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   }, []);
 
   // Save collapse state to localStorage whenever it changes
-  useEffect(() => {
-    if (!isMobile) {
-      localStorage.setItem('sidebarCollapsed', isCollapsed);
-    }
-  }, [isCollapsed, isMobile]);
+  // useEffect(() => {
+  //   if (!isMobile) {
+  //     localStorage.setItem('sidebarCollapsed', isCollapsed);
+  //   }
+  // }, [isCollapsed, isMobile]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed(prev => !prev);
@@ -417,70 +419,9 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
     };
   }, [isMobile, isOpen]);
 
-  // Fetch initial chat counts and set up WebSocket listeners
-  useEffect(() => {
-    if (userData) {
-      // Connect socket if not already connected
-      if (!socket.connected) {
-        socket.connect();
-      }
-
-      // Listen for real-time count updates
-      socket.on("chatCountsUpdate", (data) => {
-        setCounts({
-          pendingChats: data.pendingChats || 0,
-          activeChats: data.activeChats || 0
-        });
-      });
-
-      // Listen for new chat in queue
-      socket.on("newChatInQueue", () => {
-        setCounts(prev => ({
-          ...prev,
-          pendingChats: prev.pendingChats + 1
-        }));
-      });
-
-      // Listen for chat accepted (moved from queue to active)
-      socket.on("chatAccepted", () => {
-        setCounts(prev => ({
-          pendingChats: Math.max(0, prev.pendingChats - 1),
-          activeChats: prev.activeChats + 1
-        }));
-      });
-
-      // Listen for chat closed/resolved
-      socket.on("chatClosed", () => {
-        setCounts(prev => ({
-          ...prev,
-          activeChats: Math.max(0, prev.activeChats - 1)
-        }));
-      });
-
-      // Listen for message read/seen event
-      socket.on("messagesSeen", (data) => {
-        if (data.chatGroupId) {
-          // Optionally refresh counts or handle specific chat
-        }
-      });
-
-      // Cleanup on unmount
-      return () => {
-        socket.off("chatCountsUpdate");
-        socket.off("newChatInQueue");
-        socket.off("chatAccepted");
-        socket.off("chatClosed");
-        socket.off("messagesSeen");
-      };
-    }
-  }, [userData]);
-
-  // Debug logging - must be after all other hooks
-  useEffect(() => {
-    if (isMobile) {
-      console.log('Sidebar mobile state changed:', { isMobile, isOpen });
-    }
-  }, [isMobile, isOpen]);
+  // Note: Chat count badges are currently static
+  // Real-time count updates via socket events are not yet implemented in backend
+  // Future implementation would listen to: chatCountsUpdate, newChatInQueue, chatAccepted, chatClosed, messagesSeen
 
   // Filter navigation sections based on permissions - memoize to prevent recalculation
   const visibleNavSections = useMemo(() => {

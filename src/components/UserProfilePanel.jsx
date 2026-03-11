@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import { useUserStatus } from "../context/UserStatusContext";
+import { useAgentStatus } from "../context/AgentStatusContext";
 import { LogOut } from "react-feather";
 import api from "../api";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
-import socket from "../socket";
+import socket from "../socket/index";
+import { setAgentOffline } from "../socket/emitters";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user
@@ -16,13 +17,28 @@ import socket from "../socket";
 export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  const { getAgentStatus, updateAgentStatus } = useUserStatus();
+  const { getAgentStatus, updateAgentStatus } = useAgentStatus();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Get agent status from context (real-time)
   const agentStatusData = getAgentStatus(userData?.sys_user_id);
-  const agentStatus = agentStatusData.agentStatus || 'offline';
+  const agentStatus = agentStatusData.agentStatus || 'not_accepting_chats';
+
+  // Determine status indicator color based on agent status
+  const getStatusColor = () => {
+    if (!agentStatusData) return 'bg-gray-400'; // Default/offline
+    
+    switch (agentStatusData.agentStatus) {
+      case 'accepting_chats':
+        return 'bg-green-500';
+      case 'not_accepting_chats':
+        return 'bg-red-500';
+      case 'offline':
+      default:
+        return 'bg-gray-400';
+    }
+  };
 
   // Note: Agent status is now managed by UserStatusContext via Socket.IO
   // No need to fetch or listen for status changes here
@@ -75,8 +91,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     try {
       // Emit agent offline event before logout
       if (userData?.sys_user_id && socket.connected) {
-        socket.emit('agentOffline', { userId: userData.sys_user_id });
-        console.log('📡 Emitted agentOffline event');
+        setAgentOffline(socket, userData.sys_user_id);
       }
       
       await api.post("/auth/logout", {}, { withCredentials: true });
@@ -120,7 +135,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
             </h2>
           </div>
 
-          {/* Profile Picture with animated ring */}
+          {/* Profile Picture with animated ring and status indicator */}
           <div className="flex flex-col items-center relative z-10">
             <div className="relative group">
               <div className="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse"></div>
@@ -130,7 +145,20 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
                 alt={fullName}
                 className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-300"
               />
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 border-4 border-white rounded-full z-20 animate-pulse"></div>
+              {/* Dynamic status indicator */}
+              <div 
+                className={`absolute -bottom-1 -right-1 w-7 h-7 border-4 border-white rounded-full z-20 ${getStatusColor()}`}
+                style={{
+                  animation: agentStatusData.agentStatus === 'accepting_chats' ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+                }}
+                title={
+                  agentStatusData.agentStatus === 'accepting_chats' 
+                    ? 'Accepting Chats' 
+                    : agentStatusData.agentStatus === 'not_accepting_chats' 
+                    ? 'Not Accepting Chats' 
+                    : 'Offline'
+                }
+              ></div>
             </div>
             <h3 className="text-xl font-bold mt-4 drop-shadow-lg">{fullName || 'User'}</h3>
             {role && (
@@ -138,13 +166,6 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
                 {role}
               </span>
             )}
-          </div>
-
-          {/* Decorative line */}
-          <div className="mt-4 flex justify-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-white/40"></div>
-            <div className="w-2 h-2 rounded-full bg-white/60"></div>
-            <div className="w-2 h-2 rounded-full bg-white/80"></div>
           </div>
         </div>
 

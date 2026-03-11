@@ -187,11 +187,6 @@ export const SOCKET_EVENTS = {
   NEW_QUEUE_ITEM: 'newQueueItem',
   QUEUE_ACCEPTED: 'queueAccepted',
   QUEUE_REJECTED: 'queueRejected',
-  
-  // Notifications
-  NOTIFICATION: 'notification',
-  USER_ONLINE: 'userOnline',
-  USER_OFFLINE: 'userOffline',
 };
 
 // Pagination

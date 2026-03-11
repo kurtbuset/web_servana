@@ -16,12 +16,17 @@ import { useCustomerListUpdates } from './useCustomerListUpdates';
  * - Message pagination (load more)
  * - Department filtering
  * - Pure state management (no socket logic)
+ * - Supports both active and resolved chat modes
  * 
+ * @param {Object} options - Configuration options
+ * @param {string} options.mode - Chat mode: 'active' or 'resolved' (default: 'active')
  * @returns {Object} Chat state and actions
  */
-export const useChat = () => {
+export const useChat = ({ mode = 'active' } = {}) => {
   // Get user permissions and ID
   const { hasPermission, getUserId } = useUser();
+  
+  const isResolvedMode = mode === 'resolved';
   
   // Chat groups and filtering
   const [departmentCustomers, setDepartmentCustomers] = useState({});
@@ -66,6 +71,7 @@ export const useChat = () => {
   /**
    * Fetch chat groups from API with debouncing
    * Fetches both active chats (assigned to me) and queued chats (in my departments)
+   * Or fetches resolved chats if in resolved mode
    */
   const fetchChatGroups = useCallback(async () => {
     // Prevent simultaneous requests
@@ -87,67 +93,94 @@ export const useChat = () => {
     setError(null);
     
     try {
-      // Fetch both active and queued chats in parallel
-      const [activeChatGroups, queuedChatGroups] = await Promise.all([
-        ChatService.getChatGroups(),
-        QueueService.getQueuedChats()
-      ]);
-
-      const deptMap = {};
-
-      // Process active chats (assigned to me)
-      activeChatGroups.forEach((group) => {
-        const dept = group.department;
-        if (!deptMap[dept]) deptMap[dept] = [];
-        const customerWithDept = { 
-          ...group.customer, 
-          department: dept,
-          chat_type: 'active', // Mark as active chat
-          status: 'active'
-        };
-        deptMap[dept].push(customerWithDept);
-      });
-
-      // Process queued chats (in my departments)
-      queuedChatGroups.forEach((group) => {
-        const dept = group.department;
-        if (!deptMap[dept]) deptMap[dept] = [];
-        const customerWithDept = { 
-          ...group.customer, 
-          department: dept,
-          chat_type: 'queued', // Mark as queued chat
-          status: group.customer.status || 'queued'
-        };
-        deptMap[dept].push(customerWithDept);
-      });
-
-      // Sort each department's chats: active first, then queued
-      Object.keys(deptMap).forEach(dept => {
-        deptMap[dept].sort((a, b) => {
-          // Active chats first
-          if (a.chat_type === 'active' && b.chat_type === 'queued') return -1;
-          if (a.chat_type === 'queued' && b.chat_type === 'active') return 1;
-          // Within same type, sort by time (most recent first)
-          return 0;
+      if (isResolvedMode) {
+        // Fetch resolved chats only
+        const resolvedChatGroups = await ChatService.getResolvedChatGroups();
+        
+        const deptMap = {};
+        
+        // Process resolved chats
+        resolvedChatGroups.forEach((group) => {
+          const dept = group.department;
+          if (!deptMap[dept]) deptMap[dept] = [];
+          const customerWithDept = { 
+            ...group.customer, 
+            department: dept,
+            chat_type: 'resolved',
+            status: 'resolved'
+          };
+          deptMap[dept].push(customerWithDept);
         });
-      });
 
-      setDepartmentCustomers(deptMap);
-      const departmentList = ['All', ...Object.keys(deptMap)];
-      setDepartments(departmentList);
-      setSelectedDepartment((prev) => prev || 'All');
-      
-      return deptMap;
+        setDepartmentCustomers(deptMap);
+        const departmentList = ['All', ...Object.keys(deptMap)];
+        setDepartments(departmentList);
+        setSelectedDepartment((prev) => prev || 'All');
+        
+        return deptMap;
+      } else {
+        // Fetch both active and queued chats in parallel
+        const [activeChatGroups, queuedChatGroups] = await Promise.all([
+          ChatService.getChatGroups(),
+          QueueService.getQueuedChats()
+        ]);
+
+        const deptMap = {};
+
+        // Process active chats (assigned to me)
+        activeChatGroups.forEach((group) => {
+          const dept = group.department;
+          if (!deptMap[dept]) deptMap[dept] = [];
+          const customerWithDept = { 
+            ...group.customer, 
+            department: dept,
+            chat_type: 'active', // Mark as active chat
+            status: 'active'
+          };
+          deptMap[dept].push(customerWithDept);
+        });
+
+        // Process queued chats (in my departments)
+        queuedChatGroups.forEach((group) => {
+          const dept = group.department;
+          if (!deptMap[dept]) deptMap[dept] = [];
+          const customerWithDept = { 
+            ...group.customer, 
+            department: dept,
+            chat_type: 'queued', // Mark as queued chat
+            status: group.customer.status || 'queued'
+          };
+          deptMap[dept].push(customerWithDept);
+        });
+
+        // Sort each department's chats: active first, then queued
+        Object.keys(deptMap).forEach(dept => {
+          deptMap[dept].sort((a, b) => {
+            // Active chats first
+            if (a.chat_type === 'active' && b.chat_type === 'queued') return -1;
+            if (a.chat_type === 'queued' && b.chat_type === 'active') return 1;
+            // Within same type, sort by time (most recent first)
+            return 0;
+          });
+        });
+
+        setDepartmentCustomers(deptMap);
+        const departmentList = ['All', ...Object.keys(deptMap)];
+        setDepartments(departmentList);
+        setSelectedDepartment((prev) => prev || 'All');
+        
+        return deptMap;
+      }
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to load chat groups';
+      const errorMessage = err.response?.data?.error || `Failed to load ${isResolvedMode ? 'resolved' : 'active'} chat groups`;
       setError(errorMessage);
-      console.error('Failed to load chat groups:', err);
+      console.error(`Failed to load ${isResolvedMode ? 'resolved' : 'active'} chat groups:`, err);
       throw err;
     } finally {
       setLoading(false);
       fetchInProgressRef.current = false;
     }
-  }, []);
+  }, [isResolvedMode]);
 
   /**
    * Handle message received from socket
@@ -176,21 +209,22 @@ export const useChat = () => {
     });
   }, []);
 
-  // Initialize socket connection and listeners
+  // Initialize socket connection and listeners (only for active mode)
   const { sendMessage: socketSendMessage } = useChatSocket({
     selectedCustomer,
     getUserId,
     onMessageReceived: handleMessageReceived,
     onCustomerListUpdate: handleCustomerListUpdate,
+    enabled: !isResolvedMode, // Disable socket for resolved mode
   });
 
-  // Initialize typing indicators
+  // Initialize typing indicators (only for active mode)
   const {
     isTyping,
     typingUser,
     typingUserImage,
     handleTypingWithTimeout,
-  } = useTyping(selectedCustomer, getUserId);
+  } = useTyping(selectedCustomer, getUserId, !isResolvedMode);
 
   /**
    * Initial fetch on mount
@@ -200,9 +234,15 @@ export const useChat = () => {
   }, [fetchChatGroups]);
 
   /**
-   * Fetch canned messages for current user's role
+   * Fetch canned messages for current user's role (only in active mode)
    */
   const fetchCannedMessages = useCallback(async () => {
+    // Skip if in resolved mode
+    if (isResolvedMode) {
+      setCannedMessages([]);
+      return;
+    }
+
     // Check permission before fetching
     if (!hasPermission("priv_can_use_canned_mess")) {
       console.log("User does not have permission to use canned messages");
@@ -219,19 +259,25 @@ export const useChat = () => {
       console.error('Failed to load canned messages:', err);
       // Don't show error toast for canned messages - not critical
     }
-  }, [hasPermission]);
+  }, [hasPermission, isResolvedMode]);
 
   /**
-   * Load canned messages on mount only
+   * Load canned messages on mount only (skip in resolved mode)
    */
   useEffect(() => {
+    // Skip if in resolved mode
+    if (isResolvedMode) {
+      setCannedMessages([]);
+      return;
+    }
+
     // Only fetch if user has permission
     if (hasPermission("priv_can_use_canned_mess")) {
       fetchCannedMessages();
     } else {
       setCannedMessages([]);
     }
-  }, [hasPermission, fetchCannedMessages]);
+  }, [hasPermission, fetchCannedMessages, isResolvedMode]);
 
   /**
    * Determine frontend sender type for message display
@@ -322,7 +368,11 @@ export const useChat = () => {
    */
   const selectCustomer = useCallback(async (customer) => {
     setSelectedCustomer(customer);
-    setChatEnded(endedChats.some((chat) => chat.id === customer.id));
+    // Check if chat is ended: either in endedChats array or has resolved status
+    const isEnded = endedChats.some((chat) => chat.id === customer.id) || 
+                    customer.status === 'resolved' || 
+                    customer.chat_type === 'resolved';
+    setChatEnded(isEnded);
     setMessages([]);
     setEarliestMessageTime(null);
     setHasMoreMessages(true);
@@ -355,7 +405,7 @@ export const useChat = () => {
   /**
    * End the current chat
    */
-  const endChat = useCallback(() => {
+  const endChat = useCallback(async () => {
     // Check permission first
     if (!hasPermission("priv_can_end_chat")) {
       console.warn("User does not have permission to end chats");
@@ -365,33 +415,43 @@ export const useChat = () => {
 
     if (!selectedCustomer) return;
 
-    setChatEnded(true);
+    try {
+      // Call API to resolve the chat in the database
+      await ChatService.resolveChat(selectedCustomer.chat_group_id);
+      
+      setChatEnded(true);
 
-    const now = new Date();
-    const endMessage = {
-      id: messages.length + 1,
-      sender: 'system',
-      content: 'Thank you for your patience. Your chat has ended.',
-      timestamp: now.toISOString(),
-      displayTime: now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
+      const now = new Date();
+      const endMessage = {
+        id: messages.length + 1,
+        sender: 'system',
+        content: 'Thank you for your patience. Your chat has ended.',
+        timestamp: now.toISOString(),
+        displayTime: now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
 
-    setMessages((prev) => [...prev, endMessage]);
+      setMessages((prev) => [...prev, endMessage]);
 
-    setEndedChats((prev) => [
-      ...prev,
-      {
-        ...selectedCustomer,
-        messages: [...messages, endMessage],
-        endedAt: now.toISOString(),
-      },
-    ]);
+      setEndedChats((prev) => [
+        ...prev,
+        {
+          ...selectedCustomer,
+          messages: [...messages, endMessage],
+          endedAt: now.toISOString(),
+        },
+      ]);
 
-    setSelectedCustomer(null);
-    setMessages([]);
+      setSelectedCustomer(null);
+      setMessages([]);
+      
+      toast.success("Chat ended successfully");
+    } catch (err) {
+      console.error("Error ending chat:", err);
+      toast.error("Failed to end chat");
+    }
   }, [selectedCustomer, messages, hasPermission]);
 
   /**
@@ -551,6 +611,10 @@ export const useChat = () => {
       : departmentCustomers[selectedDepartment] || [];
 
   return {
+    // Mode
+    mode,
+    isResolvedMode,
+    
     // Chat groups
     departmentCustomers,
     departments,

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import socket from '../socket';
+import socket from '../socket/index';
+import { registerTypingEvents } from '../socket/events';
+import { emitTyping as emitTypingEmitter, emitStopTyping as emitStopTypingEmitter } from '../socket/emitters';
 
 /**
  * useTyping hook manages typing indicators
@@ -11,9 +13,10 @@ import socket from '../socket';
  * 
  * @param {Object} selectedCustomer - Currently selected customer
  * @param {Function} getUserId - Function to get current user ID
+ * @param {boolean} enabled - Whether typing is enabled (default: true)
  * @returns {Object} Typing state and actions
  */
-export const useTyping = (selectedCustomer, getUserId) => {
+export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
   const [typingUserImage, setTypingUserImage] = useState(null);
@@ -23,7 +26,7 @@ export const useTyping = (selectedCustomer, getUserId) => {
    * Listen for typing indicators from clients
    */
   useEffect(() => {
-    if (!selectedCustomer) return;
+    if (!enabled || !selectedCustomer) return;
 
     const handleTyping = (data) => {
       if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
@@ -58,48 +61,47 @@ export const useTyping = (selectedCustomer, getUserId) => {
       }
     };
 
-    socket.on('typing', handleTyping);
-    socket.on('stopTyping', handleStopTyping);
+    const cleanup = registerTypingEvents(socket, {
+      onTyping: handleTyping,
+      onStopTyping: handleStopTyping
+    });
 
     return () => {
-      socket.off('typing', handleTyping);
-      socket.off('stopTyping', handleStopTyping);
+      cleanup();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [selectedCustomer]);
+  }, [selectedCustomer, enabled]);
 
   /**
    * Emit typing event to server
    */
   const emitTyping = useCallback(() => {
-    if (!selectedCustomer || !socket) return;
+    if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) return;
 
-    socket.emit('typing', {
+    emitTypingEmitter(socket, {
       chatGroupId: selectedCustomer.chat_group_id,
       userName: 'Agent',
-      userId: userId,
-      userType: 'agent',
+      userId: userId
     });
-  }, [selectedCustomer, getUserId]);
+  }, [selectedCustomer, getUserId, enabled]);
 
   /**
    * Emit stop typing event to server
    */
   const emitStopTyping = useCallback(() => {
-    if (!selectedCustomer || !socket) return;
+    if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) return;
 
-    socket.emit('stopTyping', {
+    emitStopTypingEmitter(socket, {
       chatGroupId: selectedCustomer.chat_group_id,
-      userId: userId,
-      userType: 'agent',
+      userId: userId
     });
   }, [selectedCustomer, getUserId]);
 
