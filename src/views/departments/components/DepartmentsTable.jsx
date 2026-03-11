@@ -11,7 +11,7 @@ export default function DepartmentsTable({
   searchQuery,
   sortBy,
   onSortChange,
-  canEditDepartment,
+  canEditDepartments,
   isDark,
   onEdit,
   onToggleStatus
@@ -60,7 +60,7 @@ export default function DepartmentsTable({
               <DepartmentTableRow
                 key={dept.dept_id}
                 department={dept}
-                canEditDepartment={canEditDepartment}
+                canEditDepartments={canEditDepartments}
                 isDark={isDark}
                 onEdit={() => onEdit(dept)}
                 onToggleStatus={() => onToggleStatus(dept.dept_id, dept.dept_is_active)}

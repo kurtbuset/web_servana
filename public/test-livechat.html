@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveChat Test Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+    button {
+      background: #6237A0;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { background: #7A4ED9; }
+    pre {
+      background: #fff;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 LiveChat Widget Diagnostic Test</h1>
+  <p>This page tests if LiveChat widget loads correctly with your license.</p>
+  
+  <div id="status"></div>
+  
+  <h2>Manual Tests:</h2>
+  <button onclick="testWidget()">Test Widget Status</button>
+  <button onclick="openWidget()">Open Widget</button>
+  <button onclick="checkLicense()">Check License</button>
+  <button onclick="checkNetwork()">Check Network</button>
+  
+  <h2>Diagnostic Results:</h2>
+  <pre id="results"></pre>
+
+  <!-- Start of LiveChat code -->
+  <script>
+    window.__lc = window.__lc || {};
+    window.__lc.license = 19540394;
+    window.__lc.integration_name = "manual_channels";
+    window.__lc.product_name = "livechat";
+    
+    // Add event listeners for debugging
+    window.__lc.on_after_load = function() {
+      log('✅ LiveChat loaded successfully!', 'success');
+    };
+    
+    ;(function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[LiveChatWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.livechatinc.com/tracking.js",t.head.appendChild(n)}};!n.__lc.asyncInit&&e.init(),n.LiveChatWidget=n.LiveChatWidget||e}(window,document,[].slice))
+  </script>
+  <!-- End of LiveChat code -->
+
+  <script>
+    const resultsEl = document.getElementById('results');
+    const statusEl = document.getElementById('status');
+    
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.textContent = message;
+      statusEl.appendChild(div);
+      
+      resultsEl.textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+      console.log(message);
+    }
+
+    function testWidget() {
+      resultsEl.textContent = '';
+      log('🔍 Running diagnostic tests...', 'info');
+      
+      // Test 1: Check if LiveChatWidget exists
+      if (typeof window.LiveChatWidget !== 'undefined') {
+        log('✅ LiveChatWidget object exists', 'success');
+      } else {
+        log('❌ LiveChatWidget object NOT found', 'error');
+      }
+      
+      // Test 2: Check license
+      if (window.__lc && window.__lc.license) {
+        log(`✅ License configured: ${window.__lc.license}`, 'success');
+      } else {
+        log('❌ License NOT configured', 'error');
+      }
+      
+      // Test 3: Check if script loaded
+      const scripts = document.querySelectorAll('script[src*="livechatinc.com"]');
+      if (scripts.length > 0) {
+        log(`✅ LiveChat script tag found (${scripts.length})`, 'success');
+        scripts.forEach((script, i) => {
+          log(`   Script ${i + 1}: ${script.src}`, 'info');
+        });
+      } else {
+        log('❌ LiveChat script tag NOT found', 'error');
+      }
+      
+      // Test 4: Check widget state
+      try {
+        if (window.LiveChatWidget) {
+          const state = window.LiveChatWidget.get('state');
+          log(`✅ Widget state: ${JSON.stringify(state)}`, 'success');
+        }
+      } catch (e) {
+        log(`⚠️ Could not get widget state: ${e.message}`, 'info');
+      }
+    }
+
+    function openWidget() {
+      try {
+        if (window.LiveChatWidget) {
+          window.LiveChatWidget.call('maximize');
+          log('✅ Attempted to open widget', 'success');
+        } else {
+          log('❌ Widget not available', 'error');
+        }
+      } catch (e) {
+        log(`❌ Error opening widget: ${e.message}`, 'error');
+      }
+    }
+
+    function checkLicense() {
+      resultsEl.textContent = '';
+      log('License Information:', 'info');
+      log(`License ID: ${window.__lc.license || 'NOT SET'}`, 'info');
+      log(`Integration: ${window.__lc.integration_name || 'NOT SET'}`, 'info');
+      log(`Product: ${window.__lc.product_name || 'NOT SET'}`, 'info');
+    }
+
+    function checkNetwork() {
+      resultsEl.textContent = '';
+      log('🌐 Checking network connectivity...', 'info');
+      
+      fetch('https://cdn.livechatinc.com/tracking.js')
+        .then(response => {
+          if (response.ok) {
+            log('✅ Can reach LiveChat CDN', 'success');
+            log(`   Status: ${response.status}`, 'info');
+          } else {
+            log(`❌ LiveChat CDN returned error: ${response.status}`, 'error');
+          }
+        })
+        .catch(error => {
+          log(`❌ Cannot reach LiveChat CDN: ${error.message}`, 'error');
+          log('   Possible causes: Network issue, firewall, or ad blocker', 'info');
+        });
+    }
+
+    // Auto-run tests after 2 seconds
+    setTimeout(() => {
+      log('🚀 Auto-running diagnostic tests...', 'info');
+      testWidget();
+    }, 2000);
+
+    // Listen for errors
+    window.addEventListener('error', (e) => {
+      if (e.filename && e.filename.includes('livechat')) {
+        log(`❌ Script error: ${e.message}`, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

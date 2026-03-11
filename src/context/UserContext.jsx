@@ -58,7 +58,7 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Force refresh user data (useful after login/logout)
+  // Force refresh user data (useful after login/logout or permission changes)
   const refreshUserData = async () => {
     console.log("🔄 Force refreshing user data...");
     await fetchUser(true);
@@ -129,7 +129,7 @@ export const UserProvider = ({ children }) => {
         socket.disconnect();
       }
     };
-  }, [userData?.sys_user_id]);
+  }, []);
 
   // Update user profile
   const updateProfile = async (data) => {
@@ -171,7 +171,24 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const hasPermission = (permission) => {
+  const hasPermission = (permission, usePreview = true) => {
+    // Check if we should use preview permissions (from RolePreviewContext)
+    if (usePreview && window.__rolePreviewPermissions) {
+      const previewValue = window.__rolePreviewPermissions[permission];
+      console.log(`🎭 [PREVIEW] Checking permission ${permission}: ${previewValue}`);
+      
+      // Special debug for change roles permissions
+      if (permission === 'priv_can_view_change_roles') {
+        console.log(`🎭 [PREVIEW DEBUG] Change Roles View Permission:`, {
+          permission,
+          previewValue,
+          allPreviewPermissions: window.__rolePreviewPermissions
+        });
+      }
+      
+      return previewValue === true;
+    }
+
     // Remove admin override - everyone goes through privilege table
     if (!userData?.privilege) {
       console.warn(`🚨 hasPermission(${permission}): No privilege data available`);
@@ -185,6 +202,13 @@ export const UserProvider = ({ children }) => {
     }
     
     const privilegeValue = userData.privilege[permission];
+    
+    // Handle undefined values (new permissions that don't exist in DB yet)
+    if (privilegeValue === undefined) {
+      console.warn(`⚠️ Permission ${permission} is undefined - likely missing from database. Defaulting to false.`);
+      return false;
+    }
+    
     const result = privilegeValue === true;
     
     // console.log(`🔍 hasPermission(${permission}): ${result} (raw value: ${privilegeValue}, type: ${typeof privilegeValue})`);

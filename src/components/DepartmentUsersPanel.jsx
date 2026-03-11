@@ -13,18 +13,18 @@ const CACHE_DURATION = 60000; // 1 minute cache
 
 /**
  * DepartmentUsersPanel - Discord-style right sidebar showing department team members
- * Collapsible, responsive, with theme-matching colors
+ * 
+ * This is a re-export of the modular component structure.
+ * See ./DepartmentUsersPanel/ folder for individual components.
  * 
  * Usage:
  * ```jsx
  * const [isDepartmentPanelOpen, setIsDepartmentPanelOpen] = useState(false);
  * 
- * // Toggle button
  * <button onClick={() => setIsDepartmentPanelOpen(!isDepartmentPanelOpen)}>
  *   Toggle Department Panel
  * </button>
  * 
- * // Panel component
  * <DepartmentUsersPanel 
  *   isOpen={isDepartmentPanelOpen} 
  *   onClose={() => setIsDepartmentPanelOpen(false)} 

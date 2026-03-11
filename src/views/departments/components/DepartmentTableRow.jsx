@@ -6,7 +6,7 @@ import ToggleSwitch from '../../../components/ToggleSwitch';
  */
 export default function DepartmentTableRow({
   department,
-  canEditDepartment,
+  canEditDepartments,
   isDark,
   onEdit,
   onToggleStatus
@@ -29,24 +29,24 @@ export default function DepartmentTableRow({
           </p>
           <button
             onClick={onEdit}
-            disabled={!canEditDepartment}
+            disabled={!canEditDepartments}
             className={`flex-shrink-0 p-1 rounded transition-colors ${
-              canEditDepartment
+              canEditDepartments
                 ? "hover:text-[#6237A0]"
                 : "cursor-not-allowed"
             }`}
-            style={canEditDepartment ? { color: 'var(--text-secondary)' } : { color: isDark ? '#4a4a4a' : '#d1d5db' }}
+            style={canEditDepartments ? { color: 'var(--text-secondary)' } : { color: isDark ? '#4a4a4a' : '#d1d5db' }}
             onMouseEnter={(e) => {
-              if (canEditDepartment) {
+              if (canEditDepartments) {
                 e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(243, 232, 255, 1)';
               }
             }}
             onMouseLeave={(e) => {
-              if (canEditDepartment) {
+              if (canEditDepartments) {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }
             }}
-            title={!canEditDepartment ? "You don't have permission to edit departments" : "Edit"}
+            title={!canEditDepartments ? "You don't have permission to edit departments" : "Edit"}
           >
             <Edit3 size={14} />
           </button>
@@ -56,12 +56,12 @@ export default function DepartmentTableRow({
       <td className="py-2 px-2.5 sm:px-3 text-center">
         <div
           className="inline-block"
-          title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
+          title={!canEditDepartments ? "You don't have permission to edit departments" : ""}
         >
           <ToggleSwitch
             checked={department.dept_is_active}
             onChange={onToggleStatus}
-            disabled={!canEditDepartment}
+            disabled={!canEditDepartments}
             size="md"
           />
         </div>

@@ -53,9 +53,15 @@ export default function MacrosAgentsScreen() {
   }, []);
   
   // Get user ID from UserContext
-  const { getUserId } = useUser();
+  const { getUserId, hasPermission } = useUser();
   const currentUserId = getUserId();
   const { isDark } = useTheme();
+  
+  // Macro permissions
+  const canViewMacros = hasPermission("priv_can_view_macros");
+  const canAddMacros = hasPermission("priv_can_add_macros");
+  const canEditMacros = hasPermission("priv_can_edit_macros");
+  const canDeleteMacros = hasPermission("priv_can_delete_macros");
 
   // Use the macros hook with "agent" role type
   const {
@@ -69,6 +75,31 @@ export default function MacrosAgentsScreen() {
     deleteMacro,
     changeDepartment,
   } = useMacros('agent');
+
+  // Check if user has permission to view macros
+  if (!canViewMacros) {
+    return (
+      <Layout>
+        <ScreenContainer>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-5V9m0 0V7m0 2h2m-2 0H10" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                Access Denied
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                You don't have permission to view agent macros.
+              </p>
+            </div>
+          </div>
+        </ScreenContainer>
+      </Layout>
+    );
+  }
 
   // Filter macros based on search and selected department
   const filteredReplies = macros.filter((reply) => {
@@ -130,6 +161,11 @@ export default function MacrosAgentsScreen() {
   const handleSaveMacro = async () => {
     if (currentEditId !== null) {
       // Update existing macro
+      if (!canEditMacros) {
+        console.warn("User does not have permission to edit macros");
+        return;
+      }
+      
       const macro = macros.find((m) => m.id === currentEditId);
       if (!macro) return;
 
@@ -149,6 +185,11 @@ export default function MacrosAgentsScreen() {
       }
     } else {
       // Create new macro with selected department
+      if (!canAddMacros) {
+        console.warn("User does not have permission to add macros");
+        return;
+      }
+      
       const selectedDept = departments.find(
         (dept) => dept.dept_name === modalDepartment
       );
@@ -165,10 +206,19 @@ export default function MacrosAgentsScreen() {
   };
 
   const handleToggleActive = (id) => {
+    if (!canEditMacros) {
+      console.warn("User does not have permission to edit macros");
+      return;
+    }
     toggleActive(id, currentUserId);
   };
 
   const handleDeleteMacro = async () => {
+    if (!canDeleteMacros) {
+      console.warn("User does not have permission to delete macros");
+      return;
+    }
+    
     if (selectedMacroId) {
       const success = await deleteMacro(selectedMacroId, currentUserId);
       if (success) {
@@ -179,6 +229,11 @@ export default function MacrosAgentsScreen() {
   };
 
   const handleTransferMacro = async () => {
+    if (!canEditMacros) {
+      console.warn("User does not have permission to edit macros");
+      return;
+    }
+    
     if (selectedMacroId && transferToDept !== '') {
       const dept_id = transferToDept === 'All' ? null : parseInt(transferToDept);
       const success = await changeDepartment(selectedMacroId, dept_id, currentUserId);
@@ -220,12 +275,26 @@ export default function MacrosAgentsScreen() {
               {/* Add Button */}
               <button
                 onClick={() => {
+                  if (!canAddMacros) {
+                    console.warn("User does not have permission to add macros");
+                    return;
+                  }
                   setEditText('');
                   setCurrentEditId(null);
                   setModalDepartment('All');
                   setIsModalOpen(true);
                 }}
-                className="bg-[#6237A0] text-white px-3 py-1.5 rounded-lg text-xs hover:bg-[#552C8C] transition-colors whitespace-nowrap font-medium"
+                disabled={!canAddMacros}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                  canAddMacros
+                    ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
+                    : "cursor-not-allowed"
+                }`}
+                style={!canAddMacros ? {
+                  backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
+                  color: isDark ? '#9ca3af' : '#6b7280'
+                } : {}}
+                title={!canAddMacros ? "You don't have permission to add macros" : ""}
               >
                 + Add Macro
               </button>
@@ -301,18 +370,32 @@ export default function MacrosAgentsScreen() {
                         departments={departments}
                         sortBy={sortBy}
                         onSortChange={setSortBy}
+                        canEditMacros={canEditMacros}
+                        canDeleteMacros={canDeleteMacros}
                         onEdit={(reply) => {
+                          if (!canEditMacros) {
+                            console.warn("User does not have permission to edit macros");
+                            return;
+                          }
                           setCurrentEditId(reply.id);
                           setEditText(reply.text);
                           setIsModalOpen(true);
                         }}
                         onToggleActive={handleToggleActive}
                         onTransfer={(reply) => {
+                          if (!canEditMacros) {
+                            console.warn("User does not have permission to edit macros");
+                            return;
+                          }
                           setSelectedMacroId(reply.id);
                           setTransferToDept(reply.dept_id?.toString() || 'All');
                           setTransferModalOpen(true);
                         }}
                         onDelete={(id) => {
+                          if (!canDeleteMacros) {
+                            console.warn("User does not have permission to delete macros");
+                            return;
+                          }
                           setSelectedMacroId(id);
                           setDeleteModalOpen(true);
                         }}

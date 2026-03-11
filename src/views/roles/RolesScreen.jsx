@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Settings, Users, Shield, MessageSquare, HelpCircle } from "react-feather";
+import { Plus, Settings, Users, Shield, MessageSquare, MessageCircle, HelpCircle } from "react-feather";
 import Layout from "../../components/Layout";
 import ScreenContainer from "../../components/ScreenContainer";
 import Modal from "../../components/Modal";
@@ -19,6 +19,7 @@ import {
 import { useUser } from "../../../src/context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import { useRolePreview } from "../../context/RolePreviewContext";
 import { useRoles } from "../../hooks/useRoles";
 import RoleService from "../../services/role.service";
 import toast from "../../utils/toast";
@@ -36,15 +37,51 @@ const PERMISSION_CATEGORIES = {
       { key: "Can send Macros", description: "Allows members to use predefined message templates" },
     ]
   },
-  "Management Permissions": {
+  "Department Management": {
     icon: Settings,
     permissions: [
-      { key: "Can Edit Department", description: "Allows members to create, edit, and manage departments" },
+      { key: "Can View Departments", description: "Allows members to view the departments list and details" },
+      { key: "Can Add Departments", description: "Allows members to create new departments" },
+      { key: "Can Edit Departments", description: "Allows members to modify existing departments" },
       { key: "Can Assign Department", description: "Allows members to assign users to departments" },
-      { key: "Can Edit Roles", description: "Allows members to create and modify user roles" },
-      { key: "Can Assign Roles", description: "Allows members to assign roles to other users" },
+    ]
+  },
+  "Auto-Replies Management": {
+    icon: MessageCircle,
+    permissions: [
+      { key: "Can View Auto-Replies", description: "Allows members to view automated response messages" },
+      { key: "Can Add Auto-Replies", description: "Allows members to create new automated response messages" },
+      { key: "Can Edit Auto-Replies", description: "Allows members to modify existing automated response messages" },
+      { key: "Can Delete Auto-Replies", description: "Allows members to delete automated response messages" },
+    ]
+  },
+  "User Management": {
+    icon: Users,
+    permissions: [
+      { key: "Can View Manage Agents", description: "Allows members to view the manage agents screen and agent list" },
+      { key: "Can View Agents Information", description: "Allows members to view detailed agent information and profiles" },
+      { key: "Can Create Agent Account", description: "Allows members to create new agent accounts" },
+      { key: "Can Edit Manage Agents", description: "Allows members to edit agent details and settings" },
+      { key: "Can Edit Department Manage Agents", description: "Allows members to edit agent department assignments" },
+      { key: "Can View Analytics Manage Agents", description: "Allows members to view agent analytics and performance data" },
+      { key: "Can View Change Roles", description: "Allows members to view user role assignments" },
+      { key: "Can Edit Change Roles", description: "Allows members to modify user role assignments and toggle user status" },
+    ]
+  },
+  "Automation Tools": {
+    icon: MessageCircle,
+    permissions: [
+      { key: "Can View Macros", description: "Allows members to view macro templates" },
+      { key: "Can Add Macros", description: "Allows members to create new macro templates" },
+      { key: "Can Edit Macros", description: "Allows members to modify existing macro templates" },
+      { key: "Can Delete Macros", description: "Allows members to delete macro templates" },
+    ]
+  },
+  "Administration": {
+    icon: Shield,
+    permissions: [
       { key: "Can Add Admin Accounts", description: "Allows members to create new administrator accounts" },
-      { key: "Can Edit Auto-Replies", description: "Allows members to manage automated response messages" },
+      { key: "Can Edit Roles", description: "Allows members to create and modify user roles" },
     ]
   },
   "General Permissions": {
@@ -53,6 +90,38 @@ const PERMISSION_CATEGORIES = {
       { key: "Can Manage Profile", description: "Allows members to edit their own profile information" },
     ]
   }
+};
+
+// Permission mapping for preview mode sync
+const PERMISSION_MAP = {
+  "Can view Chats": "priv_can_view_message",
+  "Can Reply": "priv_can_message",
+  "Can Manage Profile": "priv_can_manage_profile",
+  "Can send Macros": "priv_can_use_canned_mess",
+  "Can End Chat": "priv_can_end_chat",
+  "Can Transfer Department": "priv_can_transfer",
+  "Can View Departments": "priv_can_view_dept",
+  "Can Add Departments": "priv_can_add_dept",
+  "Can Edit Departments": "priv_can_edit_dept",
+  "Can Assign Department": "priv_can_assign_dept",
+  "Can Edit Roles": "priv_can_manage_role",
+  "Can View Change Roles": "priv_can_view_change_roles",
+  "Can Edit Change Roles": "priv_can_edit_change_roles",
+  "Can Add Admin Accounts": "priv_can_create_account",
+  "Can View Auto-Replies": "priv_can_view_auto_reply",
+  "Can Add Auto-Replies": "priv_can_add_auto_reply",
+  "Can Edit Auto-Replies": "priv_can_edit_auto_reply",
+  "Can Delete Auto-Replies": "priv_can_delete_auto_reply",
+  "Can View Macros": "priv_can_view_macros",
+  "Can Add Macros": "priv_can_add_macros",
+  "Can Edit Macros": "priv_can_edit_macros",
+  "Can Delete Macros": "priv_can_delete_macros",
+  "Can View Manage Agents": "priv_can_view_manage_agents",
+  "Can View Agents Information": "priv_can_view_agents_info",
+  "Can Create Agent Account": "priv_can_create_agent_account",
+  "Can Edit Manage Agents": "priv_can_edit_manage_agents",
+  "Can Edit Department Manage Agents": "priv_can_edit_dept_manage_agents",
+  "Can View Analytics Manage Agents": "priv_can_view_analytics_manage_agents",
 };
 
 export default function RolesScreen() {
@@ -77,10 +146,11 @@ export default function RolesScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [shakeBar, setShakeBar] = useState(0);
 
-  const { userData, hasPermission } = useUser();
+  const { userData, hasPermission, refreshUserData } = useUser();
   const { isDark } = useTheme();
   const { roles, loading, createRole, toggleRoleActive, updateRole } = useRoles();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
+  const { previewMode, previewRole, startPreview } = useRolePreview();
 
   const canManageRoles = hasPermission("priv_can_manage_role");
 
@@ -238,6 +308,32 @@ export default function RolesScreen() {
                        JSON.stringify([...originalPermissions].sort());
     setHasUnsavedChanges(hasChanges);
     setGlobalUnsavedChanges(hasChanges);
+
+    // If we're in preview mode and previewing this role, update preview permissions immediately
+    if (previewMode && previewRole && previewRole.id === selectedRole.role_id) {
+      console.log(`🎭 Updating preview permissions for ${permission}`);
+      
+      // Build updated privilege object for preview
+      const privileges = {};
+      Object.values(PERMISSION_MAP).forEach(key => {
+        privileges[key] = false;
+      });
+      
+      updatedPermissions.forEach(label => {
+        const key = PERMISSION_MAP[label];
+        if (key) {
+          privileges[key] = true;
+        }
+      });
+
+      // Update preview permissions immediately
+      window.__rolePreviewPermissions = privileges;
+      
+      // Force sidebar and other components to re-render
+      window.dispatchEvent(new CustomEvent('rolePreviewChanged'));
+      
+      console.log(`✅ Preview permissions updated:`, privileges);
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -262,6 +358,12 @@ export default function RolesScreen() {
         setHasUnsavedChanges(false);
         setGlobalUnsavedChanges(false);
         
+        // If we're in preview mode and previewing this role, restart preview with updated permissions
+        if (previewMode && previewRole && previewRole.id === selectedRole.role_id) {
+          console.log(`🎭 Restarting preview mode with saved permissions`);
+          await startPreview(selectedRole.role_id, selectedRole.name);
+        }
+        
         // Execute pending action if exists
         if (pendingAction) {
           pendingAction();
@@ -279,6 +381,32 @@ export default function RolesScreen() {
     setPendingPermissions(originalPermissions);
     setHasUnsavedChanges(false);
     setGlobalUnsavedChanges(false);
+    
+    // If we're in preview mode and previewing this role, reset preview permissions too
+    if (previewMode && previewRole && selectedRole && previewRole.id === selectedRole.role_id) {
+      console.log(`🎭 Resetting preview permissions to original state`);
+      
+      // Build original privilege object for preview
+      const privileges = {};
+      Object.values(PERMISSION_MAP).forEach(key => {
+        privileges[key] = false;
+      });
+      
+      originalPermissions.forEach(label => {
+        const key = PERMISSION_MAP[label];
+        if (key) {
+          privileges[key] = true;
+        }
+      });
+
+      // Update preview permissions to original state
+      window.__rolePreviewPermissions = privileges;
+      
+      // Force sidebar and other components to re-render
+      window.dispatchEvent(new CustomEvent('rolePreviewChanged'));
+      
+      console.log(`✅ Preview permissions reset to original:`, privileges);
+    }
     
     // Execute pending action if exists
     if (pendingAction) {
@@ -404,6 +532,15 @@ export default function RolesScreen() {
                 </div>
               </Tooltip>
             </div>
+            
+            {/* Refresh Permissions Button */}
+            <button
+              onClick={refreshUserData}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-[#6237A0] text-white hover:bg-[#552C8C]"
+              title="Refresh user permissions to see updated sidebar"
+            >
+              🔄 Refresh Permissions
+            </button>
           </div>
 
           {/* Content Area */}

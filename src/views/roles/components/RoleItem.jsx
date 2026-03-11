@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, Settings, Users } from "react-feather";
 import MemberListItem from "./MemberListItem";
+import RolePreviewDropdown from "../../../components/RolePreviewDropdown";
 
 /**
  * RoleItem Component
@@ -97,6 +98,7 @@ export default function RoleItem({
               }`}
               title={role.active ? "Active" : "Inactive"}
             />
+            <RolePreviewDropdown role={role} />
             {canManage && (
               <button
                 onClick={(e) => {

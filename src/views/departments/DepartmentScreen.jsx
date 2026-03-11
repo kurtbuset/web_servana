@@ -45,7 +45,9 @@ export default function DepartmentScreen() {
   // Get user permissions
   const { hasPermission } = useUser();
   const { isDark } = useTheme();
-  const canEditDepartment = hasPermission("priv_can_manage_dept");
+  const canViewDepartments = hasPermission("priv_can_view_dept");
+  const canAddDepartments = hasPermission("priv_can_add_dept");
+  const canEditDepartments = hasPermission("priv_can_edit_dept");
 
   // Get department state and actions from hook
   const {
@@ -109,8 +111,9 @@ export default function DepartmentScreen() {
   };
 
   const handleSave = async () => {
-    if (!canEditDepartment) {
-      console.warn("User does not have permission to edit departments");
+    const requiredPermission = currentEditId ? canEditDepartments : canAddDepartments;
+    if (!requiredPermission) {
+      console.warn("User does not have permission to modify departments");
       return;
     }
 
@@ -131,7 +134,7 @@ export default function DepartmentScreen() {
   };
 
   const handleToggle = async (deptId, currentStatus) => {
-    if (!canEditDepartment) {
+    if (!canEditDepartments) {
       console.warn("User does not have permission to edit departments");
       return;
     }
@@ -145,7 +148,7 @@ export default function DepartmentScreen() {
   };
 
   const handleEdit = (dept) => {
-    if (!canEditDepartment) {
+    if (!canEditDepartments) {
       console.warn("User does not have permission to edit departments");
       return;
     }
@@ -155,8 +158,8 @@ export default function DepartmentScreen() {
   };
 
   const handleOpenAddModal = () => {
-    if (!canEditDepartment) {
-      console.warn("User does not have permission to edit departments");
+    if (!canAddDepartments) {
+      console.warn("User does not have permission to add departments");
       return;
     }
     setEditText("");
@@ -202,17 +205,17 @@ export default function DepartmentScreen() {
               {/* Add Button */}
               <button
                 onClick={handleOpenAddModal}
-                disabled={!canEditDepartment}
+                disabled={!canAddDepartments}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                  canEditDepartment
+                  canAddDepartments
                     ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
                     : "cursor-not-allowed"
                 }`}
-                style={!canEditDepartment ? {
+                style={!canAddDepartments ? {
                   backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
                   color: isDark ? '#9ca3af' : '#6b7280'
                 } : {}}
-                title={!canEditDepartment ? "You don't have permission to edit departments" : ""}
+                title={!canAddDepartments ? "You don't have permission to add departments" : ""}
               >
                 + Add Department
               </button>
@@ -228,7 +231,7 @@ export default function DepartmentScreen() {
               searchQuery={searchQuery}
               sortBy={sortBy}
               onSortChange={handleSortChange}
-              canEditDepartment={canEditDepartment}
+              canEditDepartments={canEditDepartments}
               isDark={isDark}
               onEdit={handleEdit}
               onToggleStatus={handleToggle}
@@ -319,7 +322,8 @@ export default function DepartmentScreen() {
             isOpen={isModalOpen}
             isEdit={currentEditId !== null}
             departmentName={editText}
-            canEditDepartment={canEditDepartment}
+            canAddDepartments={canAddDepartments}
+            canEditDepartments={canEditDepartments}
             isDark={isDark}
             onNameChange={setEditText}
             onSave={handleSave}

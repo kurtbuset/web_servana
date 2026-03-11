@@ -55,7 +55,10 @@ export default function AutoRepliesScreen() {
   const currentUserId = getUserId();
   const { isDark } = useTheme();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
-  const canEditAutoReplies = hasPermission("priv_can_manage_auto_reply");
+  const canViewAutoReplies = hasPermission("priv_can_view_auto_reply");
+  const canAddAutoReplies = hasPermission("priv_can_add_auto_reply");
+  const canEditAutoReplies = hasPermission("priv_can_edit_auto_reply");
+  const canDeleteAutoReplies = hasPermission("priv_can_delete_auto_reply");
   const {
     replies,
     allDepartments,
@@ -157,9 +160,9 @@ export default function AutoRepliesScreen() {
   };
 
   const handleSaveAdd = async () => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
+    if (!canAddAutoReplies) {
+      console.warn("User does not have permission to add auto-replies");
+      toast.error("You don't have permission to add auto-replies");
       return;
     }
     
@@ -249,9 +252,9 @@ export default function AutoRepliesScreen() {
   };
 
   const openAddModal = () => {
-    if (!canEditAutoReplies) {
-      console.warn("User does not have permission to edit auto-replies");
-      toast.error("You don't have permission to edit auto-replies");
+    if (!canAddAutoReplies) {
+      console.warn("User does not have permission to add auto-replies");
+      toast.error("You don't have permission to add auto-replies");
       return;
     }
     
@@ -309,13 +312,13 @@ export default function AutoRepliesScreen() {
               {/* Add Button */}
               <button
                 onClick={openAddModal}
-                disabled={!canEditAutoReplies}
+                disabled={!canAddAutoReplies}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                  canEditAutoReplies
+                  canAddAutoReplies
                     ? "bg-[#6237A0] text-white hover:bg-[#552C8C]"
                     : "cursor-not-allowed"
                 }`}
-                style={!canEditAutoReplies ? {
+                style={!canAddAutoReplies ? {
                   backgroundColor: isDark ? '#4a4a4a' : '#d1d5db',
                   color: isDark ? '#9ca3af' : '#6b7280'
                 } : {}}
@@ -378,6 +381,8 @@ export default function AutoRepliesScreen() {
                       searchQuery={searchQuery}
                       sortBy={sortBy}
                       onSortChange={setSortBy}
+                      canEditAutoReplies={canEditAutoReplies}
+                      canDeleteAutoReplies={canDeleteAutoReplies}
                       isDark={isDark}
                       onEdit={openEditModal}
                       onToggleStatus={handleStatusToggle}
