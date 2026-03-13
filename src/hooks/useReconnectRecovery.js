@@ -2,38 +2,36 @@
  * Reconnect Recovery Hook
  * Recovers state after reconnection (rejoin rooms, refresh data)
  */
-import { useEffect, useCallback } from 'react';
-import socket from '../socket';
-import { useSocketConnection } from './useSocketConnection';
-import { emitJoinChatRoom } from '../socket/emitters/chat.emitters';
-import { emitGetAgentStatuses } from '../socket/emitters/agent.emitters';
+import { useEffect, useCallback } from "react";
+import socket, { joinChatRoom, getAgentStatuses } from "../socket-simple";
+import { useSocketConnection } from "./useSocketConnection";
 
-export const useReconnectRecovery = ({ 
-  currentChatGroupId, 
-  onReconnect 
+export const useReconnectRecovery = ({
+  currentChatGroupId,
+  onReconnect,
 } = {}) => {
   const { isConnected } = useSocketConnection();
 
   // Recovery actions after reconnection
   const performRecovery = useCallback(() => {
-    console.log('🔄 Performing reconnection recovery...');
+    console.log("🔄 Performing reconnection recovery...");
 
     // 1. Rejoin current chat room if any
     if (currentChatGroupId) {
       console.log(`Rejoining chat room: ${currentChatGroupId}`);
-      emitJoinChatRoom(currentChatGroupId);
+      joinChatRoom(socket, currentChatGroupId);
     }
 
     // 2. Refresh agent statuses
-    console.log('Refreshing agent statuses');
-    emitGetAgentStatuses();
+    console.log("Refreshing agent statuses");
+    getAgentStatuses(socket);
 
     // 3. Call custom recovery callback
     if (onReconnect) {
       onReconnect();
     }
 
-    console.log('✅ Reconnection recovery complete');
+    console.log("✅ Reconnection recovery complete");
   }, [currentChatGroupId, onReconnect]);
 
   // Track previous connection state
@@ -52,17 +50,17 @@ export const useReconnectRecovery = ({
       }
     };
 
-    socket.on('disconnect', handleDisconnect);
-    socket.on('connect', handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect", handleConnect);
 
     return () => {
-      socket.off('disconnect', handleDisconnect);
-      socket.off('connect', handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect", handleConnect);
     };
   }, [performRecovery]);
 
   return {
     isConnected,
-    performRecovery
+    performRecovery,
   };
 };

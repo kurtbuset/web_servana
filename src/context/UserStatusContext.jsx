@@ -1,6 +1,6 @@
 // src/context/UserStatusContext.jsx
 import { createContext, useContext, useEffect, useState, useRef } from "react";
-import socket from "../socket";
+import socket from "../socket-simple";
 import { useUser } from "./UserContext";
 import { showWarning, dismissToast } from "../utils/toast";
 
@@ -16,7 +16,7 @@ export const UserStatusProvider = ({ children }) => {
   const { userData, getUserName } = useUser();
   const [userStatuses, setUserStatuses] = useState(new Map());
   const [agentStatuses, setAgentStatuses] = useState(new Map());
-  
+
   const lastActivityTimeRef = useRef(Date.now());
   const heartbeatIntervalRef = useRef(null);
   const agentHeartbeatIntervalRef = useRef(null);
@@ -30,41 +30,43 @@ export const UserStatusProvider = ({ children }) => {
   const updateActivity = () => {
     const now = Date.now();
     const timeSinceLastActivity = now - lastActivityTimeRef.current;
-    
+
     lastActivityTimeRef.current = now;
-    
+
     // Dismiss session warning if user becomes active
     if (sessionWarningToastIdRef.current) {
       dismissToast(sessionWarningToastIdRef.current);
       sessionWarningToastIdRef.current = null;
     }
-    
+
     // Clear session timeout if user becomes active
     if (sessionTimeoutRef.current) {
       clearTimeout(sessionTimeoutRef.current);
       sessionTimeoutRef.current = null;
     }
-    
+
     if (!userData?.sys_user_id) return;
-    
+
     // Optimistic update - immediately show user as online
-    setUserStatuses(prev => {
+    setUserStatuses((prev) => {
       const newMap = new Map(prev);
       newMap.set(userData.sys_user_id, {
-        status: 'online',
-        lastSeen: new Date()
+        status: "online",
+        lastSeen: new Date(),
       });
       return newMap;
     });
-    
+
     // If user was inactive for more than 30 seconds, send immediate heartbeat
     if (timeSinceLastActivity > 30000 && socket.connected) {
-      console.log('🔥 User active after idle period, sending immediate heartbeat');
-      socket.emit('userHeartbeat', { userId: userData.sys_user_id });
-      
+      console.log(
+        "🔥 User active after idle period, sending immediate heartbeat",
+      );
+      socket.emit("userHeartbeat", { userId: userData.sys_user_id });
+
       // Also send agent heartbeat if user is an agent
-      if (userData.role_name === 'agent' || userData.role_name === 'admin') {
-        socket.emit('agentHeartbeat', { userId: userData.sys_user_id });
+      if (userData.role_name === "agent" || userData.role_name === "admin") {
+        socket.emit("agentHeartbeat", { userId: userData.sys_user_id });
       }
     }
   };
@@ -73,14 +75,20 @@ export const UserStatusProvider = ({ children }) => {
    * Setup activity tracking
    */
   useEffect(() => {
-    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
-    
-    activityEvents.forEach(event => {
+    const activityEvents = [
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+      "click",
+    ];
+
+    activityEvents.forEach((event) => {
       window.addEventListener(event, updateActivity, { passive: true });
     });
 
     return () => {
-      activityEvents.forEach(event => {
+      activityEvents.forEach((event) => {
         window.removeEventListener(event, updateActivity);
       });
     };
@@ -94,66 +102,62 @@ export const UserStatusProvider = ({ children }) => {
 
     const userId = userData.sys_user_id;
     const userName = getUserName();
-    const isAgent = userData.role_name === 'agent' || userData.role_name === 'admin';
-
-    // Connect socket if not connected
-    if (!socket.connected) {
-      socket.connect();
-    }
+    const isAgent =
+      userData.role_name === "agent" || userData.role_name === "admin";
 
     /**
      * Handle socket connection
      */
     const handleConnect = () => {
-      console.log('✅ Socket connected, emitting userOnline for user:', userId);
-      
+      console.log("✅ Socket connected, emitting userOnline for user:", userId);
+
       // Emit that current user is online
-      socket.emit('userOnline', {
+      socket.emit("userOnline", {
         userId,
-        userType: userData.role_name || 'agent',
-        userName
+        userType: userData.role_name || "agent",
+        userName,
       });
 
       // Request list of online users
-      socket.emit('getOnlineUsers');
-      
+      socket.emit("getOnlineUsers");
+
       // Always request agent statuses (includes database fetch for offline agents)
-      console.log('📡 Requesting agent statuses from server...');
-      socket.emit('getAgentStatuses');
+      console.log("📡 Requesting agent statuses from server...");
+      socket.emit("getAgentStatuses");
     };
 
     /**
      * Handle online users list
      */
     const handleOnlineUsersList = (users) => {
-      console.log('📋 Received online users list:', users);
-      
+      console.log("📋 Received online users list:", users);
+
       const statusMap = new Map();
-      
+
       if (!users) {
-        console.warn('⚠️ No users data received');
+        console.warn("⚠️ No users data received");
         return;
       }
-      
+
       // If users is an object (Map-like), convert to array
-      if (typeof users === 'object' && !Array.isArray(users)) {
+      if (typeof users === "object" && !Array.isArray(users)) {
         Object.entries(users).forEach(([userId, userData]) => {
           statusMap.set(parseInt(userId, 10), {
             status: userData.status,
-            lastSeen: new Date(userData.lastSeen)
-          });
-        });
-      } 
-      // If users is an array
-      else if (Array.isArray(users)) {
-        users.forEach(user => {
-          statusMap.set(user.userId, {
-            status: user.status,
-            lastSeen: new Date(user.lastSeen)
+            lastSeen: new Date(userData.lastSeen),
           });
         });
       }
-      
+      // If users is an array
+      else if (Array.isArray(users)) {
+        users.forEach((user) => {
+          statusMap.set(user.userId, {
+            status: user.status,
+            lastSeen: new Date(user.lastSeen),
+          });
+        });
+      }
+
       setUserStatuses(statusMap);
     };
 
@@ -161,8 +165,8 @@ export const UserStatusProvider = ({ children }) => {
      * Handle user status changes
      */
     const handleUserStatusChanged = ({ userId, status, lastSeen }) => {
-      console.log('🔄 User status changed:', { userId, status, lastSeen });
-      setUserStatuses(prev => {
+      console.log("🔄 User status changed:", { userId, status, lastSeen });
+      setUserStatuses((prev) => {
         const newMap = new Map(prev);
         newMap.set(userId, { status, lastSeen: new Date(lastSeen) });
         return newMap;
@@ -173,36 +177,36 @@ export const UserStatusProvider = ({ children }) => {
      * Handle agent statuses list
      */
     const handleAgentStatusesList = (agents) => {
-      console.log('📋 Received agent statuses list:', agents);
-      console.log('📋 Number of agents:', Object.keys(agents || {}).length);
-      
+      console.log("📋 Received agent statuses list:", agents);
+      console.log("📋 Number of agents:", Object.keys(agents || {}).length);
+
       const statusMap = new Map();
-      
+
       if (!agents) {
-        console.warn('⚠️ No agents data received');
+        console.warn("⚠️ No agents data received");
         return;
       }
-      
+
       // If agents is an object (Map-like), convert to array
-      if (typeof agents === 'object' && !Array.isArray(agents)) {
+      if (typeof agents === "object" && !Array.isArray(agents)) {
         Object.entries(agents).forEach(([userId, agentData]) => {
           statusMap.set(parseInt(userId, 10), {
             agentStatus: agentData.agentStatus,
-            lastSeen: new Date(agentData.lastSeen)
-          });
-        });
-      } 
-      // If agents is an array
-      else if (Array.isArray(agents)) {
-        agents.forEach(agent => {
-          statusMap.set(agent.userId, {
-            agentStatus: agent.agentStatus,
-            lastSeen: new Date(agent.lastSeen)
+            lastSeen: new Date(agentData.lastSeen),
           });
         });
       }
-      
-      console.log('✅ Loaded agent statuses for', statusMap.size, 'agents');
+      // If agents is an array
+      else if (Array.isArray(agents)) {
+        agents.forEach((agent) => {
+          statusMap.set(agent.userId, {
+            agentStatus: agent.agentStatus,
+            lastSeen: new Date(agent.lastSeen),
+          });
+        });
+      }
+
+      console.log("✅ Loaded agent statuses for", statusMap.size, "agents");
       setAgentStatuses(statusMap);
     };
 
@@ -210,8 +214,12 @@ export const UserStatusProvider = ({ children }) => {
      * Handle agent status changes
      */
     const handleAgentStatusChanged = ({ userId, agentStatus, lastSeen }) => {
-      console.log('🔄 Agent status changed:', { userId, agentStatus, lastSeen });
-      setAgentStatuses(prev => {
+      console.log("🔄 Agent status changed:", {
+        userId,
+        agentStatus,
+        lastSeen,
+      });
+      setAgentStatuses((prev) => {
         const newMap = new Map(prev);
         newMap.set(userId, { agentStatus, lastSeen: new Date(lastSeen) });
         return newMap;
@@ -227,7 +235,7 @@ export const UserStatusProvider = ({ children }) => {
      * Handle socket reconnection - refetch all statuses
      */
     const handleReconnect = () => {
-      console.log('🔄 Socket reconnected, refetching statuses...');
+      console.log("🔄 Socket reconnected, refetching statuses...");
       handleConnect();
     };
 
@@ -241,14 +249,14 @@ export const UserStatusProvider = ({ children }) => {
       if (idleTime < idleThreshold) {
         // User is active, send heartbeat
         if (socket.connected) {
-          socket.emit('userHeartbeat', { userId });
-          console.log('💓 Heartbeat sent (user active)');
+          socket.emit("userHeartbeat", { userId });
+          console.log("💓 Heartbeat sent (user active)");
         }
       } else {
         // User is idle for 20+ minutes, mark as offline
-        console.log('😴 User idle for 20+ minutes, marking offline');
+        console.log("😴 User idle for 20+ minutes, marking offline");
         if (socket.connected) {
-          socket.emit('userOffline', { userId });
+          socket.emit("userOffline", { userId });
         }
       }
     }, 30000); // Check every 30 seconds
@@ -265,14 +273,14 @@ export const UserStatusProvider = ({ children }) => {
         if (idleTime < idleThreshold) {
           // Agent is active, send heartbeat
           if (socket.connected) {
-            socket.emit('agentHeartbeat', { userId });
-            console.log('💓 Agent heartbeat sent (agent active)');
+            socket.emit("agentHeartbeat", { userId });
+            console.log("💓 Agent heartbeat sent (agent active)");
           }
         } else {
           // Agent is idle for 12+ minutes, mark as offline
-          console.log('😴 Agent idle for 12+ minutes, marking offline');
+          console.log("😴 Agent idle for 12+ minutes, marking offline");
           if (socket.connected) {
-            socket.emit('agentOffline', { userId });
+            socket.emit("agentOffline", { userId });
           }
         }
       }, 30000); // Check every 30 seconds
@@ -285,38 +293,41 @@ export const UserStatusProvider = ({ children }) => {
     activityCheckIntervalRef.current = setInterval(() => {
       const idleTime = Date.now() - lastActivityTimeRef.current;
       const idleMinutes = Math.floor(idleTime / 60000);
-      
+
       // For agents: show warning at 10 minutes (5 minutes before token expiry)
       if (isAgent && idleMinutes === 10 && !sessionWarningToastIdRef.current) {
-        console.log('⚠️ Agent idle for 10 minutes, showing session warning');
-        
+        console.log("⚠️ Agent idle for 10 minutes, showing session warning");
+
         sessionWarningToastIdRef.current = showWarning(
-          'Your session will expire in 5 minutes due to inactivity. Click here to stay logged in.',
+          "Your session will expire in 5 minutes due to inactivity. Click here to stay logged in.",
           {
             autoClose: false,
             closeOnClick: true,
             onClick: () => {
-              console.log('👆 User clicked to stay logged in');
+              console.log("👆 User clicked to stay logged in");
               updateActivity();
-            }
-          }
+            },
+          },
         );
-        
+
         // Set timeout to force logout at 15 minutes
-        sessionTimeoutRef.current = setTimeout(() => {
-          console.log('⏰ Session expired after 15 minutes of inactivity');
-          
-          // Dismiss warning toast
-          if (sessionWarningToastIdRef.current) {
-            dismissToast(sessionWarningToastIdRef.current);
-            sessionWarningToastIdRef.current = null;
-          }
-          
-          // Force logout by redirecting to login
-          window.location.href = '/login?reason=session_expired';
-        }, 5 * 60 * 1000); // 5 minutes from now (total 15 minutes)
+        sessionTimeoutRef.current = setTimeout(
+          () => {
+            console.log("⏰ Session expired after 15 minutes of inactivity");
+
+            // Dismiss warning toast
+            if (sessionWarningToastIdRef.current) {
+              dismissToast(sessionWarningToastIdRef.current);
+              sessionWarningToastIdRef.current = null;
+            }
+
+            // Force logout by redirecting to login
+            window.location.href = "/login?reason=session_expired";
+          },
+          5 * 60 * 1000,
+        ); // 5 minutes from now (total 15 minutes)
       }
-      
+
       // Log idle status
       const idleThreshold = isAgent ? 10 * 60 * 1000 : 20 * 60 * 1000;
       if (idleTime >= idleThreshold) {
@@ -325,17 +336,17 @@ export const UserStatusProvider = ({ children }) => {
     }, 60000); // Check every minute
 
     // Listen for socket events
-    socket.on('connect', handleConnect);
-    socket.on('userStatusChanged', handleUserStatusChanged);
-    socket.on('agentStatusesList', handleAgentStatusesList);
-    socket.on('agentStatusChanged', handleAgentStatusChanged);
+    socket.on("connect", handleConnect);
+    socket.on("userStatusChanged", handleUserStatusChanged);
+    socket.on("agentStatusesList", handleAgentStatusesList);
+    socket.on("agentStatusChanged", handleAgentStatusChanged);
 
     // Cleanup
     return () => {
       clearInterval(heartbeatIntervalRef.current);
       clearInterval(agentHeartbeatIntervalRef.current);
       clearInterval(activityCheckIntervalRef.current);
-      
+
       // Clear session warning and timeout
       if (sessionWarningToastIdRef.current) {
         dismissToast(sessionWarningToastIdRef.current);
@@ -345,20 +356,20 @@ export const UserStatusProvider = ({ children }) => {
         clearTimeout(sessionTimeoutRef.current);
         sessionTimeoutRef.current = null;
       }
-      
-      socket.off('connect', handleConnect);
-      socket.off('userStatusChanged', handleUserStatusChanged);
-      socket.off('agentStatusesList', handleAgentStatusesList);
-      socket.off('agentStatusChanged', handleAgentStatusChanged);
-      
+
+      socket.off("connect", handleConnect);
+      socket.off("userStatusChanged", handleUserStatusChanged);
+      socket.off("agentStatusesList", handleAgentStatusesList);
+      socket.off("agentStatusChanged", handleAgentStatusChanged);
+
       // Emit that user is going offline
       if (socket.connected) {
-        console.log('❌ User going offline:', userId);
-        socket.emit('userOffline', { userId });
-        
+        console.log("❌ User going offline:", userId);
+        socket.emit("userOffline", { userId });
+
         // Also emit agent offline if user is an agent
         if (isAgent) {
-          socket.emit('agentOffline', { userId });
+          socket.emit("agentOffline", { userId });
         }
       }
     };
@@ -371,12 +382,12 @@ export const UserStatusProvider = ({ children }) => {
    */
   const getUserStatus = (userId) => {
     const status = userStatuses.get(userId);
-    
+
     // Return default object if no status found
     if (!status) {
-      return { status: 'offline', lastSeen: null };
+      return { status: "offline", lastSeen: null };
     }
-    
+
     return status;
   };
 
@@ -387,12 +398,12 @@ export const UserStatusProvider = ({ children }) => {
    */
   const getAgentStatus = (userId) => {
     const status = agentStatuses.get(userId);
-    
+
     // Return default object if no status found
     if (!status) {
-      return { agentStatus: 'offline', lastSeen: null };
+      return { agentStatus: "offline", lastSeen: null };
     }
-    
+
     return status;
   };
 
@@ -402,27 +413,27 @@ export const UserStatusProvider = ({ children }) => {
    */
   const updateAgentStatus = (agentStatus) => {
     if (!userData?.sys_user_id) return;
-    
-    const validStatuses = ['accepting_chats', 'not_accepting_chats'];
+
+    const validStatuses = ["accepting_chats", "not_accepting_chats"];
     if (!validStatuses.includes(agentStatus)) {
-      console.error('Invalid agent status:', agentStatus);
+      console.error("Invalid agent status:", agentStatus);
       return;
     }
-    
+
     // Optimistic update
-    setAgentStatuses(prev => {
+    setAgentStatuses((prev) => {
       const newMap = new Map(prev);
       newMap.set(userData.sys_user_id, {
         agentStatus,
-        lastSeen: new Date()
+        lastSeen: new Date(),
       });
       return newMap;
     });
-    
+
     // Emit to server
     if (socket.connected) {
-      socket.emit('updateAgentStatus', { agentStatus });
-      console.log('📡 Emitted updateAgentStatus:', agentStatus);
+      socket.emit("updateAgentStatus", { agentStatus });
+      console.log("📡 Emitted updateAgentStatus:", agentStatus);
     }
   };
 
@@ -433,7 +444,7 @@ export const UserStatusProvider = ({ children }) => {
    */
   const isUserOnline = (userId) => {
     const status = getUserStatus(userId);
-    return status.status === 'online';
+    return status.status === "online";
   };
 
   /**
@@ -443,7 +454,7 @@ export const UserStatusProvider = ({ children }) => {
   const getOnlineUsers = () => {
     const onlineUsers = [];
     userStatuses.forEach((status, userId) => {
-      if (status.status === 'online') {
+      if (status.status === "online") {
         onlineUsers.push(userId);
       }
     });
@@ -459,16 +470,18 @@ export const UserStatusProvider = ({ children }) => {
   };
 
   return (
-    <UserStatusContext.Provider value={{ 
-      userStatuses,
-      agentStatuses,
-      getUserStatus,
-      getAgentStatus,
-      updateAgentStatus,
-      isUserOnline,
-      getOnlineUsers,
-      getOnlineUsersCount,
-    }}>
+    <UserStatusContext.Provider
+      value={{
+        userStatuses,
+        agentStatuses,
+        getUserStatus,
+        getAgentStatus,
+        updateAgentStatus,
+        isUserOnline,
+        getOnlineUsers,
+        getOnlineUsersCount,
+      }}
+    >
       {children}
     </UserStatusContext.Provider>
   );
@@ -477,7 +490,7 @@ export const UserStatusProvider = ({ children }) => {
 export const useUserStatus = () => {
   const context = useContext(UserStatusContext);
   if (!context) {
-    throw new Error('useUserStatus must be used within a UserStatusProvider');
+    throw new Error("useUserStatus must be used within a UserStatusProvider");
   }
   return context;
 };

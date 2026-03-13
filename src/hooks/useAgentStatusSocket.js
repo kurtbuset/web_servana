@@ -1,14 +1,13 @@
-import { useEffect, useState, useRef } from 'react';
-import socket from '../socket/index';
-import { 
-  sendAgentHeartbeat, 
-  setAgentOffline, 
-  sendUserHeartbeat, 
+import { useEffect, useState, useRef } from "react";
+import socket, {
+  sendAgentHeartbeat,
+  setAgentOffline,
+  sendUserHeartbeat,
   setUserOffline,
   setAgentOnline,
-  getAgentStatuses
-} from '../socket/emitters';
-import { registerAgentEvents } from '../socket/events/agent.events';
+  getAgentStatuses,
+  registerAgentEvents,
+} from "../socket-simple";
 
 /**
  * useAgentStatusSocket hook
@@ -16,7 +15,7 @@ import { registerAgentEvents } from '../socket/events/agent.events';
  */
 export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
   const [agentStatuses, setAgentStatuses] = useState(new Map());
-  
+
   const heartbeatIntervalRef = useRef(null);
   const agentHeartbeatIntervalRef = useRef(null);
   const activityCheckIntervalRef = useRef(null);
@@ -26,31 +25,31 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
    */
   const handleAgentStatusesList = (agents) => {
     const statusMap = new Map();
-    
+
     if (!agents) {
-      console.warn('⚠️ No agents data received');
+      console.warn("⚠️ No agents data received");
       return;
     }
-    
+
     // If agents is an object (Map-like), convert to array
-    if (typeof agents === 'object' && !Array.isArray(agents)) {
+    if (typeof agents === "object" && !Array.isArray(agents)) {
       Object.entries(agents).forEach(([userId, agentData]) => {
         statusMap.set(parseInt(userId, 10), {
           agentStatus: agentData.agentStatus,
-          lastSeen: new Date(agentData.lastSeen)
-        });
-      });
-    } 
-    // If agents is an array
-    else if (Array.isArray(agents)) {
-      agents.forEach(agent => {
-        statusMap.set(agent.userId, {
-          agentStatus: agent.agentStatus,
-          lastSeen: new Date(agent.lastSeen)
+          lastSeen: new Date(agentData.lastSeen),
         });
       });
     }
-    
+    // If agents is an array
+    else if (Array.isArray(agents)) {
+      agents.forEach((agent) => {
+        statusMap.set(agent.userId, {
+          agentStatus: agent.agentStatus,
+          lastSeen: new Date(agent.lastSeen),
+        });
+      });
+    }
+
     setAgentStatuses(statusMap);
   };
 
@@ -59,18 +58,18 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
    */
   const handleAgentStatusChanged = (data) => {
     const { userId, agentStatus, lastSeen } = data || {};
-    
+
     // Validate data
     if (!userId || !agentStatus) {
-      console.warn('⚠️ Invalid agent status change data:', data);
+      console.warn("⚠️ Invalid agent status change data:", data);
       return;
     }
-    
-    setAgentStatuses(prev => {
+
+    setAgentStatuses((prev) => {
       const newMap = new Map(prev);
-      newMap.set(userId, { 
-        agentStatus, 
-        lastSeen: lastSeen ? new Date(lastSeen) : new Date() 
+      newMap.set(userId, {
+        agentStatus,
+        lastSeen: lastSeen ? new Date(lastSeen) : new Date(),
       });
       return newMap;
     });
@@ -84,7 +83,7 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
     if (isAgent) {
       setAgentOnline(socket, userId);
     }
-    
+
     // Always request agent statuses (includes database fetch for offline agents)
     getAgentStatuses(socket);
   };
@@ -109,7 +108,7 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
         }
       } else {
         // User is idle for 20+ minutes, mark as offline
-        console.log('😴 User idle for 20+ minutes, marking offline');
+        console.log("😴 User idle for 20+ minutes, marking offline");
         if (socket.connected) {
           setUserOffline(socket, userId);
         }
@@ -132,7 +131,7 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
           }
         } else {
           // Agent is idle for 12+ minutes, mark as offline
-          console.log('😴 Agent idle for 12+ minutes, marking offline');
+          console.log("😴 Agent idle for 12+ minutes, marking offline");
           if (socket.connected) {
             setAgentOffline(socket, userId);
           }
@@ -146,13 +145,13 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
      */
     activityCheckIntervalRef.current = setInterval(() => {
       const idleMinutes = activityTracking.getIdleMinutes();
-      
+
       // For agents: show warning at 10 minutes (5 minutes before token expiry)
       if (isAgent && idleMinutes === 10) {
-        console.log('⚠️ Agent idle for 10 minutes, showing session warning');
+        console.log("⚠️ Agent idle for 10 minutes, showing session warning");
         // Note: Session warning would be handled by parent component
       }
-      
+
       // Log idle status
       const idleThreshold = isAgent ? 10 : 20;
       if (idleMinutes >= idleThreshold) {
@@ -179,20 +178,20 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
     }
 
     // Listen for socket events using centralized event registration
-    socket.on('connect', handleConnect);
-    
+    socket.on("connect", handleConnect);
+
     // Register agent status events with callbacks
     const cleanupAgentEvents = registerAgentEvents(socket, {
       onAgentStatusesList: handleAgentStatusesList,
-      onAgentStatusChanged: handleAgentStatusChanged
+      onAgentStatusChanged: handleAgentStatusChanged,
     });
 
     return () => {
-      socket.off('connect', handleConnect);
+      socket.off("connect", handleConnect);
       cleanupAgentEvents(); // Cleanup agent events
-      
+
       // Emit that user is going offline
-      if (socket.connected){
+      if (socket.connected) {
         // Also emit agent offline if user is an agent
         if (isAgent) {
           setAgentOffline(socket, userId);
@@ -207,7 +206,7 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
    */
   const sendImmediateHeartbeatIfIdle = (timeSinceLastActivity) => {
     if (!userId || !socket.connected) return;
-    
+
     // If user was inactive for more than 30 seconds, send immediate heartbeat
     if (timeSinceLastActivity > 30000) {
       if (isAgent) {
@@ -220,6 +219,6 @@ export const useAgentStatusSocket = (userId, isAgent, activityTracking) => {
     agentStatuses,
     setAgentStatuses,
     handleConnect,
-    sendImmediateHeartbeatIfIdle
+    sendImmediateHeartbeatIfIdle,
   };
 };

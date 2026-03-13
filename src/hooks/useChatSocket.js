@@ -1,17 +1,18 @@
-import { useEffect, useCallback } from 'react';
-import socket from '../socket/index';
-import { registerChatEvents } from '../socket/events';
-import { joinChatGroup, leavePreviousRoom, leaveRoom, sendMessage as sendMessageEmitter } from '../socket/emitters';
+import { useEffect } from "react";
+import socket, {
+  registerChatEvents,
+  joinChatGroup,
+  leaveRoom,
+} from "../socket-simple";
 
 /**
- * useChatSocket hook manages Socket.IO connections and events
- * 
- * Features:
- * - Join/leave chat rooms
- * - Listen for real-time messages
- * - Listen for customer list updates
- * - Send messages via Socket.IO
- * 
+ * useChatSocket hook manages Socket.IO lifecycle for chat
+ *
+ * Handles:
+ * - Auto join/leave rooms based on selected customer
+ * - Register/cleanup event listeners
+ * - Reconnect on logout
+ *
  * @param {Object} params - Hook parameters
  * @param {Object} params.selectedCustomer - Currently selected customer
  * @param {Function} params.getUserId - Function to get current user ID
@@ -20,7 +21,6 @@ import { joinChatGroup, leavePreviousRoom, leaveRoom, sendMessage as sendMessage
  * @param {Function} params.onUserJoined - Callback when user joins room
  * @param {Function} params.onUserLeft - Callback when user leaves room
  * @param {boolean} params.enabled - Whether socket is enabled (default: true)
- * @returns {Object} Socket actions
  */
 export const useChatSocket = ({
   selectedCustomer,
@@ -31,102 +31,74 @@ export const useChatSocket = ({
   onUserLeft,
   enabled = true,
 }) => {
-  /**
-   * Handle logout events to reconnect socket with fresh cookies
-   */
+  // Handle logout events to reconnect socket with fresh cookies
   useEffect(() => {
     if (!enabled) return;
 
-    // Listen for logout events to reconnect socket with fresh cookies
     const handleLogout = () => {
-      console.log('Logout detected - reconnecting socket');
+      console.log("Logout detected - reconnecting socket");
       socket.disconnect();
-      // Small delay to ensure cookies are cleared
-      setTimeout(() => {
-        socket.connect();
-      }, 100);
+      setTimeout(() => socket.connect(), 100);
     };
 
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'logout') {
-        handleLogout();
-      }
-    });
-
-    return () => {
-      window.removeEventListener('storage', handleLogout);
+    const handleStorage = (event) => {
+      if (event.key === "logout") handleLogout();
     };
-  }, []);
 
-  /**
-   * Listen for chat events via Socket.IO
-   */
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [enabled]);
+
+  // Register chat event listeners
   useEffect(() => {
     if (!enabled) return;
 
     const cleanup = registerChatEvents(socket, {
       onMessageReceived: (msg) => {
         const userId = getUserId();
-        if (onMessageReceived) {
-          onMessageReceived(msg, userId);
-        }
+        if (onMessageReceived) onMessageReceived(msg, userId);
       },
       onCustomerListUpdate,
       onUserJoined,
-      onUserLeft
+      onUserLeft,
     });
 
     return cleanup;
-  }, [getUserId, onMessageReceived, onCustomerListUpdate, onUserJoined, onUserLeft, enabled]);
+  }, [
+    getUserId,
+    onMessageReceived,
+    onCustomerListUpdate,
+    onUserJoined,
+    onUserLeft,
+    enabled,
+  ]);
 
-  /**
-   * Join chat group and listen for messages when customer is selected
-   */
+  // Auto join/leave rooms when customer changes
   useEffect(() => {
     if (!enabled || !selectedCustomer) return;
 
     const userId = getUserId();
     if (!userId) {
-      console.warn('No user ID available, cannot join chat group');
+      console.warn("No user ID available, cannot join chat group");
       return;
     }
 
-    // Track current room to prevent duplicate joins
     const currentRoomId = selectedCustomer.chat_group_id;
 
-    // Leave previous room if agent was in another room
-    leavePreviousRoom(socket);
-
-    // Join new chat group with user info
+    // Join chat group (backend automatically leaves previous room)
     joinChatGroup(socket, {
       groupId: currentRoomId,
-      userType: 'agent',
-      userId: userId
+      userType: "agent",
+      userId: userId,
     });
 
+    // Cleanup: leave room on unmount or customer change
     return () => {
-      // Leave room when component unmounts or customer changes
       leaveRoom(socket, {
         roomId: currentRoomId,
-        userType: 'agent',
-        userId: userId
+        userType: "agent",
+        userId: userId,
       });
     };
   }, [selectedCustomer?.chat_group_id, getUserId, enabled]);
-
-  /**
-   * Send a message via Socket.IO
-   */
-  const sendMessage = useCallback((messageBody, chatGroupId, userId) => {
-    sendMessageEmitter(socket, {
-      chat_body: messageBody,
-      chat_group_id: chatGroupId,
-      sys_user_id: userId,
-      client_id: null,
-    });
-  }, []);
-
-  return {
-    sendMessage,
-  };
 };

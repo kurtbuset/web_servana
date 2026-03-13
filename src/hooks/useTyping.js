@@ -1,16 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import socket from '../socket/index';
-import { registerTypingEvents } from '../socket/events';
-import { emitTyping as emitTypingEmitter, emitStopTyping as emitStopTypingEmitter } from '../socket/emitters';
+import { useState, useEffect, useRef, useCallback } from "react";
+import socket, {
+  registerTypingEvents,
+  emitTyping as emitTypingEmitter,
+  emitStopTyping as emitStopTypingEmitter,
+} from "../socket-simple";
 
 /**
  * useTyping hook manages typing indicators
- * 
+ *
  * Features:
  * - Listen for typing events from clients
  * - Emit typing events when agent types
  * - Auto-clear typing indicator after timeout
- * 
+ *
  * @param {Object} selectedCustomer - Currently selected customer
  * @param {Function} getUserId - Function to get current user ID
  * @param {boolean} enabled - Whether typing is enabled (default: true)
@@ -29,10 +31,13 @@ export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
     if (!enabled || !selectedCustomer) return;
 
     const handleTyping = (data) => {
-      if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
-        console.log('👤 Client is typing:', data.userName);
+      if (
+        data.chatGroupId === selectedCustomer.chat_group_id &&
+        data.userType === "client"
+      ) {
+        console.log("👤 Client is typing:", data.userName);
         setIsTyping(true);
-        setTypingUser(data.userName || 'Client');
+        setTypingUser(data.userName || "Client");
         setTypingUserImage(data.userImage || null);
 
         if (typingTimeoutRef.current) {
@@ -48,8 +53,11 @@ export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
     };
 
     const handleStopTyping = (data) => {
-      if (data.chatGroupId === selectedCustomer.chat_group_id && data.userType === 'client') {
-        console.log('👤 Client stopped typing');
+      if (
+        data.chatGroupId === selectedCustomer.chat_group_id &&
+        data.userType === "client"
+      ) {
+        console.log("👤 Client stopped typing");
 
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
@@ -63,7 +71,7 @@ export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
 
     const cleanup = registerTypingEvents(socket, {
       onTyping: handleTyping,
-      onStopTyping: handleStopTyping
+      onStopTyping: handleStopTyping,
     });
 
     return () => {
@@ -85,8 +93,8 @@ export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
 
     emitTypingEmitter(socket, {
       chatGroupId: selectedCustomer.chat_group_id,
-      userName: 'Agent',
-      userId: userId
+      userName: "Agent",
+      userId: userId,
     });
   }, [selectedCustomer, getUserId, enabled]);
 
@@ -101,31 +109,34 @@ export const useTyping = (selectedCustomer, getUserId, enabled = true) => {
 
     emitStopTypingEmitter(socket, {
       chatGroupId: selectedCustomer.chat_group_id,
-      userId: userId
+      userId: userId,
     });
   }, [selectedCustomer, getUserId]);
 
   /**
    * Handle typing with auto-stop after inactivity
    */
-  const handleTypingWithTimeout = useCallback((isTypingNow) => {
-    if (isTypingNow) {
-      emitTyping();
+  const handleTypingWithTimeout = useCallback(
+    (isTypingNow) => {
+      if (isTypingNow) {
+        emitTyping();
 
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+        // Clear previous timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
 
-      // Set timeout to emit stop typing after 2 seconds of inactivity
-      typingTimeoutRef.current = setTimeout(() => {
+        // Set timeout to emit stop typing after 2 seconds of inactivity
+        typingTimeoutRef.current = setTimeout(() => {
+          emitStopTyping();
+        }, 2000);
+      } else {
+        // If not typing, immediately stop
         emitStopTyping();
-      }, 2000);
-    } else {
-      // If not typing, immediately stop
-      emitStopTyping();
-    }
-  }, [emitTyping, emitStopTyping]);
+      }
+    },
+    [emitTyping, emitStopTyping],
+  );
 
   return {
     isTyping,

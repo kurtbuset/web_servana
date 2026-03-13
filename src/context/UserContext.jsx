@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
 import tokenService from "../services/token.service";
-import socket from "../socket/index";
+import socket from "../socket-simple";
 
 const UserContext = createContext();
 
@@ -15,21 +15,25 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     try {
       const timestamp = Date.now();
-      console.log(`🔄 UserContext - Fetching user data (${forceRefresh ? 'forced refresh' : 'normal'}) at ${timestamp}`);
-      
+      console.log(
+        `🔄 UserContext - Fetching user data (${forceRefresh ? "forced refresh" : "normal"}) at ${timestamp}`,
+      );
+
       const data = await ProfileService.getProfile();
-      
-      
+
       // Validate role data
       if (!data?.role_name) {
         console.warn("⚠️ User role information is missing or invalid");
       }
-      
+
       // Validate privilege data
       if (!data?.privilege) {
         console.error("🚨 User privilege data is missing!");
         console.error("🚨 This will cause permission checks to fail");
-        console.error("🚨 Backend response structure:", Object.keys(data || {}));
+        console.error(
+          "🚨 Backend response structure:",
+          Object.keys(data || {}),
+        );
       } else {
         // console.log("✅ Privilege data found:", Object.keys(data.privilege));
         // Log each permission status with detailed info
@@ -38,17 +42,16 @@ export const UserProvider = ({ children }) => {
           // console.log(`  ${key}: ${value} ${status}`);
         });
       }
-      
+
       // Store with timestamp to track freshness
       const userDataWithMeta = {
         ...data,
         _fetchedAt: timestamp,
-        _sessionId: Math.random().toString(36).substr(2, 9)
+        _sessionId: Math.random().toString(36).substr(2, 9),
       };
-      
+
       setUserData(userDataWithMeta);
       // console.log(`✅ UserContext - User data updated successfully (session: ${userDataWithMeta._sessionId})`);
-      
     } catch (err) {
       console.error("❌ Failed to fetch user data:", err);
       console.error("❌ Error details:", err.response?.data || err.message);
@@ -66,10 +69,10 @@ export const UserProvider = ({ children }) => {
 
   useEffect(() => {
     fetchUser();
-    
+
     // Start auto token refresh when user context loads
     tokenService.startAutoRefresh();
-    
+
     return () => {
       // Stop auto refresh on unmount
       tokenService.stopAutoRefresh();
@@ -79,57 +82,58 @@ export const UserProvider = ({ children }) => {
   // Connect socket when user is authenticated
   useEffect(() => {
     if (userData?.sys_user_id) {
-      console.log('🔌 Connecting socket for authenticated user:', userData.sys_user_id);
-      
+      console.log(
+        "🔌 Connecting socket for authenticated user:",
+        userData.sys_user_id,
+      );
+
       // Update socket auth before connecting
       socket.auth = (cb) => {
         cb({
           userId: userData.sys_user_id,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       };
-      
+
       // Handle disconnect events specific to user context
       const handleDisconnect = (reason) => {
-        if (reason === 'io server disconnect') {
+        if (reason === "io server disconnect") {
           // Server kicked us out - likely auth failure
-          console.error('🚨 Server disconnected socket - checking authentication...');
-          
+          console.error(
+            "🚨 Server disconnected socket - checking authentication...",
+          );
+
           // Check if we still have valid session
           setTimeout(async () => {
             try {
               await fetchUser();
               if (!userData) {
-                console.error('🚨 Session invalid - user needs to re-login');
+                console.error("🚨 Session invalid - user needs to re-login");
                 // Could trigger logout or show re-login modal here
               }
             } catch (error) {
-              console.error('🚨 Failed to verify session:', error);
+              console.error("🚨 Failed to verify session:", error);
             }
           }, 1000);
         }
       };
-      
-      socket.on('disconnect', handleDisconnect);
+
+      socket.on("disconnect", handleDisconnect);
       socket.connect();
-      
+
       return () => {
-        socket.off('disconnect', handleDisconnect);
+        socket.off("disconnect", handleDisconnect);
+        if (socket.connected) {
+          socket.disconnect();
+        }
       };
     } else {
-      console.log('🔌 Disconnecting socket - no authenticated user');
+      console.log("🔌 Disconnecting socket - no authenticated user");
       if (socket.connected) {
         socket.disconnect();
       }
     }
-    
-    return () => {
-      // Disconnect socket on unmount or logout
-      if (socket.connected) {
-        socket.disconnect();
-      }
-    };
-  }, []);
+  }, [userData?.sys_user_id]);
 
   // Update user profile
   const updateProfile = async (data) => {
@@ -160,10 +164,10 @@ export const UserProvider = ({ children }) => {
   const logout = async () => {
     try {
       await AuthService.logout();
-      
+
       // Clear all user data and force fresh fetch on next login
       setUserData(null);
-      
+
       return { success: true };
     } catch (err) {
       console.error("Failed to logout:", err);
@@ -175,48 +179,57 @@ export const UserProvider = ({ children }) => {
     // Check if we should use preview permissions (from RolePreviewContext)
     if (usePreview && window.__rolePreviewPermissions) {
       const previewValue = window.__rolePreviewPermissions[permission];
-      console.log(`🎭 [PREVIEW] Checking permission ${permission}: ${previewValue}`);
-      
+      console.log(
+        `🎭 [PREVIEW] Checking permission ${permission}: ${previewValue}`,
+      );
+
       // Special debug for change roles permissions
-      if (permission === 'priv_can_view_change_roles') {
+      if (permission === "priv_can_view_change_roles") {
         console.log(`🎭 [PREVIEW DEBUG] Change Roles View Permission:`, {
           permission,
           previewValue,
-          allPreviewPermissions: window.__rolePreviewPermissions
+          allPreviewPermissions: window.__rolePreviewPermissions,
         });
       }
-      
+
       return previewValue === true;
     }
 
     // Remove admin override - everyone goes through privilege table
     if (!userData?.privilege) {
-      console.warn(`🚨 hasPermission(${permission}): No privilege data available`);
+      console.warn(
+        `🚨 hasPermission(${permission}): No privilege data available`,
+      );
       console.warn(`🚨 UserData state:`, {
         hasUserData: !!userData,
         userDataKeys: userData ? Object.keys(userData) : [],
         sessionId: userData?._sessionId,
-        fetchedAt: userData?._fetchedAt
+        fetchedAt: userData?._fetchedAt,
       });
       return false;
     }
-    
+
     const privilegeValue = userData.privilege[permission];
-    
+
     // Handle undefined values (new permissions that don't exist in DB yet)
     if (privilegeValue === undefined) {
-      console.warn(`⚠️ Permission ${permission} is undefined - likely missing from database. Defaulting to false.`);
+      console.warn(
+        `⚠️ Permission ${permission} is undefined - likely missing from database. Defaulting to false.`,
+      );
       return false;
     }
-    
+
     const result = privilegeValue === true;
-    
+
     // console.log(`🔍 hasPermission(${permission}): ${result} (raw value: ${privilegeValue}, type: ${typeof privilegeValue})`);
-    
+
     if (!result && privilegeValue !== false) {
-      console.warn(`⚠️ Unexpected privilege value for ${permission}:`, privilegeValue);
+      console.warn(
+        `⚠️ Unexpected privilege value for ${permission}:`,
+        privilegeValue,
+      );
     }
-    
+
     return result;
   };
 
@@ -248,22 +261,24 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ 
-      userData, 
-      setUserData, 
-      loading, 
-      fetchUser,
-      refreshUserData,
-      updateProfile,
-      uploadProfileImage,
-      logout,
-      hasPermission,
-      getRoleName,
-      getUserId,
-      getUserEmail,
-      getUserName,
-      isAuthenticated,
-    }}>
+    <UserContext.Provider
+      value={{
+        userData,
+        setUserData,
+        loading,
+        fetchUser,
+        refreshUserData,
+        updateProfile,
+        uploadProfileImage,
+        logout,
+        hasPermission,
+        getRoleName,
+        getUserId,
+        getUserEmail,
+        getUserName,
+        isAuthenticated,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
