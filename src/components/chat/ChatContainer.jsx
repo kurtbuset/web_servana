@@ -13,7 +13,7 @@ import ProfilePanel from "./ProfilePanel";
 /**
  * ChatContainer - Main container for the chat interface
  * Manages state and business logic, delegates rendering to child components
- * 
+ *
  * @param {Object} props
  * @param {string} props.mode - "active" for active chats, "resolved" for resolved chats
  */
@@ -23,24 +23,26 @@ export default function ChatContainer({ mode = "active" }) {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
+  const [showTransferConfirmModal, setShowTransferConfirmModal] =
+    useState(false);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [transferDepartment, setTransferDepartment] = useState(null);
   const [allDepartments, setAllDepartments] = useState([]);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  
-  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
+
+  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } =
+    useDepartmentPanel();
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
   const { hasPermission } = useUser();
-  const { isDark } = useTheme();
-  
-  const isResolvedMode = mode === 'resolved';
+
+  const isResolvedMode = mode === "resolved";
   const canMessage = hasPermission("priv_can_message") && !isResolvedMode;
   const canEndChat = hasPermission("priv_can_end_chat") && !isResolvedMode;
   const canTransfer = hasPermission("priv_can_transfer") && !isResolvedMode;
-  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess") && !isResolvedMode;
+  const canUseCannedMessages =
+    hasPermission("priv_can_use_canned_mess") && !isResolvedMode;
 
   // Use unified hook with mode parameter
   const {
@@ -98,8 +100,10 @@ export default function ChatContainer({ mode = "active" }) {
 
   const confirmTransfer = async () => {
     setShowTransferConfirmModal(false);
-    
-    const selectedDept = allDepartments.find(dept => dept.dept_name === transferDepartment);
+
+    const selectedDept = allDepartments.find(
+      (dept) => dept.dept_name === transferDepartment,
+    );
     if (selectedDept) {
       const success = await transferChat(selectedDept.dept_id);
       if (success && isMobile) {
@@ -129,7 +133,7 @@ export default function ChatContainer({ mode = "active" }) {
   const confirmEndChat = () => {
     setShowEndChatModal(false);
     endChat();
-    
+
     if (isMobile) setView("chatList");
   };
 
@@ -224,7 +228,7 @@ export default function ChatContainer({ mode = "active" }) {
 
     const handleScroll = async () => {
       if (isThrottled || isLoadingMore) return;
-      
+
       if (container.scrollTop <= 50 && hasMoreMessages && selectedCustomer) {
         isThrottled = true;
         const prevHeight = container.scrollHeight;
@@ -241,7 +245,7 @@ export default function ChatContainer({ mode = "active" }) {
             }
           }, 50);
         } catch (error) {
-          console.error('Error loading more messages:', error);
+          console.error("Error loading more messages:", error);
         }
 
         setTimeout(() => {
@@ -252,7 +256,13 @@ export default function ChatContainer({ mode = "active" }) {
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages, isLoadingMore]);
+  }, [
+    earliestMessageTime,
+    hasMoreMessages,
+    selectedCustomer,
+    loadMessages,
+    isLoadingMore,
+  ]);
 
   const groupedMessages = groupMessagesByDate(messages);
 
@@ -320,7 +330,9 @@ export default function ChatContainer({ mode = "active" }) {
             onBack={handleBackClick}
             onInputChange={handleInputChange}
             onSendMessage={handleSendMessage}
-            onToggleCannedMessages={() => setShowCannedMessages((prev) => !prev)}
+            onToggleCannedMessages={() =>
+              setShowCannedMessages((prev) => !prev)
+            }
             onSelectCannedMessage={(msg) => {
               setInputMessage(msg);
               setShowCannedMessages(false);

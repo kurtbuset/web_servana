@@ -25,9 +25,15 @@ export default function ChatSidebar({
       className={`${
         view === "chatList" ? "block" : "hidden md:block"
       } w-full md:w-[320px] lg:w-[360px] md:rounded-xl shadow-sm border-0 md:border overflow-hidden flex flex-col`}
-      style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+      style={{
+        backgroundColor: "var(--card-bg)",
+        borderColor: "var(--border-color)",
+      }}
     >
-      <ChatSidebarHeader customerCount={filteredCustomers?.length || 0} title={title} />
+      <ChatSidebarHeader
+        customerCount={filteredCustomers?.length || 0}
+        title={title}
+      />
 
       <DepartmentFilter
         departments={departments}

@@ -154,12 +154,12 @@ export const useChat = ({ mode = "active" } = {}) => {
           deptMap[dept].push(customerWithDept);
         });
 
-        // Sort each department's chats: active first, then queued
+        // Sort each department's chats: queued first, then active
         Object.keys(deptMap).forEach((dept) => {
           deptMap[dept].sort((a, b) => {
-            // Active chats first
-            if (a.chat_type === "active" && b.chat_type === "queued") return -1;
-            if (a.chat_type === "queued" && b.chat_type === "active") return 1;
+            // Queued chats first
+            if (a.chat_type === "queued" && b.chat_type === "active") return -1;
+            if (a.chat_type === "active" && b.chat_type === "queued") return 1;
             // Within same type, sort by time (most recent first)
             return 0;
           });
@@ -572,11 +572,11 @@ export const useChat = ({ mode = "active" } = {}) => {
                 },
               );
 
-              // Re-sort: active chats first
+              // Re-sort: queued chats first
               updatedDeptCustomers[dept].sort((a, b) => {
-                if (a.chat_type === "active" && b.chat_type === "queued")
-                  return -1;
                 if (a.chat_type === "queued" && b.chat_type === "active")
+                  return -1;
+                if (a.chat_type === "active" && b.chat_type === "queued")
                   return 1;
                 return 0;
               });
