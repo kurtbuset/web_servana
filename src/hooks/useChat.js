@@ -385,7 +385,7 @@ export const useChat = ({ mode = "active" } = {}) => {
       setSelectedCustomer(customer);
       // Check if chat is ended: either in endedChats array or has resolved status
       const isEnded =
-        endedChats.some((chat) => chat.id === customer.id) ||
+        endedChats.some((chat) => chat.chat_group_id === customer.chat_group_id) ||
         customer.status === "resolved" ||
         customer.chat_type === "resolved";
       setChatEnded(isEnded);
@@ -393,7 +393,9 @@ export const useChat = ({ mode = "active" } = {}) => {
       setEarliestMessageTime(null);
       setHasMoreMessages(true);
 
-      await loadMessages(customer.id);
+      // Use chat_group_id if available (for department-specific chats), otherwise use client id
+      const messageId = customer.chat_group_id || customer.id;
+      await loadMessages(messageId);
     },
     [endedChats, loadMessages],
   );
@@ -470,12 +472,15 @@ export const useChat = ({ mode = "active" } = {}) => {
       setSelectedCustomer(null);
       setMessages([]);
 
+      // Refresh chat groups to remove the ended chat from active list
+      fetchChatGroups();
+
       toast.success("Chat ended successfully");
     } catch (err) {
       console.error("Error ending chat:", err);
       toast.error("Failed to end chat");
     }
-  }, [selectedCustomer, messages, hasPermission]);
+  }, [selectedCustomer, messages, hasPermission, fetchChatGroups]);
 
   /**
    * Transfer chat to another department

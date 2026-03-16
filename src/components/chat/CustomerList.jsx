@@ -62,8 +62,8 @@ export default function CustomerList({
   return (
     <div className="chat-list overflow-auto p-2 sm:p-3">
       {customers.map((customer) => {
-        const isEnded = endedChats.some((chat) => chat.id === customer.id);
-        const isSelected = selectedCustomer?.id === customer.id;
+        const isEnded = endedChats.some((chat) => chat.chat_group_id === customer.chat_group_id);
+        const isSelected = selectedCustomer?.chat_group_id === customer.chat_group_id;
         const isQueued = customer.chat_type === 'queued';
         const waitTime = isQueued ? getWaitTime(customer) : null;
 

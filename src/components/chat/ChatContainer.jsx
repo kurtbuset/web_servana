@@ -235,7 +235,9 @@ export default function ChatContainer({ mode = "active" }) {
         const prevScrollTop = container.scrollTop;
 
         try {
-          await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+          // Use chat_group_id if available, otherwise use client id
+          const messageId = selectedCustomer.chat_group_id || selectedCustomer.id;
+          await loadMessages(messageId, earliestMessageTime, true);
 
           setTimeout(() => {
             if (container) {
