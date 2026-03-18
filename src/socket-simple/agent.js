@@ -36,7 +36,6 @@ export const setAgentOnline = (socket, userId) => {
     return;
   }
   socket.emit("agentOnline", { userId });
-  console.log("📡 Agent online, joining department rooms...");
 };
 
 export const getAgentStatuses = (socket) => {
@@ -44,7 +43,6 @@ export const getAgentStatuses = (socket) => {
     console.warn("Socket not connected");
     return;
   }
-  console.log("📡 Requesting agent statuses from server...");
   socket.emit("getAgentStatuses");
 };
 
@@ -52,13 +50,11 @@ export const getAgentStatuses = (socket) => {
 export const sendUserHeartbeat = (socket, userId) => {
   if (!socket.connected) return;
   socket.emit("agentHeartbeat", { userId });
-  console.log("💓 Heartbeat sent (user active)");
 };
 
 export const setUserOffline = (socket, userId) => {
   if (!socket.connected) return;
   socket.emit("agentOffline", { userId });
-  console.log("😴 User marked as offline");
 };
 
 // ============= EVENT LISTENERS =============
@@ -73,13 +69,10 @@ export const registerAgentEvents = (socket, callbacks = {}) => {
   } = callbacks;
 
   const handleAgentStatusesList = (agents) => {
-    console.log("📋 Received agent statuses list:", agents);
-    console.log("📋 Number of agents:", Object.keys(agents || {}).length);
     if (onAgentStatusesList) onAgentStatusesList(agents);
   };
 
   const handleAgentStatusChanged = (data) => {
-    console.log("🔄 Agent status changed:", data);
     if (onAgentStatusChanged) onAgentStatusChanged(data);
   };
 
@@ -89,12 +82,10 @@ export const registerAgentEvents = (socket, callbacks = {}) => {
   };
 
   const handleAgentOnline = (data) => {
-    console.log("Agent online:", data);
     if (onAgentOnline) onAgentOnline(data);
   };
 
   const handleAgentOffline = (data) => {
-    console.log("Agent offline:", data);
     if (onAgentOffline) onAgentOffline(data);
   };
 

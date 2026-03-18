@@ -286,7 +286,7 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   
   useEffect(() => {
     const handlePreviewChange = () => {
-      console.log('🔄 Sidebar: Preview mode changed, forcing re-render');
+      // console.log('🔄 Sidebar: Preview mode changed, forcing re-render');
       forceUpdate({});
     };
     
@@ -425,10 +425,10 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
 
   // Filter navigation sections based on permissions - memoize to prevent recalculation
   const visibleNavSections = useMemo(() => {
-    console.log('🔄 Sidebar: Recalculating visible nav sections', {
-      previewMode,
-      hasPreviewPermissions: !!previewPermissions
-    });
+    // console.log('🔄 Sidebar: Recalculating visible nav sections', {
+    //   previewMode,
+    //   hasPreviewPermissions: !!previewPermissions
+    // });
     
     return navSections.map(section => ({
       ...section,
@@ -441,32 +441,32 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
         // Check permission (will use preview permissions if in preview mode)
         const hasAccess = hasPermission(item.permission) || 
                          (item.fallbackPermission && hasPermission(item.fallbackPermission));
-        console.log(`  📋 ${item.label}: ${hasAccess ? '✅' : '❌'} (${item.permission}${item.fallbackPermission ? ` or ${item.fallbackPermission}` : ''})`);
+        // console.log(`  📋 ${item.label}: ${hasAccess ? '✅' : '❌'} (${item.permission}${item.fallbackPermission ? ` or ${item.fallbackPermission}` : ''})`);
         
         // Special debug for Change Roles
-        if (item.label === 'Change Roles') {
-          console.log(`  👥 Change Roles permission check:`, {
-            permission: item.permission,
-            fallbackPermission: item.fallbackPermission,
-            hasMainPermission: hasPermission(item.permission),
-            hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
-            hasAccess,
-            previewMode,
-            previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
-          });
-        }
+        // if (item.label === 'Change Roles') {
+        //   console.log(`  👥 Change Roles permission check:`, {
+        //     permission: item.permission,
+        //     fallbackPermission: item.fallbackPermission,
+        //     hasMainPermission: hasPermission(item.permission),
+        //     hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
+        //     hasAccess,
+        //     previewMode,
+        //     previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
+        //   });
+        // }
         
         // Special debug for Departments
         if (item.label === 'Departments') {
-          console.log(`  🏢 Departments permission check:`, {
-            permission: item.permission,
-            fallbackPermission: item.fallbackPermission,
-            hasMainPermission: hasPermission(item.permission),
-            hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
-            hasAccess,
-            previewMode,
-            previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
-          });
+          // console.log(`  🏢 Departments permission check:`, {
+          //   permission: item.permission,
+          //   fallbackPermission: item.fallbackPermission,
+          //   hasMainPermission: hasPermission(item.permission),
+          //   hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
+          //   hasAccess,
+          //   previewMode,
+          //   previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
+          // });
         }
         
         return hasAccess;

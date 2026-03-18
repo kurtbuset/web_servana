@@ -4,6 +4,7 @@ import { useUser } from "./UserContext";
 import { showWarning, dismissToast } from "../utils/toast";
 import { useActivityTracking } from "../hooks/useActivityTracking";
 import { useAgentStatusSocket } from "../hooks/useAgentStatusSocket";
+import agentStatusService from "../services/agentStatusService";
 import socket, {
   updateAgentStatus as updateAgentStatusEmitter,
 } from "../socket-simple";
@@ -28,6 +29,50 @@ export const AgentStatusProvider = ({ children }) => {
     userData?.role_name === "Agent" || userData?.role_name === "Admin";
   const { agentStatuses, setAgentStatuses, sendImmediateHeartbeatIfIdle } =
     useAgentStatusSocket(userId, isAgent, activityTracking);
+
+  /**
+   * Fetch agent status from REST API
+   * @param {number} userId - User ID to fetch status for
+   */
+  const fetchAgentStatus = async (userId) => {
+    if (!userId) return;
+
+    try {
+      const agentStatus = await agentStatusService.getAgentStatus();
+      
+      // Update socket state with REST API data
+      setAgentStatuses(prev => {
+        const newMap = new Map(prev);
+        newMap.set(userId, {
+          agentStatus,
+          lastSeen: new Date(),
+        });
+        return newMap;
+      });
+
+      console.log(`✅ Fetched agent status from REST API: ${agentStatus}`);
+    } catch (error) {
+      console.error("❌ Failed to fetch agent status from REST API:", error);
+      
+      // Set error state
+      setAgentStatuses(prev => {
+        const newMap = new Map(prev);
+        newMap.set(userId, {
+          agentStatus: "offline",
+          lastSeen: new Date(),
+        });
+        return newMap;
+      });
+    }
+  };
+
+  // Fetch initial agent status from REST API when user loads or changes
+  useEffect(() => {
+    if (userId && isAgent) {
+      console.log(`🔄 Fetching agent status for user ${userId} (isAgent: ${isAgent})`);
+      fetchAgentStatus(userId);
+    }
+  }, [userId, isAgent, userData?._fetchedAt]); // Include _fetchedAt to refetch after login
 
   /**
    * Handle immediate heartbeat on activity
@@ -104,25 +149,28 @@ export const AgentStatusProvider = ({ children }) => {
 
   /**
    * Get agent status (accepting_chats/not_accepting_chats/offline)
+   * First tries to get from socket state, falls back to REST API
    * @param {number} userId - User ID to check
    * @returns {Object} Status object with agentStatus and lastSeen
    */
   const getAgentStatus = (userId) => {
     const status = agentStatuses.get(userId);
 
-    // Return default object if no status found
-    if (!status) {
-      return { agentStatus: "offline", lastSeen: null };
+    // Return socket state if available
+    if (status) {
+      return status;
     }
 
-    return status;
+    // Return loading state - REST API will be called separately
+    return { agentStatus: "loading", lastSeen: null };
   };
 
   /**
    * Update agent status (accepting_chats/not_accepting_chats)
+   * Uses REST API first, then socket for real-time updates
    * @param {string} agentStatus - New agent status
    */
-  const updateAgentStatus = (agentStatus) => {
+  const updateAgentStatus = async (agentStatus) => {
     if (!userData?.sys_user_id) return;
 
     const validStatuses = ["accepting_chats", "not_accepting_chats"];
@@ -131,19 +179,31 @@ export const AgentStatusProvider = ({ children }) => {
       return;
     }
 
-    // Optimistic update
-    setAgentStatuses((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(userData.sys_user_id, {
-        agentStatus,
-        lastSeen: new Date(),
-      });
-      return newMap;
-    });
+    try {
+      // 1. Update via REST API first (authoritative)
+      console.log(`🔄 Updating agent status via REST API: ${agentStatus}`);
+      await agentStatusService.updateAgentStatus(agentStatus);
 
-    // Emit to server
-    if (socket.connected) {
-      updateAgentStatusEmitter(socket, agentStatus);
+      // 2. Update local state immediately for responsive UI
+      setAgentStatuses(prev => {
+        const newMap = new Map(prev);
+        newMap.set(userData.sys_user_id, {
+          agentStatus,
+          lastSeen: new Date(),
+        });
+        return newMap;
+      });
+
+      // 3. Emit socket event for real-time updates to other clients
+      // (REST API already broadcasts, but this ensures immediate local updates)
+      if (socket.connected) {
+        updateAgentStatusEmitter(socket, agentStatus);
+      }
+
+      console.log(`✅ Agent status updated successfully: ${agentStatus}`);
+    } catch (error) {
+      console.error("❌ Failed to update agent status:", error);
+      throw error;
     }
   };
 
@@ -153,6 +213,7 @@ export const AgentStatusProvider = ({ children }) => {
         agentStatuses,
         getAgentStatus,
         updateAgentStatus,
+        fetchAgentStatus,
       }}
     >
       {children}

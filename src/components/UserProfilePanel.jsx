@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useUser } from "../context/UserContext";
 import { useAgentStatus } from "../context/AgentStatusContext";
 import { LogOut } from "react-feather";
 import api from "../api";
@@ -16,6 +17,7 @@ import socket, { setAgentOffline } from "../socket-simple";
 export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
+  const { logout } = useUser();
   const { getAgentStatus, updateAgentStatus } = useAgentStatus();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -24,11 +26,10 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const agentStatusData = getAgentStatus(userData?.sys_user_id);
   const agentStatus = agentStatusData.agentStatus || "not_accepting_chats";
 
+  console.log('agentStatus: ', agentStatus)
   // Determine status indicator color based on agent status
   const getStatusColor = () => {
-    if (!agentStatusData) return "bg-gray-400"; // Default/offline
-
-    switch (agentStatusData.agentStatus) {
+    switch (agentStatus) {
       case "accepting_chats":
         return "bg-green-500";
       case "not_accepting_chats":
@@ -79,10 +80,10 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
           ? "not_accepting_chats"
           : "accepting_chats";
 
-      // Update via Socket.IO (handled by UserStatusContext)
-      updateAgentStatus(newStatus);
+      // Update via REST API first, then socket (handled by AgentStatusContext)
+      await updateAgentStatus(newStatus);
 
-      console.log(`✅ Agent status update requested: ${newStatus}`);
+      console.log(`✅ Agent status updated successfully: ${newStatus}`);
     } catch (error) {
       console.error("❌ Error updating agent status:", error);
       // Optionally show error toast/notification
@@ -98,10 +99,18 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
         setAgentOffline(socket, userData.sys_user_id);
       }
 
-      await api.post("/auth/logout", {}, { withCredentials: true });
+      // Use UserContext logout method which handles socket disconnection
+      const result = await logout();
+      if (result.success) {
+        navigate("/");
+      } else {
+        console.error("Logout failed:", result.error);
+        // Force navigation even if logout fails
+        navigate("/");
+      }
     } catch (error) {
-      console.error("Logout API call failed:", error);
-    } finally {
+      console.error("Logout failed:", error);
+      // Force navigation on any error
       navigate("/");
     }
   };
@@ -167,16 +176,18 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
                 className={`absolute -bottom-1 -right-1 w-7 h-7 border-4 border-white rounded-full z-20 ${getStatusColor()}`}
                 style={{
                   animation:
-                    agentStatusData.agentStatus === "accepting_chats"
+                    agentStatus === "accepting_chats"
                       ? "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
                       : "none",
                 }}
                 title={
-                  agentStatusData.agentStatus === "accepting_chats"
+                  agentStatus === "accepting_chats"
                     ? "Accepting Chats"
-                    : agentStatusData.agentStatus === "not_accepting_chats"
+                    : agentStatus === "not_accepting_chats"
                       ? "Not Accepting Chats"
-                      : "Offline"
+                      : agentStatus === "loading"
+                        ? "Loading Status..."
+                        : "Offline"
                 }
               ></div>
             </div>
@@ -436,7 +447,11 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
                   <div className="text-sm font-semibold">
                     {agentStatus === "accepting_chats"
                       ? "Accepting Chats"
-                      : "Not Accepting Chats"}
+                      : agentStatus === "not_accepting_chats"
+                        ? "Not Accepting Chats"
+                        : agentStatus === "loading"
+                          ? "Loading Status..."
+                          : "Offline"}
                   </div>
                   <div
                     className="text-xs"
@@ -444,7 +459,11 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
                   >
                     {agentStatus === "accepting_chats"
                       ? "Available for new conversations"
-                      : "Not available for new chats"}
+                      : agentStatus === "not_accepting_chats"
+                        ? "Not available for new chats"
+                        : agentStatus === "loading"
+                          ? "Fetching current status..."
+                          : "Currently offline"}
                   </div>
                 </div>
               </div>

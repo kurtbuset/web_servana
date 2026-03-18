@@ -91,17 +91,6 @@ export default function ChatHeader({
 
         {/* Actions */}
         <div className="relative flex items-center gap-2 flex-shrink-0">
-          {/* Accept Chat Button */}
-          {showAcceptButton && !chatEnded && (
-            <button
-              onClick={onAccept}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#6237A0] to-[#7A4ED9] text-white rounded-lg hover:shadow-lg hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2"
-            >
-              <CheckCircle size={14} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Accept Chat</span>
-              <span className="sm:hidden">Accept</span>
-            </button>
-          )}
 
           {/* Three-dot menu */}
           {showMenu && !chatEnded && (canEndChat || canTransfer) && (

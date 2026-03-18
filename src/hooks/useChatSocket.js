@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import socket, {
   registerChatEvents,
   joinChatGroup,
-  leaveRoom,
 } from "../socket-simple";
 
 /**
@@ -12,6 +11,7 @@ import socket, {
  * - Auto join/leave rooms based on selected customer
  * - Register/cleanup event listeners
  * - Reconnect on logout
+ * - Message status updates (delivered, read)
  *
  * @param {Object} params - Hook parameters
  * @param {Object} params.selectedCustomer - Currently selected customer
@@ -19,7 +19,8 @@ import socket, {
  * @param {Function} params.onMessageReceived - Callback when message is received
  * @param {Function} params.onCustomerListUpdate - Callback for customer list updates
  * @param {Function} params.onUserJoined - Callback when user joins room
- * @param {Function} params.onUserLeft - Callback when user leaves room
+ * @param {Function} params.onMessageStatusUpdate - Callback for message status updates
+ * @param {Function} params.onBulkMessageStatusUpdate - Callback for bulk status updates
  * @param {boolean} params.enabled - Whether socket is enabled (default: true)
  */
 export const useChatSocket = ({
@@ -28,7 +29,7 @@ export const useChatSocket = ({
   onMessageReceived,
   onCustomerListUpdate,
   onUserJoined,
-  onUserLeft,
+  onMessageStatusUpdate,
   enabled = true,
 }) => {
   // Handle logout events to reconnect socket with fresh cookies
@@ -60,7 +61,7 @@ export const useChatSocket = ({
       },
       onCustomerListUpdate,
       onUserJoined,
-      onUserLeft,
+      onMessageStatusUpdate,
     });
 
     return cleanup;
@@ -69,7 +70,7 @@ export const useChatSocket = ({
     onMessageReceived,
     onCustomerListUpdate,
     onUserJoined,
-    onUserLeft,
+    onMessageStatusUpdate,
     enabled,
   ]);
 
@@ -91,14 +92,5 @@ export const useChatSocket = ({
       userType: "agent",
       userId: userId,
     });
-
-    // Cleanup: leave room on unmount or customer change
-    return () => {
-      leaveRoom(socket, {
-        roomId: currentRoomId,
-        userType: "agent",
-        userId: userId,
-      });
-    };
   }, [selectedCustomer?.chat_group_id, getUserId, enabled]);
 };

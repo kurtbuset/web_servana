@@ -3,6 +3,7 @@
  * Enhanced with responsive design and modern styling
  */
 import TypingIndicator from './TypingIndicator';
+import MessageStatus from './MessageStatus';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function ChatMessages({
@@ -19,6 +20,20 @@ export default function ChatMessages({
   isLoadingMore = false,
 }) {
   const { isDark } = useTheme();
+  
+  // // Find the latest agent message (current agent message sent by "user")
+  const findLatestAgentMessageIndex = () => {
+    for (let i = groupedMessages.length - 1; i >= 0; i--) {
+      const item = groupedMessages[i];
+      if (item.type !== "date" && item.sender === "user") {
+        return i;
+      }
+    }
+    return -1;
+  };
+  
+  
+  const latestAgentMessageIndex = findLatestAgentMessageIndex();
   const getSenderLabel = (message) => {
     if (message.sender_type === 'client') {
       return 'Client';
@@ -195,6 +210,15 @@ export default function ChatMessages({
                       {item.displayTime}
                     </div>
                   </div>
+                  {/* Status indicator below message bubble - only for latest agent message */}
+                  {item.sender === "user" && index === latestAgentMessageIndex && (
+                    <div className="flex justify-end mt-0.5">
+                      <MessageStatus 
+                        status={item.status || "sent"} 
+                        className="mr-1"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );

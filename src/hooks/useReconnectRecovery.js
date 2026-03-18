@@ -3,23 +3,29 @@
  * Recovers state after reconnection (rejoin rooms, refresh data)
  */
 import { useEffect, useCallback } from "react";
-import socket, { joinChatRoom, getAgentStatuses } from "../socket-simple";
+import socket, { joinChatGroup, getAgentStatuses } from "../socket-simple";
 import { useSocketConnection } from "./useSocketConnection";
+import { useUser } from "../context/UserContext";
 
 export const useReconnectRecovery = ({
   currentChatGroupId,
   onReconnect,
 } = {}) => {
   const { isConnected } = useSocketConnection();
+  const { userData } = useUser();
 
   // Recovery actions after reconnection
   const performRecovery = useCallback(() => {
     console.log("🔄 Performing reconnection recovery...");
 
     // 1. Rejoin current chat room if any
-    if (currentChatGroupId) {
+    if (currentChatGroupId && userData) {
       console.log(`Rejoining chat room: ${currentChatGroupId}`);
-      joinChatRoom(socket, currentChatGroupId);
+      joinChatGroup(socket, {
+        groupId: currentChatGroupId,
+        userType: userData.role_name || "agent",
+        userId: userData.sys_user_id,
+      });
     }
 
     // 2. Refresh agent statuses
@@ -32,7 +38,7 @@ export const useReconnectRecovery = ({
     }
 
     console.log("✅ Reconnection recovery complete");
-  }, [currentChatGroupId, onReconnect]);
+  }, [currentChatGroupId, onReconnect, userData]);
 
   // Track previous connection state
   useEffect(() => {

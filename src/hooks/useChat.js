@@ -197,11 +197,18 @@ export const useChat = ({ mode = "active" } = {}) => {
       if (exists) return prev;
 
       // Determine if this message is from the current user
-      // For agents: check if sys_user_id matches current user
-      // For clients: check if client_id matches current user
       const isCurrentUser =
         (msg.sys_user_id && msg.sys_user_id === currentUserId) ||
         (msg.sender_type === "agent" && msg.sender_id === currentUserId);
+
+      // Determine message status for display
+      let messageStatus = "sent";
+      if (isCurrentUser) {
+        // For current user's messages, check delivery/read status
+        if (msg.chat_read_at) {
+          messageStatus = "read";
+        }
+      }
 
       return [
         ...prev,
@@ -213,6 +220,7 @@ export const useChat = ({ mode = "active" } = {}) => {
           sender_name: msg.sender_name || "Unknown",
           sender_type: msg.sender_type || "system",
           sender_image: msg.sender_image || null,
+          status: messageStatus,
           displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -222,12 +230,32 @@ export const useChat = ({ mode = "active" } = {}) => {
     });
   }, []);
 
+  /**
+   * Handle message status updates from socket (including auto-updates)
+   */
+  const handleMessageStatusUpdate = useCallback((data) => {
+    setMessages((prev) => 
+      prev.map(msg => 
+        msg.id === data.chatId
+          ? { ...msg, status: data.status }
+          : msg
+      )
+    );
+
+    console.log("data sa useChat: ", data)
+    
+    if (data.updatedByType === "auto") {
+      console.log(`🤖 Auto-updated message ${data.chatId} to ${data.status}`);
+    }
+  }, []);
+
   // Initialize socket connection and listeners (only for active mode)
   useChatSocket({
     selectedCustomer,
     getUserId,
     onMessageReceived: handleMessageReceived,
     onCustomerListUpdate: handleCustomerListUpdate,
+    onMessageStatusUpdate: handleMessageStatusUpdate,
     enabled: !isResolvedMode, // Disable socket for resolved mode
   });
 
@@ -324,19 +352,40 @@ export const useChat = ({ mode = "active" } = {}) => {
 
       try {
         const response = await ChatService.getMessages(clientId, before, 10);
-        const newMessages = response.messages.map((msg, index) => ({
-          id: msg.chat_id || index,
-          sender: determineFrontendSender(msg),
-          content: msg.chat_body,
-          timestamp: msg.chat_created_at,
-          sender_name: msg.sender_name || "Unknown",
-          sender_type: msg.sender_type || "system",
-          sender_image: msg.sender_image || null,
-          displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        }));
+        const currentUserId = getUserId();
+        
+        const newMessages = response.messages.map((msg, index) => {
+          // Determine if this message is from the current user
+          const isCurrentUser = determineFrontendSender(msg) === "user";
+          
+          console.log(`isCurrentUser: ${isCurrentUser}`)
+          console.log('msg: ', msg)
+          // Determine message status for display
+          let messageStatus = "sent";
+          if (isCurrentUser) {
+            // For current user's messages (agent messages), check client status
+            if (msg.chat_read_at) {
+              messageStatus = "read";
+            } else if (msg.chat_delivered_at) {
+              messageStatus = "delivered";
+            }
+          }
+
+          return {
+            id: msg.chat_id || index,
+            sender: determineFrontendSender(msg),
+            content: msg.chat_body,
+            timestamp: msg.chat_created_at,
+            sender_name: msg.sender_name || "Unknown",
+            sender_type: msg.sender_type || "system",
+            sender_image: msg.sender_image || null,
+            status: messageStatus,
+            displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          };
+        });
 
         setMessages((prev) => {
           const combined = append
@@ -373,7 +422,7 @@ export const useChat = ({ mode = "active" } = {}) => {
         loadMessagesInProgressRef.current = false;
       }
     },
-    [determineFrontendSender],
+    [determineFrontendSender, getUserId],
   );
 
   /**
@@ -395,7 +444,7 @@ export const useChat = ({ mode = "active" } = {}) => {
 
       await loadMessages(customer.id);
     },
-    [endedChats, loadMessages],
+    [endedChats, loadMessages, isResolvedMode],
   );
 
   /**
