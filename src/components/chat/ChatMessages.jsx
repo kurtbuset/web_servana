@@ -168,6 +168,35 @@ export default function ChatMessages({
                 }} />
               </div>
             );
+          } else if (item.message_type === "transfer") {
+            // Transfer separator
+            return (
+              <div
+                key={`transfer-${index}`}
+                className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-2 sm:my-3"
+              >
+                <div className="flex-grow h-px" style={{ 
+                  background: isDark 
+                    ? 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent)' 
+                    : 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent)' 
+                }} />
+                <span className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]" style={{
+                  backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : 'rgba(243, 232, 255, 1)',
+                  border: `1px solid ${isDark ? 'rgba(124, 58, 237, 0.3)' : 'rgba(124, 58, 237, 0.2)'}`,
+                  color: isDark ? '#c4b5fd' : '#6237A0'
+                }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  {item.content}
+                </span>
+                <div className="flex-grow h-px" style={{ 
+                  background: isDark 
+                    ? 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent)' 
+                    : 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent)' 
+                }} />
+              </div>
+            );
           } else {
             return (
               <div

@@ -9,6 +9,7 @@ export default function ChatModals({
   showTransferModal,
   showTransferConfirmModal,
   allDepartments,
+  allAgents,
   transferDepartment,
   selectedDepartment,
   onConfirmEndChat,
@@ -36,6 +37,7 @@ export default function ChatModals({
       <TransferModal
         isOpen={showTransferModal}
         departments={allDepartments.map(dept => dept.dept_name)}
+        agents={allAgents || []}
         selectedDepartment={transferDepartment}
         currentDepartment={selectedDepartment}
         onDepartmentChange={onDepartmentChange}

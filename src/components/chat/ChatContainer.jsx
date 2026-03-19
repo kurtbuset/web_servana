@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "../../context/ThemeContext";
 import { useUser } from "../../context/UserContext";
 import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
 import { useChat } from "../../hooks/useChat";
@@ -275,6 +274,7 @@ export default function ChatContainer({ mode = "active" }) {
         showTransferModal={showTransferModal}
         showTransferConfirmModal={showTransferConfirmModal}
         allDepartments={allDepartments}
+        allAgents={[]} // TODO: Fetch agents from API or context
         transferDepartment={transferDepartment}
         selectedDepartment={selectedDepartment}
         onConfirmEndChat={confirmEndChat}

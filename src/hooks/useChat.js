@@ -249,6 +249,50 @@ export const useChat = ({ mode = "active" } = {}) => {
     }
   }, []);
 
+  // Handle chat transferred event
+  const handleChatTransferred = useCallback((transferData) => {
+    console.log("Chat transferred:", transferData);
+    
+    // Create transfer message
+    const transferMessage = {
+      chat_id: `transfer_${Date.now()}`,
+      chat_group_id: transferData.chat_group_id,
+      chat_body: formatTransferMessage(transferData),
+      chat_created_at: transferData.timestamp,
+      sender_type: 'system',
+      message_type: 'transfer',
+      transfer_data: transferData,
+    };
+    
+    // Add to messages
+    setMessages(prev => [...prev, transferMessage]);
+  }, []);
+
+  // Format transfer message for display
+  const formatTransferMessage = (transferData) => {
+    const { transfer_type, to_dept, to_agent, assigned } = transferData;
+    
+    if (transfer_type === 'manual') {
+      if (assigned && to_agent) {
+        return `Chat transferred to ${to_dept} - Assigned to ${to_agent}`;
+      }
+      return `Chat transferred to ${to_dept}`;
+    }
+    
+    if (transfer_type === 'auto_reassign') {
+      if (to_agent) {
+        return `Chat automatically reassigned to ${to_agent}`;
+      }
+      return 'Chat automatically reassigned';
+    }
+    
+    if (transfer_type === 'agent_offline') {
+      return `Chat reassigned (previous agent went offline)`;
+    }
+    
+    return 'Chat transferred';
+  };
+
   // Initialize socket connection and listeners (only for active mode)
   useChatSocket({
     selectedCustomer,
@@ -256,6 +300,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     onMessageReceived: handleMessageReceived,
     onCustomerListUpdate: handleCustomerListUpdate,
     onMessageStatusUpdate: handleMessageStatusUpdate,
+    onChatTransferred: handleChatTransferred,
     enabled: !isResolvedMode, // Disable socket for resolved mode
   });
 
@@ -355,6 +400,22 @@ export const useChat = ({ mode = "active" } = {}) => {
         const currentUserId = getUserId();
         
         const newMessages = response.messages.map((msg, index) => {
+          // Check if this is a transfer message
+          if (msg.message_type === 'transfer') {
+            return {
+              id: msg.chat_id || `transfer_${index}`,
+              sender: 'system',
+              content: msg.chat_body,
+              timestamp: msg.chat_created_at,
+              message_type: 'transfer',
+              transfer_data: msg.transfer_data,
+              displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            };
+          }
+
           // Determine if this message is from the current user
           const isCurrentUser = determineFrontendSender(msg) === "user";
           
