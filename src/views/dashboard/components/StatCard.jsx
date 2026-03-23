@@ -3,7 +3,7 @@ import { TrendingUp } from "react-feather";
 /**
  * StatCard - Reusable stat card component
  */
-export default function StatCard({ icon: Icon, label, value, trend, color, onClick }) {
+export default function StatCard({ icon: Icon, label, value, subLabel, trend, color, onClick }) {
     return (
         <div 
             className={`rounded-lg p-4 shadow-sm border hover:shadow-lg transition-all duration-300 ${onClick ? 'cursor-pointer' : ''}`}
@@ -17,6 +17,9 @@ export default function StatCard({ icon: Icon, label, value, trend, color, onCli
                 <div className="flex-1">
                     <p className="text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</p>
                     <h3 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{value}</h3>
+                    {subLabel && (
+                        <p className="text-[10px] mb-1 font-medium opacity-75" style={{ color: 'var(--text-secondary)' }}>{subLabel}</p>
+                    )}
                     {trend && (
                         <div className="flex items-center gap-1 mt-1">
                             <TrendingUp size={12} className="text-green-500" />

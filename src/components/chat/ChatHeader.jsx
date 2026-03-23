@@ -75,10 +75,20 @@ export default function ChatHeader({
           </button>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm sm:text-base md:text-lg font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-              {customer.name}
-            </h3>
-            {(!customer.isAccepted && !customer.sys_user_id) && (
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                {customer.name}
+              </h3>
+              {chatEnded && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-9A7 7 0 1117 9H3z" clipRule="evenodd" />
+                  </svg>
+                  Ended
+                </span>
+              )}
+            </div>
+            {(!customer.isAccepted && !customer.sys_user_id) && !chatEnded && (
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Clock size={12} className="text-orange-500 flex-shrink-0" />
                 <span className="text-[10px] sm:text-xs text-orange-600 font-medium truncate">

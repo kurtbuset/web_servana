@@ -249,6 +249,86 @@ export const useChat = ({ mode = "active" } = {}) => {
     }
   }, []);
 
+  /**
+   * Handle chat resolved from socket (when mobile ends chat)
+   */
+  const handleChatResolved = useCallback((data) => {
+    console.log("Chat resolved from socket:", data);
+    
+    // Check if this is the currently selected chat
+    if (selectedCustomer && selectedCustomer.chat_group_id === data.chat_group_id) {
+      setChatEnded(true);
+      
+      // Add system message about chat ending as a proper message bubble
+      const endMessage = {
+        id: `system_${Date.now()}`,
+        sender: "system",
+        content: data.resolved_by_type === "client" 
+          ? "The customer has ended this chat." 
+          : "This chat has been ended.",
+        timestamp: data.resolved_at,
+        sender_name: "System",
+        sender_type: "system",
+        sender_image: null,
+        status: "delivered",
+        displayTime: new Date(data.resolved_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setMessages((prev) => [...prev, endMessage]);
+
+      // Add to ended chats
+      setEndedChats((prev) => [
+        ...prev,
+        {
+          ...selectedCustomer,
+          messages: [...messages, endMessage],
+          endedAt: data.resolved_at,
+        },
+      ]);
+
+      toast.info(
+        data.resolved_by_type === "client" 
+          ? "Customer ended the chat" 
+          : "Chat has been ended"
+      );
+    }
+
+    // Remove the ended chat from the active chat list immediately
+    setDepartmentCustomers((prevDeptCustomers) => {
+      const updatedDeptCustomers = { ...prevDeptCustomers };
+      
+      // Find and remove the ended chat from all departments
+      Object.keys(updatedDeptCustomers).forEach((dept) => {
+        updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+          (customer) => customer.chat_group_id !== data.chat_group_id
+        );
+        
+        // Remove empty departments
+        if (updatedDeptCustomers[dept].length === 0) {
+          delete updatedDeptCustomers[dept];
+        }
+      });
+      
+      return updatedDeptCustomers;
+    });
+
+    // Update departments list
+    setDepartments((prevDepartments) => {
+      const activeDepartments = Object.keys(departmentCustomers).filter(
+        (dept) => departmentCustomers[dept] && departmentCustomers[dept].length > 0
+      );
+      return ["All", ...activeDepartments];
+    });
+
+    // Refresh chat groups to get updated data
+    setTimeout(() => {
+      fetchChatGroups();
+    }, 1000);
+  }, [selectedCustomer, messages, departmentCustomers, fetchChatGroups]);
+
   // Initialize socket connection and listeners (only for active mode)
   useChatSocket({
     selectedCustomer,
@@ -256,6 +336,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     onMessageReceived: handleMessageReceived,
     onCustomerListUpdate: handleCustomerListUpdate,
     onMessageStatusUpdate: handleMessageStatusUpdate,
+    onChatResolved: handleChatResolved,
     enabled: !isResolvedMode, // Disable socket for resolved mode
   });
 

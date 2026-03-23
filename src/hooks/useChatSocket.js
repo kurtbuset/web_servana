@@ -12,6 +12,7 @@ import socket, {
  * - Register/cleanup event listeners
  * - Reconnect on logout
  * - Message status updates (delivered, read)
+ * - Chat resolution events
  *
  * @param {Object} params - Hook parameters
  * @param {Object} params.selectedCustomer - Currently selected customer
@@ -20,7 +21,7 @@ import socket, {
  * @param {Function} params.onCustomerListUpdate - Callback for customer list updates
  * @param {Function} params.onUserJoined - Callback when user joins room
  * @param {Function} params.onMessageStatusUpdate - Callback for message status updates
- * @param {Function} params.onBulkMessageStatusUpdate - Callback for bulk status updates
+ * @param {Function} params.onChatResolved - Callback when chat is resolved
  * @param {boolean} params.enabled - Whether socket is enabled (default: true)
  */
 export const useChatSocket = ({
@@ -30,6 +31,7 @@ export const useChatSocket = ({
   onCustomerListUpdate,
   onUserJoined,
   onMessageStatusUpdate,
+  onChatResolved,
   enabled = true,
 }) => {
   // Handle logout events to reconnect socket with fresh cookies
@@ -62,6 +64,7 @@ export const useChatSocket = ({
       onCustomerListUpdate,
       onUserJoined,
       onMessageStatusUpdate,
+      onChatResolved,
     });
 
     return cleanup;
@@ -71,6 +74,7 @@ export const useChatSocket = ({
     onCustomerListUpdate,
     onUserJoined,
     onMessageStatusUpdate,
+    onChatResolved,
     enabled,
   ]);
 
