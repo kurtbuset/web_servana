@@ -4,7 +4,6 @@ import { useTheme } from "../context/ThemeContext";
 import { useUser } from "../context/UserContext";
 import { useAgentStatus } from "../context/AgentStatusContext";
 import { LogOut } from "react-feather";
-import api from "../api";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
 import socket, { setAgentOffline } from "../socket-simple";
@@ -26,7 +25,6 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const agentStatusData = getAgentStatus(userData?.sys_user_id);
   const agentStatus = agentStatusData.agentStatus || "not_accepting_chats";
 
-  console.log('agentStatus: ', agentStatus)
   // Determine status indicator color based on agent status
   const getStatusColor = () => {
     switch (agentStatus) {
@@ -61,9 +59,6 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const dob = userData.profile?.prof_dob;
   const role = userData.role_name;
   const departments = userData.departments || [];
-  // Debug log to see userData structure
-  // console.log("UserProfilePanel - userData:", userData);
-  // console.log("UserProfilePanel - departments:", departments);
 
   const handleViewFullProfile = () => {
     onClose();

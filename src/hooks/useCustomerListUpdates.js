@@ -349,13 +349,13 @@ export const useCustomerListUpdates = (
           );
           break;
 
-        case "chat_transferred_out":
-          handleChatTransferredOut(updateData.data.chat_group_id);
-          break;
+        // case "chat_transferred_out":
+        //   handleChatTransferredOut(updateData.data.chat_group_id);
+        //   break;
 
-        case "chat_transferred_in":
-          handleChatTransferredIn(updateData.data.customer);
-          break;
+        // case "chat_transferred_in":
+        //   handleChatTransferredIn(updateData.data.customer);
+        //   break;
 
         default:
           console.warn(`Unknown customer list update type: ${updateData.type}`);

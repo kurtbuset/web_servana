@@ -23,7 +23,6 @@ export const RolePreviewProvider = ({ children }) => {
       // Force a re-render by dispatching a custom event
       window.dispatchEvent(new CustomEvent('rolePreviewChanged'));
     } else {
-      console.log('🚪 Clearing preview permissions');
       window.__rolePreviewPermissions = null;
       
       // Force a re-render by dispatching a custom event

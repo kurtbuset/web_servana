@@ -49,27 +49,14 @@ export const AgentStatusProvider = ({ children }) => {
         });
         return newMap;
       });
-
-      console.log(`✅ Fetched agent status from REST API: ${agentStatus}`);
     } catch (error) {
       console.error("❌ Failed to fetch agent status from REST API:", error);
-      
-      // Set error state
-      setAgentStatuses(prev => {
-        const newMap = new Map(prev);
-        newMap.set(userId, {
-          agentStatus: "offline",
-          lastSeen: new Date(),
-        });
-        return newMap;
-      });
     }
   };
 
   // Fetch initial agent status from REST API when user loads or changes
   useEffect(() => {
     if (userId && isAgent) {
-      console.log(`🔄 Fetching agent status for user ${userId} (isAgent: ${isAgent})`);
       fetchAgentStatus(userId);
     }
   }, [userId, isAgent, userData?._fetchedAt]); // Include _fetchedAt to refetch after login

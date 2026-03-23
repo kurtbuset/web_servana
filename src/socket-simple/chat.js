@@ -11,12 +11,11 @@ export const joinChatGroup = (socket, { groupId, userType, userId }) => {
     console.warn("Socket not connected");
     return;
   }
-  socket.emit("joinChatGroup", {
+  socket.emit("chat:join", {
     chatGroupId: groupId,
     userType,
     userId,
   });
-  console.log(`${userType} ${userId} joining chat_group ${groupId}`);
 };
 
 export const sendMessage = (
@@ -93,7 +92,6 @@ export const registerChatEvents = (socket, callbacks = {}) => {
   };
 
   const handleChatTransferred = (data) => {
-    console.log("Chat transferred:", data);
     if (onChatTransferred) onChatTransferred(data);
   };
 

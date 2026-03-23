@@ -241,8 +241,6 @@ export const useChat = ({ mode = "active" } = {}) => {
           : msg
       )
     );
-
-    console.log("data sa useChat: ", data)
     
     if (data.updatedByType === "auto") {
       console.log(`🤖 Auto-updated message ${data.chatId} to ${data.status}`);
@@ -251,11 +249,9 @@ export const useChat = ({ mode = "active" } = {}) => {
 
   // Handle chat transferred event
   const handleChatTransferred = useCallback((transferData) => {
-    console.log("Chat transferred:", transferData);
-    
+    console.log('transferData: ', transferData)
     // Create transfer message
     const transferMessage = {
-      chat_id: `transfer_${Date.now()}`,
       chat_group_id: transferData.chat_group_id,
       chat_body: formatTransferMessage(transferData),
       chat_created_at: transferData.timestamp,
@@ -270,20 +266,10 @@ export const useChat = ({ mode = "active" } = {}) => {
 
   // Format transfer message for display
   const formatTransferMessage = (transferData) => {
-    const { transfer_type, to_dept, to_agent, assigned } = transferData;
+    const { transfer_type, to_dept } = transferData;
     
     if (transfer_type === 'manual') {
-      if (assigned && to_agent) {
-        return `Chat transferred to ${to_dept} - Assigned to ${to_agent}`;
-      }
       return `Chat transferred to ${to_dept}`;
-    }
-    
-    if (transfer_type === 'auto_reassign') {
-      if (to_agent) {
-        return `Chat automatically reassigned to ${to_agent}`;
-      }
-      return 'Chat automatically reassigned';
     }
     
     if (transfer_type === 'agent_offline') {
@@ -419,8 +405,6 @@ export const useChat = ({ mode = "active" } = {}) => {
           // Determine if this message is from the current user
           const isCurrentUser = determineFrontendSender(msg) === "user";
           
-          console.log(`isCurrentUser: ${isCurrentUser}`)
-          console.log('msg: ', msg)
           // Determine message status for display
           let messageStatus = "sent";
           if (isCurrentUser) {

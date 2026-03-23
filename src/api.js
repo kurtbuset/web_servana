@@ -8,9 +8,14 @@ const api = axios.create({
   timeout: 30000, // Increased to 30 seconds for slow queries
 });
 
-// Add response interceptor for better error handling
+// Unwrap { data: ... } envelope so frontend keeps using response.data as before
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   (error) => {
     if (error.code === 'ECONNABORTED') {
       console.error('Request timeout:', error.config.url);

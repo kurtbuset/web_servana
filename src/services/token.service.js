@@ -61,8 +61,6 @@ class TokenService {
         console.error('Auto-refresh failed:', error);
       }
     }, 12 * 60 * 1000); // 12 minutes
-
-    console.log('🔄 Auto token refresh started (every 12 minutes)');
   }
 
   /**
