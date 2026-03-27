@@ -28,7 +28,7 @@ export const formatMessageDate = (timestamp) => {
 /**
  * Group messages by date with date dividers
  * @param {Array} messages - Array of message objects with timestamp
- * @returns {Array} - Array with date dividers and messages
+ * @returns {Array} - Array with date dividers, transfer separators, and messages
  */
 export const groupMessagesByDate = (messages) => {
   const groupedMessages = [];
@@ -37,6 +37,7 @@ export const groupMessagesByDate = (messages) => {
   messages.forEach((message) => {
     const messageDate = formatMessageDate(message.timestamp);
 
+    // Add date divider if date changed
     if (messageDate !== currentDate) {
       currentDate = messageDate;
       groupedMessages.push({
@@ -45,10 +46,22 @@ export const groupMessagesByDate = (messages) => {
       });
     }
 
-    groupedMessages.push({
-      type: "message",
-      ...message,
-    });
+    // Check if this is a transfer message
+    if (message.message_type === 'transfer') {
+      groupedMessages.push({
+        type: "message",
+        message_type: "transfer",
+        content: message.content,
+        timestamp: message.timestamp,
+        transfer_data: message.transfer_data,
+        ...message,
+      });
+    } else {
+      groupedMessages.push({
+        type: "message",
+        ...message,
+      });
+    }
   });
 
   return groupedMessages;

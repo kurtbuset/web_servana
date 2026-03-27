@@ -11,12 +11,11 @@ export const joinChatGroup = (socket, { groupId, userType, userId }) => {
     console.warn("Socket not connected");
     return;
   }
-  socket.emit("joinChatGroup", {
+  socket.emit("chat:join", {
     chatGroupId: groupId,
     userType,
     userId,
   });
-  console.log(`${userType} ${userId} joining chat_group ${groupId}`);
 };
 
 export const sendMessage = (
@@ -54,7 +53,7 @@ export const registerChatEvents = (socket, callbacks = {}) => {
     onMessageError,
     onError,
     onMessageStatusUpdate,
-    onChatResolved,
+    onChatTransferred,
   } = callbacks;
 
   const handleReceiveMessage = (msg) => {
@@ -92,9 +91,8 @@ export const registerChatEvents = (socket, callbacks = {}) => {
     if (onMessageStatusUpdate) onMessageStatusUpdate(data);
   };
 
-  const handleChatResolved = (data) => {
-    console.log("Chat resolved:", data);
-    if (onChatResolved) onChatResolved(data);
+  const handleChatTransferred = (data) => {
+    if (onChatTransferred) onChatTransferred(data);
   };
 
   // Register listeners
@@ -104,7 +102,7 @@ export const registerChatEvents = (socket, callbacks = {}) => {
   socket.on("messageError", handleMessageError);
   socket.on("error", handleError);
   socket.on("messageStatusUpdate", handleMessageStatusUpdate);
-  socket.on("chatResolved", handleChatResolved);
+  socket.on("chatTransferred", handleChatTransferred);
 
   // Return cleanup function
   return () => {
@@ -114,6 +112,6 @@ export const registerChatEvents = (socket, callbacks = {}) => {
     socket.off("messageError", handleMessageError);
     socket.off("error", handleError);
     socket.off("messageStatusUpdate", handleMessageStatusUpdate);
-    socket.off("chatResolved", handleChatResolved);
+    socket.off("chatTransferred", handleChatTransferred);
   };
 };

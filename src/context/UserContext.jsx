@@ -11,13 +11,10 @@ export const UserProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async (forceRefresh = false) => {
+  const fetchUser = async () => {
     setLoading(true);
     try {
       const timestamp = Date.now();
-      console.log(
-        `🔄 UserContext - Fetching user data (${forceRefresh ? "forced refresh" : "normal"}) at ${timestamp}`,
-      );
 
       const data = await ProfileService.getProfile();
 
@@ -128,7 +125,6 @@ export const UserProvider = ({ children }) => {
         }
       };
     } else {
-      console.log("🔌 Disconnecting socket - no authenticated user");
       if (socket.connected) {
         socket.disconnect();
       }

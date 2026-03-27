@@ -241,93 +241,43 @@ export const useChat = ({ mode = "active" } = {}) => {
           : msg
       )
     );
-
-    console.log("data sa useChat: ", data)
     
     if (data.updatedByType === "auto") {
       console.log(`🤖 Auto-updated message ${data.chatId} to ${data.status}`);
     }
   }, []);
 
-  /**
-   * Handle chat resolved from socket (when mobile ends chat)
-   */
-  const handleChatResolved = useCallback((data) => {
-    console.log("Chat resolved from socket:", data);
+  // Handle chat transferred event
+  const handleChatTransferred = useCallback((transferData) => {
+    console.log('transferData: ', transferData)
+    // Create transfer message
+    const transferMessage = {
+      chat_group_id: transferData.chat_group_id,
+      chat_body: formatTransferMessage(transferData),
+      chat_created_at: transferData.timestamp,
+      sender_type: 'system',
+      message_type: 'transfer',
+      transfer_data: transferData,
+    };
     
-    // Check if this is the currently selected chat
-    if (selectedCustomer && selectedCustomer.chat_group_id === data.chat_group_id) {
-      setChatEnded(true);
-      
-      // Add system message about chat ending as a proper message bubble
-      const endMessage = {
-        id: `system_${Date.now()}`,
-        sender: "system",
-        content: data.resolved_by_type === "client" 
-          ? "The customer has ended this chat." 
-          : "This chat has been ended.",
-        timestamp: data.resolved_at,
-        sender_name: "System",
-        sender_type: "system",
-        sender_image: null,
-        status: "delivered",
-        displayTime: new Date(data.resolved_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+    // Add to messages
+    setMessages(prev => [...prev, transferMessage]);
+  }, []);
 
-      setMessages((prev) => [...prev, endMessage]);
-
-      // Add to ended chats
-      setEndedChats((prev) => [
-        ...prev,
-        {
-          ...selectedCustomer,
-          messages: [...messages, endMessage],
-          endedAt: data.resolved_at,
-        },
-      ]);
-
-      toast.info(
-        data.resolved_by_type === "client" 
-          ? "Customer ended the chat" 
-          : "Chat has been ended"
-      );
+  // Format transfer message for display
+  const formatTransferMessage = (transferData) => {
+    const { transfer_type, to_dept } = transferData;
+    
+    if (transfer_type === 'manual') {
+      return `Chat transferred to ${to_dept}`;
     }
-
-    // Remove the ended chat from the active chat list immediately
-    setDepartmentCustomers((prevDeptCustomers) => {
-      const updatedDeptCustomers = { ...prevDeptCustomers };
-      
-      // Find and remove the ended chat from all departments
-      Object.keys(updatedDeptCustomers).forEach((dept) => {
-        updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
-          (customer) => customer.chat_group_id !== data.chat_group_id
-        );
-        
-        // Remove empty departments
-        if (updatedDeptCustomers[dept].length === 0) {
-          delete updatedDeptCustomers[dept];
-        }
-      });
-      
-      return updatedDeptCustomers;
-    });
-
-    // Update departments list
-    setDepartments((prevDepartments) => {
-      const activeDepartments = Object.keys(departmentCustomers).filter(
-        (dept) => departmentCustomers[dept] && departmentCustomers[dept].length > 0
-      );
-      return ["All", ...activeDepartments];
-    });
-
-    // Refresh chat groups to get updated data
-    setTimeout(() => {
-      fetchChatGroups();
-    }, 1000);
-  }, [selectedCustomer, messages, departmentCustomers, fetchChatGroups]);
+    
+    if (transfer_type === 'agent_offline') {
+      return `Chat reassigned (previous agent went offline)`;
+    }
+    
+    return 'Chat transferred';
+  };
 
   // Initialize socket connection and listeners (only for active mode)
   useChatSocket({
@@ -336,7 +286,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     onMessageReceived: handleMessageReceived,
     onCustomerListUpdate: handleCustomerListUpdate,
     onMessageStatusUpdate: handleMessageStatusUpdate,
-    onChatResolved: handleChatResolved,
+    onChatTransferred: handleChatTransferred,
     enabled: !isResolvedMode, // Disable socket for resolved mode
   });
 
@@ -436,11 +386,25 @@ export const useChat = ({ mode = "active" } = {}) => {
         const currentUserId = getUserId();
         
         const newMessages = response.messages.map((msg, index) => {
+          // Check if this is a transfer message
+          if (msg.message_type === 'transfer') {
+            return {
+              id: msg.chat_id || `transfer_${index}`,
+              sender: 'system',
+              content: msg.chat_body,
+              timestamp: msg.chat_created_at,
+              message_type: 'transfer',
+              transfer_data: msg.transfer_data,
+              displayTime: new Date(msg.chat_created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            };
+          }
+
           // Determine if this message is from the current user
           const isCurrentUser = determineFrontendSender(msg) === "user";
           
-          console.log(`isCurrentUser: ${isCurrentUser}`)
-          console.log('msg: ', msg)
           // Determine message status for display
           let messageStatus = "sent";
           if (isCurrentUser) {
