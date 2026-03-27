@@ -54,6 +54,7 @@ export const registerChatEvents = (socket, callbacks = {}) => {
     onError,
     onMessageStatusUpdate,
     onChatTransferred,
+    onChatResolved,
   } = callbacks;
 
   const handleReceiveMessage = (msg) => {
@@ -87,12 +88,16 @@ export const registerChatEvents = (socket, callbacks = {}) => {
   };
 
   const handleMessageStatusUpdate = (data) => {
-    console.log("data sa chat socket: ", data)
     if (onMessageStatusUpdate) onMessageStatusUpdate(data);
   };
 
   const handleChatTransferred = (data) => {
     if (onChatTransferred) onChatTransferred(data);
+  };
+
+  const handleChatResolved = (data) => {
+    console.log("Chat resolved:", data);
+    if (onChatResolved) onChatResolved(data);
   };
 
   // Register listeners
@@ -103,6 +108,7 @@ export const registerChatEvents = (socket, callbacks = {}) => {
   socket.on("error", handleError);
   socket.on("messageStatusUpdate", handleMessageStatusUpdate);
   socket.on("chatTransferred", handleChatTransferred);
+  socket.on("chat:resolved", handleChatResolved);
 
   // Return cleanup function
   return () => {
@@ -113,5 +119,6 @@ export const registerChatEvents = (socket, callbacks = {}) => {
     socket.off("error", handleError);
     socket.off("messageStatusUpdate", handleMessageStatusUpdate);
     socket.off("chatTransferred", handleChatTransferred);
+    socket.off("chat:resolved", handleChatResolved);
   };
 };

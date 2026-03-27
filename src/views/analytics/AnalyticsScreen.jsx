@@ -15,7 +15,7 @@ import Layout from '../../components/Layout';
 import ScreenContainer from '../../components/ScreenContainer';
 import { LoadingState } from '../../components/ui';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import socket, { registerChatEvents } from '../../socket-simple';
+import socket, { registerChatEvents } from '../../socket';
 import { useTheme } from '../../context/ThemeContext';
 import { PeriodSelector } from '../../components/shared';
 

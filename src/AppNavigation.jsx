@@ -99,11 +99,19 @@ function ProtectedRoute({ children }) {
 
 /**
  * PublicRoute: Redirect authenticated users away from Login to /Dashboard
+ * Uses UserContext as primary auth check to avoid race conditions on logout
  */
 function PublicRoute({ children }) {
+  const { userData, loading: userLoading } = useUser();
   const [state, setState] = React.useState({ loading: true, authed: false });
 
   React.useEffect(() => {
+    // If UserContext already knows user is logged out, skip API check
+    if (!userLoading && !userData) {
+      setState({ loading: false, authed: false });
+      return;
+    }
+
     let isMounted = true;
 
     const checkAuth = () => {
@@ -123,7 +131,7 @@ function PublicRoute({ children }) {
 
     const handleStorage = (event) => {
       if (event.key === "logout") {
-        checkAuth(); // recheck auth on logout event
+        setState({ loading: false, authed: false });
       }
     };
 
@@ -132,7 +140,7 @@ function PublicRoute({ children }) {
       isMounted = false;
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [userData, userLoading]);
 
   if (state.loading) {
     return <LoadingSpinner variant="page" message="Loading application..." />;

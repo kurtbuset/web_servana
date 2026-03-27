@@ -3,7 +3,7 @@
  * Recovers state after reconnection (rejoin rooms, refresh data)
  */
 import { useEffect, useCallback } from "react";
-import socket, { joinChatGroup, getAgentStatuses } from "../socket-simple";
+import socket, { joinChatGroup, getAgentStatuses } from "../socket";
 import { useSocketConnection } from "./useSocketConnection";
 import { useUser } from "../context/UserContext";
 

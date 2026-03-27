@@ -6,7 +6,7 @@ import { useAgentStatus } from "../context/AgentStatusContext";
 import { LogOut } from "react-feather";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
-import socket, { setAgentOffline } from "../socket-simple";
+import socket, { setAgentOffline } from "../socket";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user

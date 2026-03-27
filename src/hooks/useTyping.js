@@ -3,7 +3,7 @@ import socket, {
   registerTypingEvents,
   emitTyping as emitTypingEmitter,
   emitStopTyping as emitStopTypingEmitter,
-} from "../socket-simple";
+} from "../socket";
 
 /**
  * useTyping hook manages typing indicators

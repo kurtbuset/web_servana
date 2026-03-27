@@ -6,7 +6,7 @@ import toast from "../utils/toast";
 import { useChatSocket } from "./useChatSocket";
 import { useTyping } from "./useTyping";
 import { useCustomerListUpdates } from "./useCustomerListUpdates";
-import socket, { sendMessage as socketSendMessage } from "../socket-simple";
+import socket, { sendMessage as socketSendMessage } from "../socket";
 
 /**
  * useChat hook manages chat state and data
@@ -264,6 +264,30 @@ export const useChat = ({ mode = "active" } = {}) => {
     setMessages(prev => [...prev, transferMessage]);
   }, []);
 
+  // Handle chat resolved event
+  const handleChatResolved = useCallback((resolveData) => {
+    console.log(JSON.stringify(resolveData, null, 2))
+    
+    // Mark chat as ended
+    setChatEnded(true);
+    
+    // Create resolved message separator
+    const resolvedMessage = {
+      id: `resolved_${Date.now()}`,
+      sender: resolveData.system_message.senter_type || 'system',
+      content: resolveData.system_message.chat_body || 'Chat has been resolved',
+      timestamp: resolveData.timestamp || new Date().toISOString(),
+      message_type: resolveData.status || 'resolved',
+      displayTime: new Date(resolveData.timestamp || new Date()).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+    
+    // Add to messages
+    setMessages(prev => [...prev, resolvedMessage]);
+  }, []);
+
   // Format transfer message for display
   const formatTransferMessage = (transferData) => {
     const { transfer_type, to_dept } = transferData;
@@ -287,6 +311,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     onCustomerListUpdate: handleCustomerListUpdate,
     onMessageStatusUpdate: handleMessageStatusUpdate,
     onChatTransferred: handleChatTransferred,
+    onChatResolved: handleChatResolved,
     enabled: !isResolvedMode, // Disable socket for resolved mode
   });
 
@@ -512,7 +537,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     // Clear input immediately for better UX
     setInputMessage("");
 
-    // Send via socket - import directly from socket-simple
+    // Send via socket - import directly from socket
     socketSendMessage(socket, {
       chat_body: trimmedMessage,
       chat_group_id: selectedCustomer.chat_group_id,

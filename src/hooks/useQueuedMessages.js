@@ -3,7 +3,7 @@
  * Queues messages when disconnected and sends when reconnected
  */
 import { useState, useEffect, useCallback } from "react";
-import socket from "../socket-simple";
+import socket from "../socket";
 import { useSocketConnection } from "./useSocketConnection";
 
 export const useQueuedMessages = () => {

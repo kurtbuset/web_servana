@@ -3,7 +3,7 @@
  * Tracks socket connection state and provides UI feedback
  */
 import { useState, useEffect } from "react";
-import socket from "../socket-simple";
+import socket from "../socket";
 import {
   showSuccess,
   showError,

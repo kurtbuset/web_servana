@@ -7,7 +7,7 @@ import socket, {
   setAgentOnline,
   getAgentStatuses,
   registerAgentEvents,
-} from "../socket-simple";
+} from "../socket";
 
 /**
  * useAgentStatusSocket hook

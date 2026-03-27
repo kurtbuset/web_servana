@@ -197,6 +197,35 @@ export default function ChatMessages({
                 }} />
               </div>
             );
+          } else if (item.message_type === "resolved") {
+            // Resolved separator
+            return (
+              <div
+                key={`resolved-${index}`}
+                className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-2 sm:my-3"
+              >
+                <div className="flex-grow h-px" style={{ 
+                  background: isDark 
+                    ? 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.5), transparent)' 
+                    : 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.3), transparent)' 
+                }} />
+                <span className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]" style={{
+                  backgroundColor: isDark ? 'rgba(107, 114, 128, 0.15)' : '#f3f4f6',
+                  border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : '#d1d5db'}`,
+                  color: isDark ? '#9CA3AF' : '#6B7280'
+                }}>
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  {item.content}
+                </span>
+                <div className="flex-grow h-px" style={{ 
+                  background: isDark 
+                    ? 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.5), transparent)' 
+                    : 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.3), transparent)' 
+                }} />
+              </div>
+            );
           } else {
             return (
               <div

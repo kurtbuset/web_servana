@@ -7,7 +7,7 @@ import { useAgentStatusSocket } from "../hooks/useAgentStatusSocket";
 import agentStatusService from "../services/agentStatusService";
 import socket, {
   updateAgentStatus as updateAgentStatusEmitter,
-} from "../socket-simple";
+} from "../socket";
 
 const AgentStatusContext = createContext();
 

@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
 import tokenService from "../services/token.service";
-import socket from "../socket-simple";
+import socket from "../socket";
 
 const UserContext = createContext();
 

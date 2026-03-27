@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import socket, {
   registerChatEvents,
   joinChatGroup,
-} from "../socket-simple";
+} from "../socket";
 
 /**
  * useChatSocket hook manages Socket.IO lifecycle for chat
@@ -13,6 +13,7 @@ import socket, {
  * - Reconnect on logout
  * - Message status updates (delivered, read)
  * - Chat transfer notifications
+ * - Chat resolved notifications
  *
  * @param {Object} params - Hook parameters
  * @param {Object} params.selectedCustomer - Currently selected customer
@@ -22,6 +23,7 @@ import socket, {
  * @param {Function} params.onUserJoined - Callback when user joins room
  * @param {Function} params.onMessageStatusUpdate - Callback for message status updates
  * @param {Function} params.onChatTransferred - Callback when chat is transferred
+ * @param {Function} params.onChatResolved - Callback when chat is resolved
  * @param {boolean} params.enabled - Whether socket is enabled (default: true)
  */
 export const useChatSocket = ({
@@ -32,6 +34,7 @@ export const useChatSocket = ({
   onUserJoined,
   onMessageStatusUpdate,
   onChatTransferred,
+  onChatResolved,
   enabled = true,
 }) => {
   // Handle logout events to reconnect socket with fresh cookies
@@ -65,6 +68,7 @@ export const useChatSocket = ({
       onUserJoined,
       onMessageStatusUpdate,
       onChatTransferred,
+      onChatResolved,
     });
 
     return cleanup;
@@ -75,6 +79,7 @@ export const useChatSocket = ({
     onUserJoined,
     onMessageStatusUpdate,
     onChatTransferred,
+    onChatResolved,
     enabled,
   ]);
 

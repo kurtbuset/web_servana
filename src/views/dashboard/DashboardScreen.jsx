@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useQueues } from "../../hooks/useQueues";
-import socket, { registerChatEvents } from "../../socket-simple";
+import socket, { registerChatEvents } from "../../socket";
 
 // Import components
 import DashboardHeader from "./components/DashboardHeader";

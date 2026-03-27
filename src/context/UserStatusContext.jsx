@@ -1,6 +1,6 @@
 // src/context/UserStatusContext.jsx
 import { createContext, useContext, useEffect, useState, useRef } from "react";
-import socket from "../socket-simple";
+import socket from "../socket";
 import { useUser } from "./UserContext";
 import { showWarning, dismissToast } from "../utils/toast";
 
