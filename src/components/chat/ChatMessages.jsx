@@ -262,27 +262,17 @@ export default function ChatMessages({
         )}
 
         {chatEnded && (
-          <div className="text-[10px] sm:text-xs text-center flex items-center gap-2 my-2 sm:my-2.5" style={{ color: 'var(--text-secondary)' }}>
-            <div className="flex-grow h-px" style={{ 
-              background: isDark 
-                ? 'linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)' 
-                : 'linear-gradient(to right, transparent, #fca5a5, transparent)' 
-            }} />
-            <span className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]" style={{
-              backgroundColor: isDark ? 'rgba(220, 38, 38, 0.1)' : '#fef2f2',
-              border: `1px solid ${isDark ? 'rgba(220, 38, 38, 0.3)' : '#fecaca'}`,
-              color: isDark ? '#fca5a5' : '#dc2626'
+          <div className="flex justify-center my-3">
+            <div className="px-4 py-2 rounded-full shadow-sm font-medium flex items-center gap-2 text-xs" style={{
+              backgroundColor: isDark ? 'rgba(107, 114, 128, 0.15)' : '#f3f4f6',
+              border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : '#d1d5db'}`,
+              color: isDark ? '#9CA3AF' : '#6B7280'
             }}>
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-9A7 7 0 1117 9H3z" clipRule="evenodd" />
               </svg>
               Chat has ended
-            </span>
-            <div className="flex-grow h-px" style={{ 
-              background: isDark 
-                ? 'linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)' 
-                : 'linear-gradient(to right, transparent, #fca5a5, transparent)' 
-            }} />
+            </div>
           </div>
         )}
         <div ref={bottomRef} />

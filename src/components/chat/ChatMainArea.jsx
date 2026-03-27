@@ -99,24 +99,26 @@ export default function ChatMainArea({
               customer={selectedCustomer}
             />
           ) : (
-            <MessageInput
-              inputMessage={inputMessage}
-              onInputChange={onInputChange}
-              onSendMessage={onSendMessage}
-              textareaRef={textareaRef}
-              showCannedMessages={showCannedMessages}
-              onToggleCannedMessages={onToggleCannedMessages}
-              cannedMessages={cannedMessages}
-              onSelectCannedMessage={onSelectCannedMessage}
-              disabled={!canMessage || chatEnded}
-              disabledMessage={
-                !canMessage
-                  ? "You don't have permission to reply/Chat"
-                  : "Message"
-              }
-              chatEnded={chatEnded}
-              canUseCannedMessages={canUseCannedMessages}
-            />
+            !chatEnded && (
+              <MessageInput
+                inputMessage={inputMessage}
+                onInputChange={onInputChange}
+                onSendMessage={onSendMessage}
+                textareaRef={textareaRef}
+                showCannedMessages={showCannedMessages}
+                onToggleCannedMessages={onToggleCannedMessages}
+                cannedMessages={cannedMessages}
+                onSelectCannedMessage={onSelectCannedMessage}
+                disabled={!canMessage}
+                disabledMessage={
+                  !canMessage
+                    ? "You don't have permission to reply/Chat"
+                    : "Message"
+                }
+                chatEnded={false}
+                canUseCannedMessages={canUseCannedMessages}
+              />
+            )
           )}
         </>
       ) : (

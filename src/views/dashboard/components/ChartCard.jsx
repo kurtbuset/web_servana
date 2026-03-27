@@ -26,7 +26,7 @@ function ChartPlaceholder() {
 /**
  * ChartCard - Reusable chart component using ApexCharts
  */
-export default function ChartCard({ title, value, trend, chartData, chartColor, isDark, className, headerAction }) {
+export default function ChartCard({ title, value, trend, chartData, chartColor, isDark, className, headerAction, loading = false }) {
     // ApexCharts configuration
     const chartOptions = useMemo(() => ({
         chart: {
@@ -138,15 +138,20 @@ export default function ChartCard({ title, value, trend, chartData, chartColor, 
     }), [chartData.categories, chartColor, isDark]);
 
     return (
-        <div className={`${className} rounded-lg shadow-sm p-4 border flex flex-col`}
+        <div className={`${className} rounded-lg shadow-sm p-4 border flex flex-col relative`}
              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+            {loading && (
+                <div className="absolute top-2 right-2 z-10">
+                    <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                </div>
+            )}
             <div className="flex justify-between items-start mb-3 flex-shrink-0">
                 <div>
                     <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{title}</p>
                     <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{value}</h3>
                     {trend && (
-                        <span className={`text-sm font-medium ${trend.startsWith('+') || trend.startsWith('↑') ? 'text-green-600' : 'text-red-600'}`}>
-                            {trend}
+                        <span className={`text-sm font-medium ${String(trend).startsWith('+') || String(trend).startsWith('↑') ? 'text-green-600' : 'text-red-600'}`}>
+                            {String(trend)}
                         </span>
                     )}
                 </div>
@@ -156,7 +161,7 @@ export default function ChartCard({ title, value, trend, chartData, chartColor, 
                     </div>
                 )}
             </div>
-            <div className="flex-1 min-h-0">
+            <div className={`flex-1 min-h-0 transition-opacity duration-200 ${loading ? 'opacity-70' : 'opacity-100'}`}>
                 <Suspense fallback={<ChartPlaceholder />}>
                     <ReactApexChart
                         options={chartOptions}
