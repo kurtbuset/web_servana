@@ -69,7 +69,7 @@ export default function CustomerList({
 
         return (
           <div
-            key={customer.id}
+            key={customer.chat_group_id}
             className={`flex items-center gap-2 px-2 sm:px-2.5 py-1.5 sm:py-2 border rounded-lg transition-all duration-200 mb-1 sm:mb-1.5 group ${
               isSelected
                 ? "border-[#6237A0] shadow-md"
