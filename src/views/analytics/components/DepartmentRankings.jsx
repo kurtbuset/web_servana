@@ -164,7 +164,7 @@ export default function DepartmentRankings({ period, className }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-[10px] truncate" style={{ color: 'var(--text-primary)' }}>
-                  {agent.agentName}
+                  #{agent.rank} {agent.agentName}
                 </p>
                 <p className="text-[9px]" style={{ color: 'var(--text-secondary)' }}>
                   ⭐ {agent.averageRating}/5.0 • {agent.totalRatings} ratings • {agent.satisfactionRate}% satisfied

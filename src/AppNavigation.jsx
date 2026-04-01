@@ -27,7 +27,6 @@ const MacrosAgentsScreen = lazy(() => import("./views/macros/MacrosAgentsScreen.
 const MacrosClientsScreen = lazy(() => import("./views/macros/MacrosClientsScreen.jsx"));
 const Profile = lazy(() => import("./views/profile/Profile.jsx"));
 const ManageAdmin = lazy(() => import("./views/manage-admin/ManageAdmin.jsx"));
-const AnalyticsScreen = lazy(() => import("./views/analytics/AnalyticsScreen.jsx"));
 
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "./components/ui";
@@ -303,16 +302,6 @@ function AppNavigation() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <AnalyticsScreen />
-            </ProtectedRoute>
-          }
-        />
-
-       
         <Route path="/queues" element={<Navigate to="/queues" replace />} />
 
         <Route path="/chats" element={<Navigate to="/chats" replace />} />

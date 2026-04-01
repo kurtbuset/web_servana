@@ -10,8 +10,7 @@ import {
   Headphones,
   Cpu,
   ChevronsLeft,
-  ChevronsRight,
-  BarChart2
+  ChevronsRight
 } from "react-feather";
 import { HiOfficeBuilding } from "react-icons/hi";
 import { Link, useLocation } from "react-router-dom";
@@ -31,11 +30,6 @@ const navSections = [
         to: ROUTES.DASHBOARD, 
         icon: Activity, 
         label: "Dashboard"
-      },
-      { 
-        to: "/analytics", 
-        icon: BarChart2, 
-        label: "Analytics"
       }
     ]
   },

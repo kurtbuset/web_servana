@@ -59,22 +59,22 @@ export const useAnalytics = (period = 'weekly', selectedDate = null, selectedWee
       }
 
       // Fetch legacy analytics (always available)
-      const [messages, responseTime, stats, satisfaction] = await Promise.all([
+      const [messages, responseTime, stats, satisfaction] = await Promise.allSettled([
         analyticsService.getMessageAnalytics(period, agentOnly, dateParams),
         analyticsService.getResponseTimeAnalytics(period, dateParams),
         analyticsService.getDashboardStats(dateParams),
         analyticsService.getCustomerSatisfactionAnalytics(period, agentOnly, dateParams)
       ]);
 
-      console.log('Received message analytics:', messages);
-      console.log('Received response time analytics:', responseTime);
-      console.log('Received dashboard stats:', stats);
-      console.log('Received customer satisfaction:', satisfaction);
+      console.log('Received message analytics:', messages.status === 'fulfilled' ? messages.value : messages.reason);
+      console.log('Received response time analytics:', responseTime.status === 'fulfilled' ? responseTime.value : responseTime.reason);
+      console.log('Received dashboard stats:', stats.status === 'fulfilled' ? stats.value : stats.reason);
+      console.log('Received customer satisfaction:', satisfaction.status === 'fulfilled' ? satisfaction.value : satisfaction.reason);
 
-      setMessageAnalytics(messages);
-      setResponseTimeAnalytics(responseTime);
-      setDashboardStats(stats);
-      setCustomerSatisfaction(satisfaction);
+      setMessageAnalytics(messages.status === 'fulfilled' ? messages.value : null);
+      setResponseTimeAnalytics(responseTime.status === 'fulfilled' ? responseTime.value : null);
+      setDashboardStats(stats.status === 'fulfilled' ? stats.value : null);
+      setCustomerSatisfaction(satisfaction.status === 'fulfilled' ? satisfaction.value : null);
 
       // Fetch top conversations only for agents
       if (agentOnly) {
@@ -175,16 +175,17 @@ export const useAnalytics = (period = 'weekly', selectedDate = null, selectedWee
   }, [enhancedResponseTime]);
 
   const getTopPerformingAgents = useCallback((limit = 5) => {
-    return agentPerformance
+    return (agentPerformance || [])
       .sort((a, b) => a.avg_response_time_seconds - b.avg_response_time_seconds)
       .slice(0, limit);
   }, [agentPerformance]);
 
   const getAgentsByPerformance = useCallback(() => {
-    const excellent = agentPerformance.filter(a => a.performance_rating === 'Excellent');
-    const good = agentPerformance.filter(a => a.performance_rating === 'Good');
-    const fair = agentPerformance.filter(a => a.performance_rating === 'Fair');
-    const needsImprovement = agentPerformance.filter(a => a.performance_rating === 'Needs Improvement');
+    const agents = agentPerformance || [];
+    const excellent = agents.filter(a => a.performance_rating === 'Excellent');
+    const good = agents.filter(a => a.performance_rating === 'Good');
+    const fair = agents.filter(a => a.performance_rating === 'Fair');
+    const needsImprovement = agents.filter(a => a.performance_rating === 'Needs Improvement');
 
     return { excellent, good, fair, needsImprovement };
   }, [agentPerformance]);
@@ -279,6 +280,6 @@ export const useAnalytics = (period = 'weekly', selectedDate = null, selectedWee
     // Status flags
     hasEnhancedData: !!enhancedResponseTime,
     hasLegacyData: !!responseTimeAnalytics,
-    hasAgentData: agentPerformance.length > 0,
+    hasAgentData: (agentPerformance || []).length > 0,
   };
 };

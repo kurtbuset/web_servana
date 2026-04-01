@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,7 +15,6 @@ import Layout from '../../components/Layout';
 import ScreenContainer from '../../components/ScreenContainer';
 import { LoadingState } from '../../components/ui';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import socket, { registerChatEvents } from '../../socket';
 import { useTheme } from '../../context/ThemeContext';
 import { PeriodSelector } from '../../components/shared';
 
@@ -68,7 +67,6 @@ const AnalyticsScreen = () => {
     loading,
     error,
     refetch,
-    refreshAnalytics,
     getResponseTimeData,
     getTopPerformingAgents,
     formatTime,
@@ -113,48 +111,6 @@ const AnalyticsScreen = () => {
   }, []);
 
   const { isDark } = useTheme();
-
-  // Socket event listeners for real-time analytics updates
-  useEffect(() => {
-    console.log('🔌 Setting up analytics socket listeners');
-    
-    const handleChatResolved = (data) => {
-      console.log('📈 Analytics: Chat resolved, refreshing data', data);
-      // Add a small delay to ensure backend has processed the resolution
-      setTimeout(() => {
-        refreshAnalytics();
-      }, 500);
-    };
-
-    const handleCustomerListUpdate = (updateData) => {
-      console.log('📈 Analytics: Customer list updated', updateData);
-      // Check if it's a chat resolution event
-      if (updateData.type === 'chat_resolved') {
-        console.log('📈 Analytics: Chat resolved via customer list update');
-        setTimeout(() => {
-          refreshAnalytics();
-        }, 500);
-      }
-    };
-
-    // Only register listeners if socket is available and connected
-    if (socket && socket.connected) {
-      console.log('✅ Socket is connected, registering analytics listeners');
-      
-      // Register socket event listeners
-      const cleanup = registerChatEvents(socket, {
-        onChatResolved: handleChatResolved,
-        onCustomerListUpdate: handleCustomerListUpdate,
-      });
-
-      return () => {
-        console.log('🔌 Cleaning up analytics socket listeners');
-        cleanup();
-      };
-    } else {
-      console.warn('⚠️ Socket not available or not connected, analytics real-time updates disabled');
-    }
-  }, [refreshAnalytics]);
 
   // Memoized chart data with proper period handling
   const messagesData = useMemo(() => {
