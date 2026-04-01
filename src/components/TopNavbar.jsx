@@ -1,19 +1,19 @@
 import { Menu } from "react-feather";
 import { useState } from "react";
 import { useUser } from "../../src/context/UserContext";
-import { useAgentStatus } from "../../src/context/AgentStatusContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../src/context/UnsavedChangesContext";
 import { useDepartmentPanel } from "../../src/context/DepartmentPanelContext";
+import { usePresence } from "../../src/context/PresenceContext";
 import UserProfilePanel from "./UserProfilePanel";
 import { getAvatarUrl } from "../utils/imageUtils";
 
 export default function TopNavbar({ toggleSidebar }) {
   const { userData, loading } = useUser();
-  const { getAgentStatus } = useAgentStatus();
   const { isDark } = useTheme();
   const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
   const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
+  const { myPresence } = usePresence();
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   // Build full name
@@ -25,22 +25,14 @@ export default function TopNavbar({ toggleSidebar }) {
 
   // Get avatar or fallback
   const avatarUrl = getAvatarUrl(userData);
-
-  // Get agent status for current user
-  const agentStatus = userData?.sys_user_id ? getAgentStatus(userData.sys_user_id) : null;
   
-  // Determine indicator color based on agent status
+  // Determine indicator color based on agent presence from Redis
   const getStatusColor = () => {
-    if (!agentStatus) return 'bg-gray-400'; // Default/offline
-    
-    switch (agentStatus.agentStatus) {
-      case 'accepting_chats':
-        return 'bg-green-500';
-      case 'not_accepting_chats':
-        return 'bg-red-500';
-      case 'offline':
-      default:
-        return 'bg-gray-400';
+    switch (myPresence) {
+      case 'accepting_chats': return 'bg-green-500';
+      case 'not_accepting_chats': return 'bg-yellow-500';
+      case 'offline': return 'bg-gray-400';
+      default: return 'bg-gray-400';
     }
   };
 
@@ -157,7 +149,7 @@ export default function TopNavbar({ toggleSidebar }) {
               <div 
                 className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-2 rounded-full ${getStatusColor()}`}
                 style={{ borderColor: 'var(--card-bg)' }}
-                title={agentStatus?.agentStatus === 'accepting_chats' ? 'Accepting Chats' : agentStatus?.agentStatus === 'not_accepting_chats' ? 'Not Accepting Chats' : 'Offline'}
+                
               ></div>
             </div>
             <span 

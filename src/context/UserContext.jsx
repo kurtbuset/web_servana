@@ -1,5 +1,5 @@
 // src/context/UserContext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
 import tokenService from "../services/token.service";
@@ -14,41 +14,9 @@ export const UserProvider = ({ children }) => {
   const fetchUser = async () => {
     setLoading(true);
     try {
-      const timestamp = Date.now();
 
       const data = await ProfileService.getProfile();
-
-      // Validate role data
-      if (!data?.role_name) {
-        console.warn("⚠️ User role information is missing or invalid");
-      }
-
-      // Validate privilege data
-      if (!data?.privilege) {
-        console.error("🚨 User privilege data is missing!");
-        console.error("🚨 This will cause permission checks to fail");
-        console.error(
-          "🚨 Backend response structure:",
-          Object.keys(data || {}),
-        );
-      } else {
-        // console.log("✅ Privilege data found:", Object.keys(data.privilege));
-        // Log each permission status with detailed info
-        Object.entries(data.privilege).forEach(([key, value]) => {
-          const status = value === true ? "✅ GRANTED" : "❌ DENIED";
-          // console.log(`  ${key}: ${value} ${status}`);
-        });
-      }
-
-      // Store with timestamp to track freshness
-      const userDataWithMeta = {
-        ...data,
-        _fetchedAt: timestamp,
-        _sessionId: Math.random().toString(36).substr(2, 9),
-      };
-
-      setUserData(userDataWithMeta);
-      // console.log(`✅ UserContext - User data updated successfully (session: ${userDataWithMeta._sessionId})`);
+      setUserData(data);
     } catch (err) {
       console.error("❌ Failed to fetch user data:", err);
       console.error("❌ Error details:", err.response?.data || err.message);
@@ -79,10 +47,6 @@ export const UserProvider = ({ children }) => {
   // Connect socket when user is authenticated
   useEffect(() => {
     if (userData?.sys_user_id) {
-      console.log(
-        "🔌 Connecting socket for authenticated user:",
-        userData.sys_user_id,
-      );
 
       // Update socket auth before connecting
       socket.auth = (cb) => {
@@ -95,11 +59,6 @@ export const UserProvider = ({ children }) => {
       // Handle disconnect events specific to user context
       const handleDisconnect = (reason) => {
         if (reason === "io server disconnect") {
-          // Server kicked us out - likely auth failure
-          console.error(
-            "🚨 Server disconnected socket - checking authentication...",
-          );
-
           // Check if we still have valid session
           setTimeout(async () => {
             try {
@@ -159,7 +118,8 @@ export const UserProvider = ({ children }) => {
   // Logout user
   const logout = async () => {
     try {
-      await AuthService.logout();
+      const logoutData = await AuthService.logout();
+      console.log(JSON.stringify(logoutData, null, 2))
 
       // Clear all user data and force fresh fetch on next login
       setUserData(null);
@@ -171,63 +131,59 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const hasPermission = (permission, usePreview = true) => {
-    // Check if we should use preview permissions (from RolePreviewContext)
-    if (usePreview && window.__rolePreviewPermissions) {
-      const previewValue = window.__rolePreviewPermissions[permission];
-      console.log(
-        `🎭 [PREVIEW] Checking permission ${permission}: ${previewValue}`,
-      );
 
-      // Special debug for change roles permissions
-      if (permission === "priv_can_view_change_roles") {
-        console.log(`🎭 [PREVIEW DEBUG] Change Roles View Permission:`, {
-          permission,
-          previewValue,
-          allPreviewPermissions: window.__rolePreviewPermissions,
-        });
-      }
-
-      return previewValue === true;
-    }
-
-    // Remove admin override - everyone goes through privilege table
-    if (!userData?.privilege) {
-      console.warn(
-        `🚨 hasPermission(${permission}): No privilege data available`,
-      );
-      console.warn(`🚨 UserData state:`, {
-        hasUserData: !!userData,
-        userDataKeys: userData ? Object.keys(userData) : [],
-        sessionId: userData?._sessionId,
-        fetchedAt: userData?._fetchedAt,
-      });
-      return false;
-    }
-
-    const privilegeValue = userData.privilege[permission];
-
-    // Handle undefined values (new permissions that don't exist in DB yet)
-    if (privilegeValue === undefined) {
-      console.warn(
-        `⚠️ Permission ${permission} is undefined - likely missing from database. Defaulting to false.`,
-      );
-      return false;
-    }
-
-    const result = privilegeValue === true;
-
-    // console.log(`🔍 hasPermission(${permission}): ${result} (raw value: ${privilegeValue}, type: ${typeof privilegeValue})`);
-
-    if (!result && privilegeValue !== false) {
-      console.warn(
-        `⚠️ Unexpected privilege value for ${permission}:`,
-        privilegeValue,
-      );
-    }
-
-    return result;
-  };
+  // Memoized permissions object - compute once, reuse everywhere
+  const permissions = useMemo(() => {
+    const source = window.__rolePreviewPermissions || userData?.privilege || {};
+    return {
+      // Communication
+      canViewMessage: source.priv_can_view_message === true,
+      canMessage: source.priv_can_message === true,
+      canEndChat: source.priv_can_end_chat === true,
+      canTransfer: source.priv_can_transfer === true,
+      canUseCannedMess: source.priv_can_use_canned_mess === true,
+      
+      // Profile
+      canManageProfile: source.priv_can_manage_profile === true,
+      
+      // Departments
+      canViewDept: source.priv_can_view_dept === true,
+      canAddDept: source.priv_can_add_dept === true,
+      canEditDept: source.priv_can_edit_dept === true,
+      canManageDept: source.priv_can_manage_dept === true,
+      canAssignDept: source.priv_can_assign_dept === true,
+      
+      // Roles
+      canManageRole: source.priv_can_manage_role === true,
+      canAssignRole: source.priv_can_assign_role === true,
+      canViewChangeRoles: source.priv_can_view_change_roles === true,
+      canEditChangeRoles: source.priv_can_edit_change_roles === true,
+      
+      // Accounts
+      canCreateAccount: source.priv_can_create_account === true,
+      
+      // Auto Replies
+      canViewAutoReply: source.priv_can_view_auto_reply === true,
+      canAddAutoReply: source.priv_can_add_auto_reply === true,
+      canEditAutoReply: source.priv_can_edit_auto_reply === true,
+      canDeleteAutoReply: source.priv_can_delete_auto_reply === true,
+      canManageAutoReply: source.priv_can_manage_auto_reply === true,
+      
+      // Macros
+      canViewMacros: source.priv_can_view_macros === true,
+      canAddMacros: source.priv_can_add_macros === true,
+      canEditMacros: source.priv_can_edit_macros === true,
+      canDeleteMacros: source.priv_can_delete_macros === true,
+      
+      // Manage Agents
+      canViewManageAgents: source.priv_can_view_manage_agents === true,
+      canViewAgentsInfo: source.priv_can_view_agents_info === true,
+      canCreateAgentAccount: source.priv_can_create_agent_account === true,
+      canEditManageAgents: source.priv_can_edit_manage_agents === true,
+      canEditDeptManageAgents: source.priv_can_edit_dept_manage_agents === true,
+      canViewAnalyticsManageAgents: source.priv_can_view_analytics_manage_agents === true,
+    };
+  }, [userData?.privilege, window.__rolePreviewPermissions]);
 
   const getRoleName = () => {
     if (!userData) return "Unknown";
@@ -267,7 +223,7 @@ export const UserProvider = ({ children }) => {
         updateProfile,
         uploadProfileImage,
         logout,
-        hasPermission,
+        permissions,
         getRoleName,
         getUserId,
         getUserEmail,

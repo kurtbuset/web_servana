@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
 import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
+import { usePresence } from "../../context/PresenceContext";
 import { useChat } from "../../hooks/useChat";
 import { ChatService } from "../../services/chat.service";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
+import socket from "../../socket";
 import ChatModals from "./ChatModals";
 import ChatSidebar from "./ChatSidebar";
 import ChatMainArea from "./ChatMainArea";
@@ -28,20 +30,22 @@ export default function ChatContainer({ mode = "active" }) {
   const [transferDepartment, setTransferDepartment] = useState(null);
   const [allDepartments, setAllDepartments] = useState([]);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [departmentAvailability, setDepartmentAvailability] = useState({});
+  const [availableAgents, setAvailableAgents] = useState([]);
 
   const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } =
     useDepartmentPanel();
+  const { fetchAvailableByDepartment, allPresences } = usePresence();
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
-  const { hasPermission } = useUser();
+  const { permissions } = useUser();
 
   const isResolvedMode = mode === "resolved";
-  const canMessage = hasPermission("priv_can_message") && !isResolvedMode;
-  const canEndChat = hasPermission("priv_can_end_chat") && !isResolvedMode;
-  const canTransfer = hasPermission("priv_can_transfer") && !isResolvedMode;
-  const canUseCannedMessages =
-    hasPermission("priv_can_use_canned_mess") && !isResolvedMode;
+  const canMessage = permissions.canMessage && !isResolvedMode;
+  const canEndChat = permissions.canEndChat && !isResolvedMode;
+  const canTransfer = permissions.canTransfer && !isResolvedMode;
+  const canUseCannedMessages = permissions.canUseCannedMess && !isResolvedMode;
 
   // Use unified hook with mode parameter
   const {
@@ -165,6 +169,42 @@ export default function ChatContainer({ mode = "active" }) {
     setShowProfilePanel(false);
   };
 
+  // Fetch available agents by department when transfer modal opens
+  const refreshTransferPresence = useCallback(() => {
+    fetchAvailableByDepartment((data) => {
+      if (data?.departments) {
+        const availMap = {};
+        data.departments.forEach((d) => {
+          availMap[d.dept_name] = d.availableCount;
+        });
+        setDepartmentAvailability(availMap);
+      }
+      if (data?.availableAgents) {
+        setAvailableAgents(data.availableAgents);
+      }
+    });
+  }, [fetchAvailableByDepartment]);
+
+  useEffect(() => {
+    if (showTransferModal) {
+      refreshTransferPresence();
+    }
+  }, [showTransferModal, refreshTransferPresence]);
+
+  // Real-time update when presence changes while transfer modal is open
+  useEffect(() => {
+    if (!showTransferModal) return;
+
+    const handlePresenceChange = () => {
+      refreshTransferPresence();
+    };
+
+    socket.on("presence:change", handlePresenceChange);
+    return () => {
+      socket.off("presence:change", handlePresenceChange);
+    };
+  }, [showTransferModal, refreshTransferPresence]);
+
   // Fetch all departments on component mount
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -274,7 +314,9 @@ export default function ChatContainer({ mode = "active" }) {
         showTransferModal={showTransferModal}
         showTransferConfirmModal={showTransferConfirmModal}
         allDepartments={allDepartments}
-        allAgents={[]} // TODO: Fetch agents from API or context
+        allAgents={[]}
+        departmentAvailability={departmentAvailability}
+        availableAgents={availableAgents}
         transferDepartment={transferDepartment}
         selectedDepartment={selectedDepartment}
         onConfirmEndChat={confirmEndChat}

@@ -40,8 +40,6 @@ export function UserCard({ user, isDark, onClick }) {
     isOnline = false;
   }
   
-  const displayLastSeen = socketLastSeen || (user.last_seen ? new Date(user.last_seen) : null);
-  
   const fullName = [
     user.profile?.prof_firstname,
     user.profile?.prof_middlename,
@@ -83,9 +81,6 @@ export function UserCard({ user, isDark, onClick }) {
         <h4 className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
           {displayName}
         </h4>
-        <p className="text-xs truncate" style={{ color: isOnline ? '#10b981' : 'var(--text-secondary)' }}>
-          {isOnline ? 'online' : (displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline')}
-        </p>
       </div>
     </div>
   );

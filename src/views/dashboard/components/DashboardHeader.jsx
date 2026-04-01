@@ -1,4 +1,5 @@
 import { getAvatarUrl } from "../../../utils/imageUtils";
+import Badge from "../../../components/ui/Badge";
 
 /**
  * DashboardHeader - User profile header section
@@ -35,19 +36,16 @@ export default function DashboardHeader({ userData, getRoleName }) {
                             {email}
                         </p>
                         <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>•</span>
-                        <span className="px-3 py-1 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
+                        <Badge variant="purple-gradient" size="lg">
                             {getRoleName()}
-                        </span>
+                        </Badge>
                         {departments.length > 0 && (
                             <>
                                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>•</span>
                                 {departments.map((dept, idx) => (
-                                    <span
-                                        key={idx}
-                                        className="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-200"
-                                    >
+                                    <Badge key={idx} variant="blue-gradient" size="lg">
                                         {dept.dept_name || dept}
-                                    </span>
+                                    </Badge>
                                 ))}
                             </>
                         )}

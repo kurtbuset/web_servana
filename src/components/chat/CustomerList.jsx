@@ -35,13 +35,6 @@ export default function CustomerList({
         </span>
       );
     }
-    if (customer.status === "transferred") {
-      return (
-        <span className="text-[7px] sm:text-[8px] font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 border border-blue-200">
-          TRANSFERRED
-        </span>
-      );
-    }
     return null;
   };
 

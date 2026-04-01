@@ -1,6 +1,5 @@
 import React from "react";
 import { useUser } from "../../context/UserContext";
-import { formatLastSeen } from "../../utils/timeUtils";
 import { getProfilePictureUrl } from "../../utils/imageUtils";
 
 /**
@@ -26,8 +25,6 @@ export function MiniProfileModal({ user, isDark, onClose, skipAnimation = false 
   } else {
     isOnline = false;
   }
-  
-  const displayLastSeen = socketLastSeen || (user.last_seen ? new Date(user.last_seen) : null);
   
   const fullName = [
     user.profile?.prof_firstname,
@@ -139,9 +136,6 @@ export function MiniProfileModal({ user, isDark, onClose, skipAnimation = false 
             <h3 className="text-base font-bold truncate" style={{ color: 'var(--text-primary)' }}>
               {displayName}
             </h3>
-            <p className="text-xs mt-0.5" style={{ color: isOnline ? '#10b981' : 'var(--text-secondary)' }}>
-              {isOnline ? 'online' : (displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline')}
-            </p>
           </div>
           
           {/* Departments Section */}

@@ -133,7 +133,6 @@ class AnalyticsService {
       });
       
       const response = await api.get(`/analytics/customer-satisfaction?${params}`);
-      console.log('Customer satisfaction analytics response:', response.data);
       return response.data.data; // Backend returns { success: true, data: {...} }
     } catch (error) {
       console.error("Error fetching customer satisfaction analytics:", error);

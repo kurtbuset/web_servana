@@ -1,5 +1,7 @@
 import { Edit3 } from 'react-feather';
 import ToggleSwitch from '../../../components/ToggleSwitch';
+import Badge from '../../../components/ui/Badge';
+import { useTableRowHover } from '../../../hooks/useTableRowHover';
 
 /**
  * AutoReplyTableRow - Individual row in the auto-replies table
@@ -15,16 +17,13 @@ export default function AutoReplyTableRow({
   onTransfer,
   onDelete
 }) {
+  const rowHover = useTableRowHover(isDark);
+
   return (
     <tr
       className="transition-colors"
       style={{ borderTop: `1px solid var(--border-color)` }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
+      {...rowHover}
     >
       <td className="py-3 px-3 sm:px-4">
         <div className="flex items-start gap-2">
@@ -54,13 +53,9 @@ export default function AutoReplyTableRow({
       </td>
 
       <td className="py-3 px-3 sm:px-4 text-center">
-        <span className="text-xs px-2 py-0.5 rounded inline-block font-medium max-w-[100px] truncate" style={{
-          backgroundColor: isDark ? '#3a3a3a' : '#e5e7eb',
-          color: 'var(--text-primary)',
-          border: `1px solid var(--border-color)`
-        }} title={departmentName}>
+        <Badge variant="neutral" size="md" pill={false} isDark={isDark} truncate title={departmentName}>
           {departmentName}
-        </span>
+        </Badge>
       </td>
 
       <td className="py-3 px-3 sm:px-4 text-center">

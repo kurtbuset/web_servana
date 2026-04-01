@@ -1,8 +1,6 @@
-  import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useUser } from "../context/UserContext";
-import { useAgentStatus } from "../context/AgentStatusContext";
 import { useTheme } from "../context/ThemeContext";
-import { formatLastSeen } from "../utils/timeUtils";
 import { getProfilePictureUrl } from "../utils/imageUtils";
 import api from "../api";
 
@@ -33,44 +31,22 @@ const CACHE_DURATION = 60000; // 1 minute cache
  */
 const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown = false }) => {
   const { userData } = useUser();
-  const { getAgentStatus, agentStatuses } = useAgentStatus();
   const { isDark } = useTheme();
   const [departmentsData, setDepartmentsData] = useState(departmentDataCache);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentDeptIndex, setCurrentDeptIndex] = useState(0);
-  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
   const [selectedUser, setSelectedUser] = useState(null); // For mini profile modal
   const [previousUserId, setPreviousUserId] = useState(null); // Track previous user to avoid re-animation
 
   const departments = userData?.departments || [];
   const currentDepartment = departmentsData[currentDeptIndex];
   
-  // Calculate online members count based on agent status only
-  const getOnlineMembersCount = (members) => {
-    if (!members) return 0;
-    
-    const onlineCount = members.filter(member => {
-      // Use agent status for all users
-      const agentStatus = getAgentStatus(member.sys_user_id);
-      return agentStatus.agentStatus === 'accepting_chats' || agentStatus.agentStatus === 'not_accepting_chats';
-    }).length;
-    
-    return onlineCount;
-  };
   
   // Update online count for current department
   const currentDeptWithOnlineCount = currentDepartment ? {
-    ...currentDepartment,
-    onlineMembers: getOnlineMembersCount(currentDepartment.members)
+    ...currentDepartment
   } : null;
-
-  // Force re-render when agentStatuses changes
-  React.useEffect(() => {
-    if (currentDepartment && agentStatuses.size > 0) {
-      forceUpdate();
-    }
-  }, [agentStatuses, currentDepartment]);
 
   // Only fetch data when panel is open
   useEffect(() => {
@@ -330,18 +306,6 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
         }} />
       </div>
       
-      {/* Mini Profile Modal */}
-      {selectedUser && (
-        <MiniProfileModal 
-          user={selectedUser} 
-          isDark={isDark} 
-          onClose={() => {
-            setSelectedUser(null);
-            setPreviousUserId(null);
-          }}
-          skipAnimation={previousUserId === selectedUser.sys_user_id}
-        />
-      )}
     </>
   );
 });
@@ -352,36 +316,15 @@ export default DepartmentUsersPanel;
 
 /**
  * UserListWithSections - Discord-style user list with ONLINE/OFFLINE sections
- * For agents: Uses agent status (accepting_chats, not_accepting_chats, offline)
- * For non-agents: Uses user status (online, offline)
+ * Uses user status (online/offline) from UserContext
  */
 function UserListWithSections({ members, isDark, onUserClick }) {
-  const { getAgentStatus, agentStatuses } = useAgentStatus();
   
-  // Convert Map to array for dependency tracking
-  const agentStatusesArray = React.useMemo(() => {
-    return Array.from(agentStatuses.entries());
-  }, [agentStatuses]);
-  
-  // Separate users into online and offline based on agent status only
+  // Separate users into online and offline
   const { onlineUsers, offlineUsers } = React.useMemo(() => {
     const online = [];
     const offline = [];
     
-    members.forEach(member => {
-      // All users are treated as agents - use agent status
-      const agentStatus = getAgentStatus(member.sys_user_id);
-      
-      // Agent is considered "online" if accepting_chats or not_accepting_chats
-      const isOnline = agentStatus.agentStatus === 'accepting_chats' || 
-                       agentStatus.agentStatus === 'not_accepting_chats';
-      
-      if (isOnline) {
-        online.push(member);
-      } else {
-        offline.push(member);
-      }
-    });
     
     // Sort alphabetically within each section
     online.sort((a, b) => {
@@ -392,12 +335,12 @@ function UserListWithSections({ members, isDark, onUserClick }) {
     
     offline.sort((a, b) => {
       const nameA = [a.profile?.prof_firstname, a.profile?.prof_lastname].filter(Boolean).join(" ");
-      const nameB = [b.profile?.prof_firstname, b.profile?.prof_lastname].filter(Boolean).join(" ");
+      const nameB = [b.profile?.prof_lastname, b.profile?.prof_lastname].filter(Boolean).join(" ");
       return nameA.localeCompare(nameB);
     });
     
     return { onlineUsers: online, offlineUsers: offline };
-  }, [members, getAgentStatus, agentStatusesArray]);
+  }, [members]);
   
   return (
     <div className="space-y-3">
@@ -438,10 +381,9 @@ function UserListWithSections({ members, isDark, onUserClick }) {
 
 /**
  * UserCard - Individual user card component (compact version)
- * Displays agent status only (accepting_chats, not_accepting_chats, offline)
+ * Displays user status (online/offline)
  */
 function UserCard({ user, isDark, onClick }) {
-  const { getAgentStatus, agentStatuses } = useAgentStatus();
   const [currentTime, setCurrentTime] = React.useState(Date.now());
   
   // Update current time every 10 seconds to refresh "X mins ago" text
@@ -452,33 +394,6 @@ function UserCard({ user, isDark, onClick }) {
     
     return () => clearInterval(interval);
   }, []);
-  
-  // Get fresh agent status on every render
-  const agentStatus = React.useMemo(() => {
-    return getAgentStatus(user.sys_user_id);
-  }, [getAgentStatus, user.sys_user_id, agentStatuses]);
-  
-  // Determine status color and text based on agent status only
-  let statusColor = 'bg-gray-400'; // Default offline
-  let statusText = 'Offline';
-  
-  const displayLastSeen = agentStatus.lastSeen || (user.last_seen ? new Date(user.last_seen) : null);
-  
-  switch (agentStatus.agentStatus) {
-    case 'accepting_chats':
-      statusColor = 'bg-green-500';
-      statusText = 'Accepting Chats';
-      break;
-    case 'not_accepting_chats':
-      statusColor = 'bg-red-500';
-      statusText = 'Not Accepting';
-      break;
-    case 'offline':
-    default:
-      statusColor = 'bg-gray-400';
-      statusText = displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline';
-      break;
-  }
   
   // Construct full name from profile data
   const fullName = [
@@ -515,7 +430,7 @@ function UserCard({ user, isDark, onClick }) {
           className="w-8 h-8 rounded-full object-cover"
         />
         <div 
-          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${statusColor} border-2 rounded-full`} 
+          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 rounded-full`} 
           style={{ borderColor: isDark ? '#2b2d31' : '#f2f3f5' }}
         ></div>
       </div>
@@ -525,227 +440,7 @@ function UserCard({ user, isDark, onClick }) {
         <h4 className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
           {displayName}
         </h4>
-        <p 
-          className="text-xs truncate" 
-          style={{ 
-            color: statusColor === 'bg-green-500' ? '#10b981' : 
-                   statusColor === 'bg-red-500' ? '#ef4444' : 
-                   'var(--text-secondary)' 
-          }}
-        >
-          {statusText}
-        </p>
       </div>
     </div>
-  );
-}
-
-
-/**
- * MiniProfileModal - Discord-style mini profile popup
- * Displays agent status only (accepting_chats, not_accepting_chats, offline)
- */
-function MiniProfileModal({ user, isDark, onClose, skipAnimation = false }) {
-  const { getAgentStatus } = useAgentStatus();
-  const [position, setPosition] = React.useState({ top: 0, left: 0 });
-  const modalRef = React.useRef(null);
-  const [isMobile, setIsMobile] = React.useState(false);
-  
-  const agentStatus = getAgentStatus(user.sys_user_id);
-  
-  // Determine status color and text based on agent status only
-  let statusColor = 'bg-gray-400'; // Default offline
-  let statusText = 'Offline';
-  
-  const displayLastSeen = agentStatus.lastSeen || (user.last_seen ? new Date(user.last_seen) : null);
-  
-  switch (agentStatus.agentStatus) {
-    case 'accepting_chats':
-      statusColor = 'bg-green-500';
-      statusText = 'Accepting Chats';
-      break;
-    case 'not_accepting_chats':
-      statusColor = 'bg-red-500';
-      statusText = 'Not Accepting';
-      break;
-    case 'offline':
-    default:
-      statusColor = 'bg-gray-400';
-      statusText = displayLastSeen ? formatLastSeen(displayLastSeen) : 'Offline';
-      break;
-  }
-  
-  const fullName = [
-    user.profile?.prof_firstname,
-    user.profile?.prof_middlename,
-    user.profile?.prof_lastname
-  ].filter(Boolean).join(" ").trim();
-  
-  const displayName = fullName || user.sys_user_email;
-  const avatarUrl = getProfilePictureUrl(user.image?.img_location);
-  const email = user.profile?.prof_email || user.sys_user_email;
-  
-  // Get user's departments
-  const userDepartments = user.departments || [];
-  
-  // Check if mobile on mount and window resize
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  
-  // Close on click outside
-  React.useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
-  
-  // Calculate position - to the left of department panel on desktop, centered on mobile
-  React.useEffect(() => {
-    if (isMobile) {
-      // Mobile: centered
-      setPosition({
-        top: '50%',
-        left: '50%',
-        right: 'auto',
-        transform: 'translate(-50%, -50%)'
-      });
-    } else {
-      // Desktop: to the left of department panel
-      setPosition({
-        top: '50%',
-        right: '280px', // 240px panel + 40px gap
-        left: 'auto',
-        transform: 'translateY(-50%)'
-      });
-    }
-  }, [isMobile]);
-  
-  return (
-    <>
-      {/* Backdrop for mobile */}
-      {isMobile && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[71] animate-fadeIn"
-          onClick={onClose}
-        />
-      )}
-      
-      <div
-        ref={modalRef}
-        className={`fixed w-[280px] rounded-xl shadow-2xl z-[72] overflow-hidden ${skipAnimation ? '' : (isMobile ? 'animate-scaleIn' : 'animate-slideInRight')}`}
-        style={{ 
-          backgroundColor: 'var(--card-bg)',
-          top: position.top,
-          left: position.left,
-          right: position.right,
-          transform: position.transform
-        }}
-      >
-      {/* Compact Banner with gradient */}
-      <div className="h-12 bg-gradient-to-br from-[#6237A0] via-[#7A4ED9] to-[#8B5CF6] relative">
-        <div className="absolute top-1.5 right-1.5">
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md hover:bg-white/20 transition-all"
-          >
-            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      {/* Profile Content - Compact */}
-      <div className="px-3 pb-3 -mt-6">
-        {/* Avatar - Smaller */}
-        <div className="relative inline-block">
-          <div className="w-16 h-16 rounded-full border-4 overflow-hidden" style={{ borderColor: 'var(--card-bg)' }}>
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div 
-            className={`absolute bottom-0.5 right-0.5 w-4 h-4 ${statusColor} border-[3px] rounded-full`}
-            style={{ borderColor: 'var(--card-bg)' }}
-          />
-        </div>
-        
-        {/* User Info - Compact */}
-        <div className="mt-2 p-2.5 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-          <h3 className="text-base font-bold truncate" style={{ color: 'var(--text-primary)' }}>
-            {displayName}
-          </h3>
-          <p 
-            className="text-xs mt-0.5" 
-            style={{ 
-              color: statusColor === 'bg-green-500' ? '#10b981' : 
-                     statusColor === 'bg-red-500' ? '#ef4444' : 
-                     'var(--text-secondary)' 
-            }}
-          >
-            {statusText}
-          </p>
-        </div>
-        
-        {/* Departments Section - Compact with "ROLES" label like Discord */}
-        {userDepartments.length > 0 && (
-          <div className="mt-2.5 p-2.5 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <svg className="w-3.5 h-3.5" style={{ color: '#6237A0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Departments
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {userDepartments.map((dept, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 rounded-md text-[11px] font-semibold border"
-                  style={{
-                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#f5f3ff',
-                    borderColor: isDark ? 'rgba(139, 92, 246, 0.4)' : '#e9d5ff',
-                    color: isDark ? '#c4b5fd' : '#6237A0'
-                  }}
-                >
-                  {dept.dept_name || dept}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Email - Compact */}
-        {email && (
-          <div className="mt-2.5 p-2.5 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <svg className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#6237A0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Email
-              </span>
-            </div>
-            <p className="text-xs break-words" style={{ color: 'var(--text-primary)' }}>{email}</p>
-          </div>
-        )}
-      </div>
-    </div>
-    </>
   );
 }

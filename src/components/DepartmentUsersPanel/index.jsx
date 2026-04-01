@@ -4,7 +4,6 @@ import { useTheme } from "../../context/ThemeContext";
 import api from "../../api";
 import { PanelHeader } from "./PanelHeader";
 import { UserListWithSections } from "./UserListWithSections";
-import { MiniProfileModal } from "./MiniProfileModal";
 import { PanelStyles } from "./PanelStyles";
 
 // Cache for department data
@@ -16,7 +15,7 @@ const CACHE_DURATION = 60000;
  * DepartmentUsersPanel - Discord-style right sidebar showing department team members
  */
 const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown = false }) => {
-  const { userData, getUserStatus, userStatuses } = useUser();
+  const { userData } = useUser();
   const { isDark } = useTheme();
   const [departmentsData, setDepartmentsData] = useState(departmentDataCache);
   const [loading, setLoading] = useState(false);
@@ -25,35 +24,12 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
   const [, forceUpdate] = React.useReducer(x => x + 1, 0);
   const [selectedUser, setSelectedUser] = useState(null);
   const [previousUserId, setPreviousUserId] = useState(null);
-  
-  const userStatusesArray = React.useMemo(() => {
-    return Array.from(userStatuses.entries());
-  }, [userStatuses]);
 
   const departments = userData?.departments || [];
   const currentDepartment = departmentsData[currentDeptIndex];
   
-  const getOnlineMembersCount = (members) => {
-    if (!members) return 0;
-    
-    return members.filter(member => {
-      const status = getUserStatus(member.sys_user_id);
-      const socketStatus = status.status;
-      const lastSeenDate = status.lastSeen;
-      
-      if (socketStatus) {
-        return socketStatus === 'online';
-      } else if (lastSeenDate) {
-        const diffMs = Date.now() - new Date(lastSeenDate).getTime();
-        return diffMs < 45000;
-      }
-      return false;
-    }).length;
-  };
-  
   const currentDeptWithOnlineCount = currentDepartment ? {
-    ...currentDepartment,
-    onlineMembers: getOnlineMembersCount(currentDepartment.members)
+    ...currentDepartment
   } : null;
 
   React.useEffect(() => {
@@ -203,18 +179,6 @@ const DepartmentUsersPanel = React.memo(({ isOpen = false, onClose, isDropdown =
         
         <PanelStyles isDark={isDark} />
       </div>
-      
-      {selectedUser && (
-        <MiniProfileModal 
-          user={selectedUser} 
-          isDark={isDark} 
-          onClose={() => {
-            setSelectedUser(null);
-            setPreviousUserId(null);
-          }}
-          skipAnimation={previousUserId === selectedUser.sys_user_id}
-        />
-      )}
     </>
   );
 });

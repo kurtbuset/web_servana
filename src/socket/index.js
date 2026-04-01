@@ -21,5 +21,5 @@ export default socket;
 // Re-export everything for convenience
 export * from "./chat";
 export * from "./typing";
-export * from "./agent";
+export * from "./presence";
 export * from "./config";

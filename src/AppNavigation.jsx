@@ -37,13 +37,28 @@ import { ToastContainer } from "./components/ui";
  * PermissionRoute: Redirect to Dashboard if user doesn't have required permission
  */
 function PermissionRoute({ children, permission, fallbackPermission }) {
-  const { hasPermission, loading } = useUser();
+  const { permissions, loading } = useUser();
 
   if (loading) {
     return <LoadingSpinner variant="page" message="Checking permissions..." />;
   }
 
-  if (permission && !hasPermission(permission) && (!fallbackPermission || !hasPermission(fallbackPermission))) {
+  // Map permission strings to permissions object properties
+  const permissionMap = {
+    'priv_can_view_message': permissions.canViewMessage,
+    'priv_can_view_dept': permissions.canViewDept,
+    'priv_can_view_manage_agents': permissions.canViewManageAgents,
+    'priv_can_view_change_roles': permissions.canViewChangeRoles,
+    'priv_can_view_auto_reply': permissions.canViewAutoReply,
+    'priv_can_view_macros': permissions.canViewMacros,
+    'priv_can_create_account': permissions.canCreateAccount,
+    'priv_can_manage_role': permissions.canManageRole,
+  };
+
+  const hasPermission = permissionMap[permission];
+  const hasFallbackPermission = fallbackPermission ? permissionMap[fallbackPermission] : false;
+
+  if (permission && !hasPermission && (!fallbackPermission || !hasFallbackPermission)) {
     console.log(`🚫 PermissionRoute: Access denied for ${permission}${fallbackPermission ? ` (fallback: ${fallbackPermission})` : ''}`);
     return <Navigate to="/Dashboard" replace />;
   }

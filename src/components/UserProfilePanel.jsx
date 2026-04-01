@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useUser } from "../context/UserContext";
-import { useAgentStatus } from "../context/AgentStatusContext";
+import { usePresence } from "../context/PresenceContext";
 import { LogOut } from "react-feather";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
-import socket, { setAgentOffline } from "../socket";
 
 /**
  * UserProfilePanel - Slide-in profile panel for logged-in user
@@ -17,29 +16,14 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { logout } = useUser();
-  const { getAgentStatus, updateAgentStatus } = useAgentStatus();
+  const { myPresence, setMyPresence } = usePresence();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  // Get agent status from context (real-time)
-  const agentStatusData = getAgentStatus(userData?.sys_user_id);
-  const agentStatus = agentStatusData.agentStatus || "not_accepting_chats";
+  const isAccepting = myPresence === "accepting_chats";
 
-  // Determine status indicator color based on agent status
-  const getStatusColor = () => {
-    switch (agentStatus) {
-      case "accepting_chats":
-        return "bg-green-500";
-      case "not_accepting_chats":
-        return "bg-red-500";
-      case "offline":
-      default:
-        return "bg-gray-400";
-    }
+  const togglePresence = () => {
+    setMyPresence(isAccepting ? "not_accepting_chats" : "accepting_chats");
   };
-
-  // Note: Agent status is now managed by UserStatusContext via Socket.IO
-  // No need to fetch or listen for status changes here
 
   if (!userData) return null;
 
@@ -65,35 +49,8 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     navigate("/profile");
   };
 
-  const handleToggleAgentStatus = async () => {
-    try {
-      setIsUpdatingStatus(true);
-
-      // Toggle between accepting_chats and not_accepting_chats
-      const newStatus =
-        agentStatus === "accepting_chats"
-          ? "not_accepting_chats"
-          : "accepting_chats";
-
-      // Update via REST API first, then socket (handled by AgentStatusContext)
-      await updateAgentStatus(newStatus);
-
-      console.log(`✅ Agent status updated successfully: ${newStatus}`);
-    } catch (error) {
-      console.error("❌ Error updating agent status:", error);
-      // Optionally show error toast/notification
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
   const handleLogout = async () => {
     try {
-      // Emit agent offline event before logout
-      if (userData?.sys_user_id && socket.connected) {
-        setAgentOffline(socket, userData.sys_user_id);
-      }
-
       // Use UserContext logout method which handles socket disconnection
       const result = await logout();
       if (result.success) {
@@ -114,17 +71,15 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     <>
       {/* Blur Overlay */}
       <div
-        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[60] transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[60] transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
         onClick={onClose}
       />
 
       {/* Slide-in Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out flex flex-col ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"
+          }`}
         style={{
           backgroundColor: "var(--card-bg)",
           color: "var(--text-primary)",
@@ -156,7 +111,7 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
             </h2>
           </div>
 
-          {/* Profile Picture with animated ring and status indicator */}
+          {/* Profile Picture with animated ring */}
           <div className="flex flex-col items-center relative z-10">
             <div className="relative group">
               <div className="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse"></div>
@@ -166,25 +121,6 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
                 alt={fullName}
                 className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-300"
               />
-              {/* Dynamic status indicator */}
-              <div
-                className={`absolute -bottom-1 -right-1 w-7 h-7 border-4 border-white rounded-full z-20 ${getStatusColor()}`}
-                style={{
-                  animation:
-                    agentStatus === "accepting_chats"
-                      ? "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
-                      : "none",
-                }}
-                title={
-                  agentStatus === "accepting_chats"
-                    ? "Accepting Chats"
-                    : agentStatus === "not_accepting_chats"
-                      ? "Not Accepting Chats"
-                      : agentStatus === "loading"
-                        ? "Loading Status..."
-                        : "Offline"
-                }
-              ></div>
             </div>
             <h3 className="text-xl font-bold mt-4 drop-shadow-lg">
               {fullName || "User"}
@@ -401,78 +337,6 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Agent Status Toggle - Only show for agents */}
-          {role === "Agent" && (
-            <button
-              onClick={handleToggleAgentStatus}
-              disabled={isUpdatingStatus}
-              className="w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all group border-2 shadow-sm hover:shadow-md relative overflow-hidden mb-3"
-              style={{
-                backgroundColor:
-                  agentStatus === "accepting_chats"
-                    ? isDark
-                      ? "rgba(34, 197, 94, 0.15)"
-                      : "#f0fdf4"
-                    : "var(--bg-tertiary)",
-                borderColor:
-                  agentStatus === "accepting_chats"
-                    ? isDark
-                      ? "rgba(34, 197, 94, 0.4)"
-                      : "#86efac"
-                    : "var(--border-color)",
-                color: "var(--text-primary)",
-                opacity: isUpdatingStatus ? 0.6 : 1,
-              }}
-            >
-              <div className="flex items-center gap-3 relative z-10">
-                <svg
-                  className={`w-5 h-5 group-hover:scale-110 transition-transform ${agentStatus === "accepting_chats" ? "text-green-500" : "text-gray-500"}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-                <div className="text-left">
-                  <div className="text-sm font-semibold">
-                    {agentStatus === "accepting_chats"
-                      ? "Accepting Chats"
-                      : agentStatus === "not_accepting_chats"
-                        ? "Not Accepting Chats"
-                        : agentStatus === "loading"
-                          ? "Loading Status..."
-                          : "Offline"}
-                  </div>
-                  <div
-                    className="text-xs"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    {agentStatus === "accepting_chats"
-                      ? "Available for new conversations"
-                      : agentStatus === "not_accepting_chats"
-                        ? "Not available for new chats"
-                        : agentStatus === "loading"
-                          ? "Fetching current status..."
-                          : "Currently offline"}
-                  </div>
-                </div>
-              </div>
-              {/* Toggle Switch */}
-              <div
-                className={`relative w-12 h-6 rounded-full transition-colors ${agentStatus === "accepting_chats" ? "bg-green-500" : "bg-gray-300"}`}
-              >
-                <div
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${agentStatus === "accepting_chats" ? "translate-x-6" : "translate-x-0"}`}
-                ></div>
-              </div>
-            </button>
-          )}
-
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -515,6 +379,56 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
             >
               <div
                 className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${isDark ? "translate-x-6" : "translate-x-0"}`}
+              ></div>
+            </div>
+          </button>
+
+          {/* Accepting Chats Toggle */}
+          <button
+            onClick={togglePresence}
+            className="w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all group border-2 shadow-sm hover:shadow-md relative overflow-hidden mb-3"
+            style={{
+              backgroundColor: "var(--bg-tertiary)",
+              borderColor: "var(--border-color)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <div className="flex items-center gap-3 relative z-10">
+              {isAccepting ? (
+                <svg
+                  className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5 text-gray-400 group-hover:scale-110 transition-transform"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+              <span className="text-sm font-semibold">
+                {isAccepting ? "Accepting Chats" : "Not Accepting"}
+              </span>
+            </div>
+            {/* Toggle Switch */}
+            <div
+              className={`relative w-12 h-6 rounded-full transition-colors ${isAccepting ? "bg-green-500" : "bg-gray-300"}`}
+            >
+              <div
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${isAccepting ? "translate-x-6" : "translate-x-0"}`}
               ></div>
             </div>
           </button>

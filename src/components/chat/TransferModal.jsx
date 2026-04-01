@@ -13,6 +13,8 @@ export default function TransferModal({
   onDepartmentChange,
   onConfirm,
   onCancel,
+  departmentAvailability = {},
+  availableAgents = [],
 }) {
   const [activeTab, setActiveTab] = useState("department");
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,10 +26,15 @@ export default function TransferModal({
     dept.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter agents based on search
-  const filteredAgents = agents?.filter((agent) =>
-    agent.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // Filter available agents based on search (only accepting_chats agents)
+  const filteredAgents = availableAgents.filter((agent) => {
+    const name = `${agent.firstName || ''} ${agent.lastName || ''}`.trim();
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      name.toLowerCase().includes(searchLower) ||
+      (agent.email || '').toLowerCase().includes(searchLower)
+    );
+  });
 
   const handleConfirm = (e) => {
     if (!selectedDepartment || selectedDepartment === currentDepartment) {
@@ -86,7 +93,7 @@ export default function TransferModal({
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            Agent ({agents?.length || 0})
+            Agent ({availableAgents.length})
           </button>
         </div>
 
@@ -112,19 +119,33 @@ export default function TransferModal({
           {activeTab === "department" ? (
             <div className="space-y-2">
               {filteredDepartments.length > 0 ? (
-                filteredDepartments.map((dept) => (
-                  <button
-                    key={dept}
-                    onClick={() => onDepartmentChange(dept)}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                      selectedDepartment === dept
-                        ? "bg-[#6237A0] text-white"
-                        : "bg-gray-50 text-gray-900 hover:bg-gray-100"
-                    }`}
-                  >
-                    {dept}
-                  </button>
-                ))
+                filteredDepartments.map((dept) => {
+                  const count = departmentAvailability[dept] ?? 0;
+                  return (
+                    <button
+                      key={dept}
+                      onClick={() => onDepartmentChange(dept)}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between ${
+                        selectedDepartment === dept
+                          ? "bg-[#6237A0] text-white"
+                          : "bg-gray-50 text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      <span>{dept}</span>
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          selectedDepartment === dept
+                            ? "bg-white/20 text-white"
+                            : count > 0
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {count} available
+                      </span>
+                    </button>
+                  );
+                })
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                   <p className="text-center">No departments found</p>
@@ -134,25 +155,33 @@ export default function TransferModal({
           ) : (
             <div className="space-y-2">
               {filteredAgents.length > 0 ? (
-                filteredAgents.map((agent) => (
-                  <button
-                    key={agent.id}
-                    onClick={() => onDepartmentChange(agent.id)}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                      selectedDepartment === agent.id
-                        ? "bg-[#6237A0] text-white"
-                        : "bg-gray-50 text-gray-900 hover:bg-gray-100"
-                    }`}
-                  >
-                    <div className="font-medium">{agent.email}</div>
-                    {agent.name && (
-                      <div className="text-sm opacity-75">{agent.name}</div>
-                    )}
-                  </button>
-                ))
+                filteredAgents.map((agent) => {
+                  const agentName = `${agent.firstName || ''} ${agent.lastName || ''}`.trim();
+                  return (
+                    <button
+                      key={agent.userId}
+                      onClick={() => onDepartmentChange(agent.userId)}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                        selectedDepartment === agent.userId
+                          ? "bg-[#6237A0] text-white"
+                          : "bg-gray-50 text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0"></span>
+                        <div>
+                          <div className="font-medium">{agentName || agent.email}</div>
+                          {agentName && (
+                            <div className="text-sm opacity-75">{agent.email}</div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                  <p className="text-center">No agents found</p>
+                  <p className="text-center">No available agents</p>
                 </div>
               )}
             </div>

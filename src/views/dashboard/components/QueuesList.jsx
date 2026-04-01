@@ -1,4 +1,5 @@
 import { Clock } from "react-feather";
+import Badge from "../../../components/ui/Badge";
 
 /**
  * QueuesList - Shows pending queues preview
@@ -12,9 +13,9 @@ export default function QueuesList({ queues, className }) {
                     <Clock size={16} className="text-[#6237A0]" />
                     Pending Queues
                 </h2>
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                <Badge variant="purple" size="lg">
                     {queues.length} waiting
-                </span>
+                </Badge>
             </div>
             <div className="space-y-2 overflow-y-auto flex-1">
                 {queues.length === 0 ? (
@@ -37,17 +38,17 @@ export default function QueuesList({ queues, className }) {
                                     <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                                         {queue.client}
                                     </p>
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium ml-1">
+                                    <Badge variant="purple" size="sm" className="ml-1">
                                         {queue.waitTime}
-                                    </span>
+                                    </Badge>
                                 </div>
                                 <p className="text-[10px] mb-1 line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
                                     {queue.message}
                                 </p>
                                 <div className="flex items-center gap-1 mt-1">
-                                    <span className="text-[9px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded-full border border-purple-200 truncate">
+                                    <Badge variant="purple-soft" size="xs" truncate>
                                         {queue.department}
-                                    </span>
+                                    </Badge>
                                     <span className="text-[9px] ml-1" style={{ color: 'var(--text-secondary)' }}>
                                         • {queue.timestamp}
                                     </span>

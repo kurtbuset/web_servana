@@ -28,10 +28,10 @@ export default function ChangeRolesScreen() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Get user permissions
-  const { hasPermission } = useUser();
+  const { permissions } = useUser();
   const { isDark } = useTheme();
-  const canViewChangeRoles = hasPermission("priv_can_view_change_roles");
-  const canEditChangeRoles = hasPermission("priv_can_edit_change_roles");
+  const canViewChangeRoles = permissions.canViewChangeRoles;
+  const canEditChangeRoles = permissions.canEditChangeRoles;
 
   const { users, availableRoles, loading, changeUserRole, toggleUserActive } = useUserRoles();
 

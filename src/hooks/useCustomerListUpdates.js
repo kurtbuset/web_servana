@@ -24,7 +24,7 @@ export const useCustomerListUpdates = (
    * Move chat to top of list or add new assignment
    */
   const handleMoveToTopOrNewAssignment = useCallback(
-    (customer, updateType) => {
+    (customer) => {
       setDepartmentCustomers((prevDeptCustomers) => {
         const updatedDeptCustomers = { ...prevDeptCustomers };
 
@@ -52,13 +52,6 @@ export const useCustomerListUpdates = (
           ...customer,
           chat_type,
         });
-
-        // Log for new assignments
-        if (updateType === "new_assignment") {
-          console.log(
-            `✅ New chat assigned: ${customer.name} (${customer.chat_group_id}) - Type: ${chat_type}`,
-          );
-        }
 
         return updatedDeptCustomers;
       });
@@ -245,75 +238,6 @@ export const useCustomerListUpdates = (
     [setDepartmentCustomers, setSelectedCustomer, getUserId],
   );
 
-  /**
-   * Handle chat transferred out (remove from old department)
-   */
-  const handleChatTransferredOut = useCallback(
-    (chatGroupId) => {
-      setDepartmentCustomers((prevDeptCustomers) => {
-        const updatedDeptCustomers = { ...prevDeptCustomers };
-
-        // Remove the chat from all departments
-        Object.keys(updatedDeptCustomers).forEach((dept) => {
-          updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
-            (existingCustomer) =>
-              existingCustomer.chat_group_id !== chatGroupId,
-          );
-        });
-
-        console.log(
-          `✅ Chat ${chatGroupId} transferred out and removed from list`,
-        );
-
-        return updatedDeptCustomers;
-      });
-    },
-    [setDepartmentCustomers],
-  );
-
-  /**
-   * Handle chat transferred in (add to new department queue)
-   */
-  const handleChatTransferredIn = useCallback(
-    (customer) => {
-      setDepartmentCustomers((prevDeptCustomers) => {
-        const updatedDeptCustomers = { ...prevDeptCustomers };
-
-        // Find the department name for this customer
-        const departmentName = customer.department || "Unknown";
-
-        // Add the department if it doesn't exist
-        if (!updatedDeptCustomers[departmentName]) {
-          updatedDeptCustomers[departmentName] = [];
-        }
-
-        // Check if chat already exists (avoid duplicates)
-        const exists = updatedDeptCustomers[departmentName].some(
-          (existingCustomer) =>
-            existingCustomer.chat_group_id === customer.chat_group_id,
-        );
-
-        if (!exists) {
-          // Add transferred chat to the list
-          updatedDeptCustomers[departmentName].push(customer);
-
-          // Re-sort: queued chats first, then active chats
-          updatedDeptCustomers[departmentName].sort((a, b) => {
-            if (a.chat_type === "queued" && b.chat_type === "active") return -1;
-            if (a.chat_type === "active" && b.chat_type === "queued") return 1;
-            return 0;
-          });
-
-          console.log(
-            `✅ Chat ${customer.chat_group_id} transferred in to department ${departmentName}`,
-          );
-        }
-
-        return updatedDeptCustomers;
-      });
-    },
-    [setDepartmentCustomers],
-  );
 
   /**
    * Main handler for all customer list update types
@@ -327,10 +251,9 @@ export const useCustomerListUpdates = (
 
       switch (updateData.type) {
         case "move_to_top":
-        case "new_assignment":
+        case "assigned":
           handleMoveToTopOrNewAssignment(
-            updateData.data.customer,
-            updateData.type,
+            updateData.data.customer
           );
           break;
 
@@ -349,14 +272,6 @@ export const useCustomerListUpdates = (
           );
           break;
 
-        // case "chat_transferred_out":
-        //   handleChatTransferredOut(updateData.data.chat_group_id);
-        //   break;
-
-        // case "chat_transferred_in":
-        //   handleChatTransferredIn(updateData.data.customer);
-        //   break;
-
         default:
           console.warn(`Unknown customer list update type: ${updateData.type}`);
       }
@@ -366,8 +281,6 @@ export const useCustomerListUpdates = (
       handleNewQueuedChat,
       handleChatAccepted,
       handleRemoveChatGroup,
-      handleChatTransferredOut,
-      handleChatTransferredIn,
     ],
   );
 
@@ -377,7 +290,5 @@ export const useCustomerListUpdates = (
     handleNewQueuedChat,
     handleChatAccepted,
     handleRemoveChatGroup,
-    handleChatTransferredOut,
-    handleChatTransferredIn,
   };
 };

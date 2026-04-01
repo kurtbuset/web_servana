@@ -52,10 +52,10 @@ export default function Profile() {
     dateOfBirth: "",
   });
   
-  const { setUserData, hasPermission, logout } = useUser();
+  const { setUserData, permissions, logout } = useUser();
   const { isDark } = useTheme();
   const navigate = useNavigate();
-  const canManageProfile = hasPermission("priv_can_manage_profile");
+  const canManageProfile = permissions.canManageProfile;
 
   // ---------------- FETCH PROFILE ----------------
   const fetchProfile = useCallback(async () => {

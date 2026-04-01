@@ -63,7 +63,6 @@ export const registerChatEvents = (socket, callbacks = {}) => {
   };
 
   const handleCustomerListUpdate = (updateData) => {
-    console.log("Received customerListUpdate:", updateData);
     if (onCustomerListUpdate) onCustomerListUpdate(updateData);
   };
 

@@ -46,13 +46,4 @@ export class ProfileService {
     });
     return response.data;
   }
-
-  /**
-   * Get agent status
-   * @returns {Promise<Object>} Object containing agent_status
-   */
-  static async getAgentStatus() {
-    const response = await api.get('/profile/agent-status');
-    return response.data;
-  }
 }

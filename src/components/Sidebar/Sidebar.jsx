@@ -272,7 +272,7 @@ SectionHeader.displayName = 'SectionHeader';
 
 const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   const location = useLocation();
-  const { userData, hasPermission } = useUser();
+  const { permissions } = useUser();
   const { previewMode, previewPermissions } = useRolePreview();
   const { isDark } = useTheme();
   const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
@@ -419,16 +419,19 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
     };
   }, [isMobile, isOpen]);
 
-  // Note: Chat count badges are currently static
-  // Real-time count updates via socket events are not yet implemented in backend
-  // Future implementation would listen to: chatCountsUpdate, newChatInQueue, chatAccepted, chatClosed, messagesSeen
-
-  // Filter navigation sections based on permissions - memoize to prevent recalculation
+  
   const visibleNavSections = useMemo(() => {
-    // console.log('🔄 Sidebar: Recalculating visible nav sections', {
-    //   previewMode,
-    //   hasPreviewPermissions: !!previewPermissions
-    // });
+    // Permission mapping for direct object access
+    const permissionMap = {
+      'priv_can_view_message': permissions.canViewMessage,
+      'priv_can_view_dept': permissions.canViewDept,
+      'priv_can_view_auto_reply': permissions.canViewAutoReply,
+      'priv_can_view_manage_agents': permissions.canViewManageAgents,
+      'priv_can_view_change_roles': permissions.canViewChangeRoles,
+      'priv_can_view_macros': permissions.canViewMacros,
+      'priv_can_create_account': permissions.canCreateAccount,
+      'priv_can_manage_role': permissions.canManageRole,
+    };
     
     return navSections.map(section => ({
       ...section,
@@ -438,41 +441,14 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
           return true;
         }
         
-        // Check permission (will use preview permissions if in preview mode)
-        const hasAccess = hasPermission(item.permission) || 
-                         (item.fallbackPermission && hasPermission(item.fallbackPermission));
-        // console.log(`  📋 ${item.label}: ${hasAccess ? '✅' : '❌'} (${item.permission}${item.fallbackPermission ? ` or ${item.fallbackPermission}` : ''})`);
-        
-        // Special debug for Change Roles
-        // if (item.label === 'Change Roles') {
-        //   console.log(`  👥 Change Roles permission check:`, {
-        //     permission: item.permission,
-        //     fallbackPermission: item.fallbackPermission,
-        //     hasMainPermission: hasPermission(item.permission),
-        //     hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
-        //     hasAccess,
-        //     previewMode,
-        //     previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
-        //   });
-        // }
-        
-        // Special debug for Departments
-        if (item.label === 'Departments') {
-          // console.log(`  🏢 Departments permission check:`, {
-          //   permission: item.permission,
-          //   fallbackPermission: item.fallbackPermission,
-          //   hasMainPermission: hasPermission(item.permission),
-          //   hasFallbackPermission: item.fallbackPermission ? hasPermission(item.fallbackPermission) : false,
-          //   hasAccess,
-          //   previewMode,
-          //   previewPermissions: previewPermissions ? Object.keys(previewPermissions).filter(k => previewPermissions[k]) : null
-          // });
-        }
+        // Check permission using direct object access
+        const hasAccess = permissionMap[item.permission] || 
+                         (item.fallbackPermission && permissionMap[item.fallbackPermission]);
         
         return hasAccess;
       })
     })).filter(section => section.items.length > 0); // Only show sections with visible items
-  }, [hasPermission, previewMode, previewPermissions]);
+  }, [permissions, previewMode, previewPermissions]);
 
   return (
     <>

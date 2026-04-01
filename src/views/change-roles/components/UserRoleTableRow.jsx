@@ -1,5 +1,6 @@
 import { Avatar } from '../../../components/ui';
 import ToggleSwitch from '../../../components/ToggleSwitch';
+import { useTableRowHover } from '../../../hooks/useTableRowHover';
 
 /**
  * UserRoleTableRow - Individual row in the user roles table
@@ -12,16 +13,13 @@ export default function UserRoleTableRow({
   onToggleActive,
   onChangeRole
 }) {
+  const rowHover = useTableRowHover(isDark);
+
   return (
     <tr
       className="transition-colors"
       style={{ borderTop: `1px solid ${isDark ? 'rgba(74, 74, 74, 0.3)' : 'var(--border-color)'}` }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
+      {...rowHover}
     >
       <td className="py-2 px-2.5 sm:px-3">
         <div className="flex items-center gap-2">
@@ -41,7 +39,7 @@ export default function UserRoleTableRow({
       </td>
 
       <td className="py-2 px-2.5 sm:px-3 text-center">
-        <div 
+        <div
           className="inline-block"
           title={!canAssignRoles ? "You don't have permission to modify user status" : ""}
         >

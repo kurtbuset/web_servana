@@ -1,6 +1,6 @@
-import { ArrowLeft } from "react-feather";
+import { ArrowLeft, MessageCircle, Clock, Smile, CheckCircle } from "react-feather";
 import ScrollContainer from "../../../components/ScrollContainer";
-import { Avatar } from "../../../components/ui";
+import { Avatar, StatCard, Badge } from "../../../components/ui";
 
 /**
  * AgentDetailView - Displays detailed information about a specific agent
@@ -121,9 +121,9 @@ export default function AgentDetailView({
                     {/* Role */}
                     <div className="flex justify-between items-center">
                       <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Role</p>
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold" style={{ backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : '#f3e8ff', color: '#6237A0' }}>
+                      <Badge variant="purple-theme" size="sm" pill={false} isDark={isDark}>
                         AGENT
-                      </span>
+                      </Badge>
                     </div>
                     
                     {/* Status */}
@@ -170,53 +170,10 @@ export default function AgentDetailView({
           <div className="mt-4">
             <h3 className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Personal Analytics</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {/* Total Chats */}
-              <div className="p-3 rounded-lg" style={{ backgroundColor: isDark ? 'rgba(139, 92, 246, 0.05)' : '#f9fafb' }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4" style={{ color: '#6237A0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Total Chats</p>
-                </div>
-                <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>247</p>
-                <p className="text-[10px] mt-1" style={{ color: '#10b981' }}>+12% this week</p>
-              </div>
-
-              {/* Avg Response Time */}
-              <div className="p-3 rounded-lg" style={{ backgroundColor: isDark ? 'rgba(139, 92, 246, 0.05)' : '#f9fafb' }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4" style={{ color: '#6237A0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Avg Response</p>
-                </div>
-                <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>2.3m</p>
-                <p className="text-[10px] mt-1" style={{ color: '#10b981' }}>-15% faster</p>
-              </div>
-
-              {/* Satisfaction Rate */}
-              <div className="p-3 rounded-lg" style={{ backgroundColor: isDark ? 'rgba(139, 92, 246, 0.05)' : '#f9fafb' }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4" style={{ color: '#6237A0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Satisfaction</p>
-                </div>
-                <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>4.8/5</p>
-                <p className="text-[10px] mt-1" style={{ color: '#10b981' }}>+0.3 rating</p>
-              </div>
-
-              {/* Resolved Tickets */}
-              <div className="p-3 rounded-lg" style={{ backgroundColor: isDark ? 'rgba(139, 92, 246, 0.05)' : '#f9fafb' }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4" style={{ color: '#6237A0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Resolved</p>
-                </div>
-                <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>234</p>
-                <p className="text-[10px] mt-1" style={{ color: '#10b981' }}>94.7% rate</p>
-              </div>
+              <StatCard variant="compact" isDark={isDark} icon={MessageCircle} label="Total Chats" value="247" trend="+12% this week" />
+              <StatCard variant="compact" isDark={isDark} icon={Clock} label="Avg Response" value="2.3m" trend="-15% faster" />
+              <StatCard variant="compact" isDark={isDark} icon={Smile} label="Satisfaction" value="4.8/5" trend="+0.3 rating" />
+              <StatCard variant="compact" isDark={isDark} icon={CheckCircle} label="Resolved" value="234" trend="94.7% rate" />
             </div>
 
             {/* View Full Analytics Button */}
