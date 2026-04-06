@@ -51,14 +51,14 @@ export default function AutoRepliesScreen() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortBy, setSortBy] = useState('default');
 
-  const { userData, hasPermission, getUserId } = useUser();
+  const { userData, permissions, getUserId } = useUser();
   const currentUserId = getUserId();
   const { isDark } = useTheme();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
-  const canViewAutoReplies = hasPermission("priv_can_view_auto_reply");
-  const canAddAutoReplies = hasPermission("priv_can_add_auto_reply");
-  const canEditAutoReplies = hasPermission("priv_can_edit_auto_reply");
-  const canDeleteAutoReplies = hasPermission("priv_can_delete_auto_reply");
+  const canViewAutoReplies = permissions.canViewAutoReply;
+  const canAddAutoReplies = permissions.canAddAutoReply;
+  const canEditAutoReplies = permissions.canEditAutoReply;
+  const canDeleteAutoReplies = permissions.canDeleteAutoReply;
   const {
     replies,
     allDepartments,

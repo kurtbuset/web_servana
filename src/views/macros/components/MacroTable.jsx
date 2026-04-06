@@ -1,21 +1,23 @@
 import { Edit3 } from 'react-feather';
 import ToggleSwitch from '../../../components/ToggleSwitch';
 import { SortButton } from '../../../components/ui';
+import Badge from '../../../components/ui/Badge';
+import { useTableRowHover } from '../../../hooks/useTableRowHover';
 
 /**
  * MacroTable Component
  * Displays a table of macros with sorting, editing, and actions
- * 
- * @param {Array} macros - List of macros to display
- * @param {Array} departments - List of departments
- * @param {string} sortBy - Current sort option
- * @param {Function} onSortChange - Handler for sort change
- * @param {Function} onEdit - Handler for editing a macro
- * @param {Function} onToggleActive - Handler for toggling macro active status
- * @param {Function} onTransfer - Handler for transferring macro to another department
- * @param {Function} onDelete - Handler for deleting a macro
- * @param {string} searchQuery - Current search query
- * @param {boolean} isDark - Dark mode flag
+ *
+ * @param {Array}    macros          - List of macros to display
+ * @param {Array}    departments     - List of departments
+ * @param {string}   sortBy          - Current sort option
+ * @param {Function} onSortChange    - Handler for sort change
+ * @param {Function} onEdit          - Handler for editing a macro
+ * @param {Function} onToggleActive  - Handler for toggling macro active status
+ * @param {Function} onTransfer      - Handler for transferring macro to another department
+ * @param {Function} onDelete        - Handler for deleting a macro
+ * @param {string}   searchQuery     - Current search query
+ * @param {boolean}  isDark          - Dark mode flag
  */
 export default function MacroTable({
   macros,
@@ -31,6 +33,8 @@ export default function MacroTable({
   searchQuery,
   isDark
 }) {
+  const rowHover = useTableRowHover(isDark);
+
   return (
     <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
       <table className="w-full text-xs">
@@ -39,8 +43,8 @@ export default function MacroTable({
             <th className="py-2 px-2 text-left font-semibold">
               <div className="flex items-center gap-2">
                 <span>Message</span>
-                <SortButton 
-                  sortBy={sortBy} 
+                <SortButton
+                  sortBy={sortBy}
                   onSortChange={onSortChange}
                   isDark={isDark}
                 />
@@ -62,22 +66,16 @@ export default function MacroTable({
             </tr>
           ) : (
             macros.map((reply) => {
-              // Find department name or show "@everyone" for macros with no department
-              const deptName = reply.dept_id 
+              const deptName = reply.dept_id
                 ? departments.find(d => d.dept_id === reply.dept_id)?.dept_name || 'Unknown'
                 : '@everyone';
-              
+
               return (
                 <tr
                   key={reply.id}
                   className="transition-colors"
                   style={{ borderTop: `1px solid var(--border-color)` }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(249, 250, 251, 1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  {...rowHover}
                 >
                   <td className="py-3 px-3 sm:px-4">
                     <div className="flex items-start gap-2">
@@ -107,13 +105,9 @@ export default function MacroTable({
                   </td>
 
                   <td className="py-3 px-3 sm:px-4 text-center">
-                    <span className="text-xs px-2 py-0.5 rounded inline-block font-medium max-w-[100px] truncate" style={{
-                      backgroundColor: isDark ? '#3a3a3a' : '#e5e7eb',
-                      color: 'var(--text-primary)',
-                      border: `1px solid var(--border-color)`
-                    }} title={deptName}>
+                    <Badge variant="neutral" size="md" pill={false} isDark={isDark} truncate title={deptName}>
                       {deptName}
-                    </span>
+                    </Badge>
                   </td>
 
                   <td className="py-3 px-3 sm:px-4 text-center">

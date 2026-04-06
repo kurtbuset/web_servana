@@ -19,6 +19,8 @@ export default function ChatModals({
   onCancelTransfer,
   onConfirmTransferConfirm,
   onCancelTransferConfirm,
+  departmentAvailability = {},
+  availableAgents = [],
 }) {
   return (
     <>
@@ -43,6 +45,8 @@ export default function ChatModals({
         onDepartmentChange={onDepartmentChange}
         onConfirm={onConfirmTransfer}
         onCancel={onCancelTransfer}
+        departmentAvailability={departmentAvailability}
+        availableAgents={availableAgents}
       />
 
       {/* Transfer Confirm Modal */}

@@ -146,7 +146,7 @@ export default function ChatMessages({
           if (item.type === "date") {
             return (
               <div
-                key={`date-${index}`}
+                key={`date-${item.content}-${index}`}
                 className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-1.5 sm:my-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
@@ -172,7 +172,7 @@ export default function ChatMessages({
             // Transfer separator
             return (
               <div
-                key={`transfer-${index}`}
+                key={`transfer-${item.message_id || item.id || index}`}
                 className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-2 sm:my-3"
               >
                 <div className="flex-grow h-px" style={{ 
@@ -201,7 +201,7 @@ export default function ChatMessages({
             // Resolved separator
             return (
               <div
-                key={`resolved-${index}`}
+                key={`resolved-${item.message_id || item.id || index}`}
                 className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-2 sm:my-3"
               >
                 <div className="flex-grow h-px" style={{ 
@@ -229,7 +229,7 @@ export default function ChatMessages({
           } else {
             return (
               <div
-                key={`msg-${index}`}
+                key={`msg-${item.message_id || item.id || index}`}
                 className={`flex items-end gap-1.5 sm:gap-2 ${
                   item.sender === "user" ? "justify-end" : "justify-start"
                 } animate-slide-in`}

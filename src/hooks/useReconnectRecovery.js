@@ -3,7 +3,7 @@
  * Recovers state after reconnection (rejoin rooms, refresh data)
  */
 import { useEffect, useCallback } from "react";
-import socket, { joinChatGroup, getAgentStatuses } from "../socket";
+import socket, { joinChatGroup } from "../socket";
 import { useSocketConnection } from "./useSocketConnection";
 import { useUser } from "../context/UserContext";
 
@@ -28,11 +28,7 @@ export const useReconnectRecovery = ({
       });
     }
 
-    // 2. Refresh agent statuses
-    console.log("Refreshing agent statuses");
-    getAgentStatuses(socket);
-
-    // 3. Call custom recovery callback
+    // 2. Call custom recovery callback
     if (onReconnect) {
       onReconnect();
     }

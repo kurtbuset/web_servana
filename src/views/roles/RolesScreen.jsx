@@ -125,8 +125,6 @@ const PERMISSION_MAP = {
 };
 
 export default function RolesScreen() {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -134,9 +132,6 @@ export default function RolesScreen() {
 
   // Member management states
   const [expandedRoles, setExpandedRoles] = useState(new Set());
-  const [roleMembers, setRoleMembers] = useState({});
-  const [membersLoading, setMembersLoading] = useState({});
-  const [membersError, setMembersError] = useState({});
 
   // Unsaved changes tracking
   const [originalPermissions, setOriginalPermissions] = useState([]);
@@ -146,19 +141,17 @@ export default function RolesScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [shakeBar, setShakeBar] = useState(0);
 
-  const { userData, hasPermission, refreshUserData } = useUser();
+  const { userData, permissions } = useUser();
   const { isDark } = useTheme();
   const { roles, loading, createRole, toggleRoleActive, updateRole } = useRoles();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
   const { previewMode, previewRole, startPreview } = useRolePreview();
 
-  const canManageRoles = hasPermission("priv_can_manage_role");
+  const canManageRoles = permissions.canManageRole;
 
   const filteredRoles = roles.filter((role) =>
     role.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const toggleSidebar = () => setMobileSidebarOpen((prev) => !prev);
 
   const triggerShake = useCallback(() => {
     setShakeBar(prev => prev + 1);
@@ -181,15 +174,6 @@ export default function RolesScreen() {
     setOriginalPermissions(role.permissions);
     setPendingPermissions(role.permissions);
     setHasUnsavedChanges(false);
-  };
-
-  const handleDiscardChanges = () => {
-    setPendingPermissions(originalPermissions);
-    setHasUnsavedChanges(false);
-    if (pendingAction) {
-      pendingAction();
-      setPendingAction(null);
-    }
   };
 
   const handleCreateRole = () => {
@@ -425,88 +409,6 @@ export default function RolesScreen() {
     setGlobalUnsavedChanges(hasUnsavedChanges);
   }, [hasUnsavedChanges, setGlobalUnsavedChanges]);
 
-  // Member management functions
-  const toggleRoleExpansion = async (roleId) => {
-    // Block if there are unsaved changes
-    if (hasUnsavedChanges) {
-      triggerShake();
-      setPendingAction(() => async () => {
-        const newExpandedRoles = new Set(expandedRoles);
-        
-        if (expandedRoles.has(roleId)) {
-          newExpandedRoles.delete(roleId);
-        } else {
-          newExpandedRoles.add(roleId);
-          // Fetch members when expanding
-          await fetchRoleMembers(roleId);
-        }
-        
-        setExpandedRoles(newExpandedRoles);
-      });
-      return;
-    }
-
-    const newExpandedRoles = new Set(expandedRoles);
-    
-    if (expandedRoles.has(roleId)) {
-      newExpandedRoles.delete(roleId);
-    } else {
-      newExpandedRoles.add(roleId);
-      // Fetch members when expanding
-      await fetchRoleMembers(roleId);
-    }
-    
-    setExpandedRoles(newExpandedRoles);
-  };
-
-  const fetchRoleMembers = async (roleId) => {
-    if (roleMembers[roleId]) {
-      return; // Already have data
-    }
-
-    setMembersLoading(prev => ({ ...prev, [roleId]: true }));
-    setMembersError(prev => ({ ...prev, [roleId]: null }));
-
-    try {
-      console.log(`Fetching members for role ${roleId}...`);
-      const response = await RoleService.getRoleMembers(roleId);
-      console.log(`Role ${roleId} members response:`, response);
-      setRoleMembers(prev => ({ ...prev, [roleId]: response.members }));
-    } catch (error) {
-      console.error("Error fetching role members:", error);
-      const errorMessage = error.response?.data?.error || error.message || "Failed to load members. Please try again.";
-      setMembersError(prev => ({ 
-        ...prev, 
-        [roleId]: errorMessage
-      }));
-      toast.error("Failed to load role members");
-    } finally {
-      setMembersLoading(prev => ({ ...prev, [roleId]: false }));
-    }
-  };
-
-  const updateMemberPermission = async (roleId, userId, permission, value) => {
-    try {
-      await RoleService.updateMemberPermission(roleId, userId, permission, value);
-      
-      // Update local state
-      setRoleMembers(prev => ({
-        ...prev,
-        [roleId]: prev[roleId]?.map(member => 
-          member.sys_user_id === userId 
-            ? { ...member, [permission]: value }
-            : member
-        ) || []
-      }));
-
-      toast.success("Member permission updated successfully");
-    } catch (error) {
-      console.error("Error updating member permission:", error);
-      toast.error("Failed to update member permission");
-      throw error;
-    }
-  };
-
   return (
     <Layout>
       <ScreenContainer>
@@ -532,15 +434,6 @@ export default function RolesScreen() {
                 </div>
               </Tooltip>
             </div>
-            
-            {/* Refresh Permissions Button */}
-            <button
-              onClick={refreshUserData}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-[#6237A0] text-white hover:bg-[#552C8C]"
-              title="Refresh user permissions to see updated sidebar"
-            >
-              🔄 Refresh Permissions
-            </button>
           </div>
 
           {/* Content Area */}
@@ -590,10 +483,6 @@ export default function RolesScreen() {
                             onToggleActive={() => handleToggleActive(role)}
                             canManage={canManageRoles}
                             isExpanded={expandedRoles.has(role.role_id)}
-                            members={roleMembers[role.role_id]}
-                            membersLoading={membersLoading[role.role_id]}
-                            membersError={membersError[role.role_id]}
-                            onToggleExpansion={toggleRoleExpansion}
                             isDark={isDark}
                           />
                         ))}

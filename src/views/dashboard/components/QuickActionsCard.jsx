@@ -1,9 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { useUser } from "../../../context/UserContext";
 
 export default function QuickActionsCard() {
     const navigate = useNavigate();
-    const { hasPermission } = useUser();
 
     const actions = [
         {
@@ -70,7 +68,7 @@ export default function QuickActionsCard() {
     ];
 
     const visibleActions = actions.filter(action => 
-        !action.permission || hasPermission(action.permission)
+        !action.permission
     );
 
     return (

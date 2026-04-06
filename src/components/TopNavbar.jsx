@@ -1,19 +1,17 @@
 import { Menu } from "react-feather";
 import { useState } from "react";
 import { useUser } from "../../src/context/UserContext";
-import { useAgentStatus } from "../../src/context/AgentStatusContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useUnsavedChanges } from "../../src/context/UnsavedChangesContext";
-import { useDepartmentPanel } from "../../src/context/DepartmentPanelContext";
+import { usePresence } from "../../src/context/PresenceContext";
 import UserProfilePanel from "./UserProfilePanel";
 import { getAvatarUrl } from "../utils/imageUtils";
 
 export default function TopNavbar({ toggleSidebar }) {
   const { userData, loading } = useUser();
-  const { getAgentStatus } = useAgentStatus();
   const { isDark } = useTheme();
   const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
-  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
+  const { myPresence } = usePresence();
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   // Build full name
@@ -25,22 +23,14 @@ export default function TopNavbar({ toggleSidebar }) {
 
   // Get avatar or fallback
   const avatarUrl = getAvatarUrl(userData);
-
-  // Get agent status for current user
-  const agentStatus = userData?.sys_user_id ? getAgentStatus(userData.sys_user_id) : null;
   
-  // Determine indicator color based on agent status
+  // Determine indicator color based on agent presence from Redis
   const getStatusColor = () => {
-    if (!agentStatus) return 'bg-gray-400'; // Default/offline
-    
-    switch (agentStatus.agentStatus) {
-      case 'accepting_chats':
-        return 'bg-green-500';
-      case 'not_accepting_chats':
-        return 'bg-red-500';
-      case 'offline':
-      default:
-        return 'bg-gray-400';
+    switch (myPresence) {
+      case 'accepting_chats': return 'bg-green-500';
+      case 'not_accepting_chats': return 'bg-yellow-500';
+      case 'offline': return 'bg-gray-400';
+      default: return 'bg-gray-400';
     }
   };
 
@@ -53,13 +43,6 @@ export default function TopNavbar({ toggleSidebar }) {
 
   const handleCloseProfilePanel = () => {
     setShowProfilePanel(false);
-  };
-
-  const handleDepartmentClick = () => {
-    if (blockNavigation()) {
-      return; // Blocked by unsaved changes
-    }
-    toggleDepartmentPanel();
   };
 
   return (
@@ -104,42 +87,6 @@ export default function TopNavbar({ toggleSidebar }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Department Users Icon */}
-          <button
-            onClick={handleDepartmentClick}
-            className={`p-2 rounded-lg transition-all group relative ${isDepartmentPanelOpen ? 'bg-[#6237A0] text-white' : ''}`}
-            style={!isDepartmentPanelOpen ? { 
-              color: isDark ? 'var(--text-secondary)' : '#6b7280',
-              backgroundColor: isDark ? 'transparent' : 'transparent',
-              pointerEvents: 'auto'
-            } : { pointerEvents: 'auto' }}
-            onMouseEnter={(e) => {
-              if (!isDepartmentPanelOpen && !hasUnsavedChanges) {
-                e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : '#f5f3ff';
-                e.currentTarget.style.color = '#6237A0';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isDepartmentPanelOpen) {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#6b7280';
-              }
-            }}
-            title={hasUnsavedChanges ? "Save or reset changes first" : "Toggle Department Team"}
-            disabled={hasUnsavedChanges}
-          >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            {/* Badge for online count */}
-            <span 
-              className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2"
-              style={{ borderColor: 'var(--card-bg)' }}
-            >
-              3
-            </span>
-          </button>
-
           {/* Profile Button */}
           <button 
             onClick={handleProfileClick}
@@ -157,7 +104,7 @@ export default function TopNavbar({ toggleSidebar }) {
               <div 
                 className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-2 rounded-full ${getStatusColor()}`}
                 style={{ borderColor: 'var(--card-bg)' }}
-                title={agentStatus?.agentStatus === 'accepting_chats' ? 'Accepting Chats' : agentStatus?.agentStatus === 'not_accepting_chats' ? 'Not Accepting Chats' : 'Offline'}
+                
               ></div>
             </div>
             <span 

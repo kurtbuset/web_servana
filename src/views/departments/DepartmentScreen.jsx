@@ -42,12 +42,10 @@ export default function DepartmentScreen() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortBy, setSortBy] = useState('default');
 
-  // Get user permissions
-  const { hasPermission } = useUser();
+  // Get user permissions (optimized - single object access)
+  const { permissions } = useUser();
   const { isDark } = useTheme();
-  const canViewDepartments = hasPermission("priv_can_view_dept");
-  const canAddDepartments = hasPermission("priv_can_add_dept");
-  const canEditDepartments = hasPermission("priv_can_edit_dept");
+  const { canViewDept: canViewDepartments, canAddDept: canAddDepartments, canEditDept: canEditDepartments } = permissions;
 
   // Get department state and actions from hook
   const {

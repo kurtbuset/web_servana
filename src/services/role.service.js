@@ -134,22 +134,6 @@ class RoleService {
       throw error;
     }
   }
-
-  /**
-   * Update member permission for a specific user in a role
-   * @param {number} roleId - Role ID
-   * @param {number} userId - User ID
-   * @param {string} permission - Permission name (e.g., 'priv_can_view_message')
-   * @param {boolean} value - Permission value
-   * @returns {Promise<Object>} Updated permission data
-   */
-  static async updateMemberPermission(roleId, userId, permission, value) {
-    const response = await api.put(`/roles/${roleId}/members/${userId}/permissions`, {
-      permission: permission,
-      value: value,
-    });
-    return response.data;
-  }
 }
 
 export default RoleService;

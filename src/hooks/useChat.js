@@ -25,7 +25,7 @@ import socket, { sendMessage as socketSendMessage } from "../socket";
  */
 export const useChat = ({ mode = "active" } = {}) => {
   // Get user permissions and ID
-  const { hasPermission, getUserId } = useUser();
+  const { permissions, getUserId } = useUser();
 
   const isResolvedMode = mode === "resolved";
 
@@ -337,7 +337,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     }
 
     // Check permission before fetching
-    if (!hasPermission("priv_can_use_canned_mess")) {
+    if (!permissions.canUseCannedMess) {
       console.log("User does not have permission to use canned messages");
       setCannedMessages([]);
       return;
@@ -352,7 +352,7 @@ export const useChat = ({ mode = "active" } = {}) => {
       console.error("Failed to load canned messages:", err);
       // Don't show error toast for canned messages - not critical
     }
-  }, [hasPermission, isResolvedMode]);
+  }, [permissions.canUseCannedMess, isResolvedMode]);
 
   /**
    * Load canned messages on mount only (skip in resolved mode)
@@ -365,12 +365,12 @@ export const useChat = ({ mode = "active" } = {}) => {
     }
 
     // Only fetch if user has permission
-    if (hasPermission("priv_can_use_canned_mess")) {
+    if (permissions.canUseCannedMess) {
       fetchCannedMessages();
     } else {
       setCannedMessages([]);
     }
-  }, [hasPermission, fetchCannedMessages, isResolvedMode]);
+  }, [permissions.canUseCannedMess, fetchCannedMessages, isResolvedMode]);
 
   /**
    * Determine frontend sender type for message display
@@ -524,7 +524,7 @@ export const useChat = ({ mode = "active" } = {}) => {
    */
   const sendMessage = useCallback(() => {
     // Check permission first
-    if (!hasPermission("priv_can_message")) {
+    if (!permissions.canMessage) {
       console.warn("User does not have permission to send messages");
       toast.error("You don't have permission to send messages");
       return;
@@ -544,14 +544,14 @@ export const useChat = ({ mode = "active" } = {}) => {
       sys_user_id: getUserId(),
       client_id: null,
     });
-  }, [inputMessage, selectedCustomer, hasPermission, getUserId]);
+  }, [inputMessage, selectedCustomer, permissions.canMessage, getUserId]);
 
   /**
    * End the current chat
    */
   const endChat = useCallback(async () => {
     // Check permission first
-    if (!hasPermission("priv_can_end_chat")) {
+    if (!permissions.canEndChat) {
       console.warn("User does not have permission to end chats");
       toast.error("You don't have permission to end chats");
       return;
@@ -599,7 +599,7 @@ export const useChat = ({ mode = "active" } = {}) => {
       console.error("Error ending chat:", err);
       toast.error("Failed to end chat");
     }
-  }, [selectedCustomer, messages, hasPermission, fetchChatGroups]);
+  }, [selectedCustomer, messages, permissions.canEndChat, fetchChatGroups]);
 
   /**
    * Transfer chat to another department
