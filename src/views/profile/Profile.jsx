@@ -262,6 +262,8 @@ export default function Profile() {
                         canManageProfile={canManageProfile}
                         onFileChange={handleFileChange}
                         onSaveImage={handleSaveImage}
+                        roleName={getRoleName()}
+                        departments={departments}
                       />
 
                       {/* Profile Details */}

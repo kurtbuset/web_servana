@@ -3,17 +3,22 @@ import QueueService from '../services/queue.service';
 
 /**
  * useQueues Hook
- * Manages pending chat queues data with real-time updates
+ * Manages pending chat queues data with sync-based updates (no sockets)
  */
 export const useQueues = () => {
   const [queues, setQueues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Fetch queued chats
-  const fetchQueues = useCallback(async () => {
+  const fetchQueues = useCallback(async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       const data = await QueueService.getQueuedChats();
@@ -30,7 +35,10 @@ export const useQueues = () => {
         waitTime: calculateWaitTime(chatGroup.latestMessageTime || new Date().toISOString()),
         timestamp: formatTimestamp(chatGroup.latestMessageTime || new Date().toISOString()),
         chatGroupId: chatGroup.chat_group_id,
-        clientId: chatGroup.customer?.id
+        clientId: chatGroup.customer?.id,
+        // Keep the original data structure for the PendingQueuesCard
+        chat_group_name: chatGroup.chat_group_name,
+        customer: chatGroup.customer
       }));
       
       setQueues(transformedQueues);
@@ -40,13 +48,14 @@ export const useQueues = () => {
       setQueues([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   // Refresh function for external use
   const refreshQueues = useCallback(() => {
     console.log('🔄 Refreshing queues due to external trigger');
-    fetchQueues();
+    fetchQueues(true);
   }, [fetchQueues]);
 
   // Calculate wait time from created_at timestamp
@@ -100,23 +109,15 @@ export const useQueues = () => {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch only - no auto-refresh
   useEffect(() => {
     fetchQueues();
-  }, [fetchQueues]);
-
-  // Auto-refresh every 2 minutes (reduced from 30 seconds)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchQueues();
-    }, 120000); // 2 minutes
-
-    return () => clearInterval(interval);
   }, [fetchQueues]);
 
   return {
     queues,
     loading,
+    refreshing,
     error,
     acceptChat,
     refreshQueues,

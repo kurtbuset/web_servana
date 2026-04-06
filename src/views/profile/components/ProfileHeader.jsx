@@ -11,7 +11,9 @@ export default function ProfileHeader({
   imageUploaded,
   canManageProfile,
   onFileChange,
-  onSaveImage
+  onSaveImage,
+  roleName,
+  departments
 }) {
   return (
     <div className="bg-gradient-to-br from-[#6237A0] via-[#7A4ED9] to-[#8B5CF6] p-4 sm:p-6 text-white relative overflow-hidden">
@@ -41,7 +43,21 @@ export default function ProfileHeader({
           <h2 className="text-lg sm:text-xl font-bold mb-1 drop-shadow-lg truncate">
             {profileData.firstName} {profileData.middleName} {profileData.lastName}
           </h2>
-          <p className="text-purple-100 text-sm mb-3 truncate">{profileData.email}</p>
+          <p className="text-purple-100 text-sm mb-2 truncate">{profileData.email}</p>
+          
+          {/* Role and Department Badges */}
+          <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start mb-3">
+            {roleName && (
+              <span className="inline-flex items-center px-3 py-1 bg-purple-500/30 backdrop-blur-sm border border-purple-300/30 rounded-full text-xs font-semibold text-white">
+                {roleName}
+              </span>
+            )}
+            {departments && departments.length > 0 && departments.map((dept, index) => (
+              <span key={dept.dept_id || index} className="inline-flex items-center px-3 py-1 bg-cyan-500/30 backdrop-blur-sm border border-cyan-300/30 rounded-full text-xs font-semibold text-white">
+                {dept.dept_name}
+              </span>
+            ))}
+          </div>
           
           {/* Upload Button */}
           <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
