@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import socket, {
   registerChatEvents,
   joinChatGroup,
+  leaveChatGroup,
 } from "../socket";
 
 /**
@@ -37,6 +38,9 @@ export const useChatSocket = ({
   onChatResolved,
   enabled = true,
 }) => {
+  // Track the current room to properly leave it
+  const currentRoomRef = useRef(null);
+
   // Handle logout events to reconnect socket with fresh cookies
   useEffect(() => {
     if (!enabled) return;
@@ -85,7 +89,7 @@ export const useChatSocket = ({
 
   // Auto join/leave rooms when customer changes
   useEffect(() => {
-    if (!enabled || !selectedCustomer) return;
+    if (!enabled) return;
 
     const userId = getUserId();
     if (!userId) {
@@ -93,13 +97,36 @@ export const useChatSocket = ({
       return;
     }
 
-    const currentRoomId = selectedCustomer.chat_group_id;
+    // If there's a selected customer, join their room
+    if (selectedCustomer?.chat_group_id) {
+      const newRoomId = selectedCustomer.chat_group_id;
 
-    // Join chat group (backend automatically leaves previous room)
-    joinChatGroup(socket, {
-      groupId: currentRoomId,
-      userType: "agent",
-      userId: userId,
-    });
+      // Leave previous room if different
+      if (currentRoomRef.current && currentRoomRef.current !== newRoomId) {
+        leaveChatGroup(socket, currentRoomRef.current);
+      }
+
+      // Join new room
+      joinChatGroup(socket, {
+        groupId: newRoomId,
+        userType: "agent",
+        userId: userId,
+      });
+
+      currentRoomRef.current = newRoomId;
+    } else {
+      // No customer selected - leave current room if any
+      if (currentRoomRef.current) {
+        leaveChatGroup(socket, currentRoomRef.current);
+        currentRoomRef.current = null;
+      }
+    }
+
+    // Cleanup: leave room when component unmounts or customer changes
+    return () => {
+      if (currentRoomRef.current) {
+        leaveChatGroup(socket, currentRoomRef.current);
+      }
+    };
   }, [selectedCustomer?.chat_group_id, getUserId, enabled]);
 };

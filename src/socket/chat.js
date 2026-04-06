@@ -16,6 +16,16 @@ export const joinChatGroup = (socket, { groupId, userType, userId }) => {
     userType,
     userId,
   });
+  console.log(`📱 Joining chat group: ${groupId}`);
+};
+
+export const leaveChatGroup = (socket, chatGroupId) => {
+  if (!socket.connected) {
+    console.warn("Socket not connected");
+    return;
+  }
+  socket.emit("chat:leave", { chatGroupId });
+  console.log(`🚪 Leaving chat group: ${chatGroupId}`);
 };
 
 export const sendMessage = (
