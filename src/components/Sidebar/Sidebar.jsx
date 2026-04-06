@@ -31,25 +31,12 @@ const navSections = [
         to: ROUTES.DASHBOARD, 
         icon: Activity, 
         label: "Dashboard"
-      },
-      { 
-        to: "/analytics", 
-        icon: BarChart2, 
-        label: "Analytics"
       }
     ]
   },
   {
     title: "Communication",
     items: [
-      // { 
-      //   to: ROUTES.QUEUES, 
-      //   icon: Layers, 
-      //   label: "Queues", 
-      //   permission: "priv_can_view_message", 
-      //   showBadge: true, 
-      //   badgeKey: "pendingChats"
-      // },
       { 
         to: ROUTES.CHATS, 
         icon: MessageSquare, 

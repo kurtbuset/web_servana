@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
-import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
 import { usePresence } from "../../context/PresenceContext";
 import { useChat } from "../../hooks/useChat";
 import { ChatService } from "../../services/chat.service";
@@ -32,9 +31,6 @@ export default function ChatContainer({ mode = "active" }) {
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [departmentAvailability, setDepartmentAvailability] = useState({});
   const [availableAgents, setAvailableAgents] = useState([]);
-
-  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } =
-    useDepartmentPanel();
   const { fetchAvailableByDepartment, allPresences } = usePresence();
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -366,7 +362,6 @@ export default function ChatContainer({ mode = "active" }) {
             canEndChat={canEndChat}
             canTransfer={canTransfer}
             canUseCannedMessages={canUseCannedMessages}
-            isDepartmentPanelOpen={isDepartmentPanelOpen}
             scrollContainerRef={scrollContainerRef}
             textareaRef={textareaRef}
             bottomRef={bottomRef}
@@ -385,7 +380,6 @@ export default function ChatContainer({ mode = "active" }) {
             onEndChat={handleEndChat}
             onTransfer={handleTransferClick}
             onProfileClick={handleProfileClick}
-            onToggleDepartmentPanel={toggleDepartmentPanel}
             onAcceptChat={acceptQueuedChat}
           />
         </div>

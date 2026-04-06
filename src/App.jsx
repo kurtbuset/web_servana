@@ -5,7 +5,6 @@ import AppNavigation from './AppNavigation.jsx';
 import { UserProvider } from "../src/context/UserContext.jsx";
 import { ThemeProvider } from "../src/context/ThemeContext.jsx";
 import { UnsavedChangesProvider } from "../src/context/UnsavedChangesContext.jsx";
-import { DepartmentPanelProvider } from "../src/context/DepartmentPanelContext.jsx";
 import { RolePreviewProvider } from './context/RolePreviewContext.jsx';
 import { PresenceProvider } from './context/PresenceContext.jsx';
 
@@ -14,13 +13,11 @@ function App() {
     <ThemeProvider>
       <UserProvider>
         <PresenceProvider>
-        <RolePreviewProvider>
+          <RolePreviewProvider>
             <UnsavedChangesProvider>
-              <DepartmentPanelProvider>
-                <AppNavigation />
-              </DepartmentPanelProvider>
+              <AppNavigation />
             </UnsavedChangesProvider>
-        </RolePreviewProvider>
+          </RolePreviewProvider>
         </PresenceProvider>
       </UserProvider>
     </ThemeProvider>

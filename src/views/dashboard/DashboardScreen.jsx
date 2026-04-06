@@ -5,7 +5,6 @@ import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import { useQueues } from "../../hooks/useQueues";
 import socket, { registerChatEvents } from "../../socket";
 
@@ -13,14 +12,12 @@ import socket, { registerChatEvents } from "../../socket";
 import DashboardHeader from "./components/DashboardHeader";
 import QueuesList from "./components/QueuesList";
 import ChartCard from "./components/ChartCard";
-import QuickActions from "./components/QuickActions";
 import StatCard from "./components/StatCard";
-import DepartmentRankings from "../analytics/components/DepartmentRankings";
 import Calendar from "./components/Calendar";
 import PeriodSelector from "../../components/shared/PeriodSelector";
 
 export default function DashboardScreen() {
-    const { userData, hasPermission, getRoleName } = useUser();
+    const { userData, getRoleName } = useUser();
     const { isDark } = useTheme();
     const navigate = useNavigate();
     const { queues, loading: queuesLoading, error: queuesError, refreshQueues } = useQueues();
@@ -50,11 +47,61 @@ export default function DashboardScreen() {
     });
     
     // Pass appropriate date/week/month/year parameters based on period
-    const analyticsDate = period === 'daily' ? selectedDate : null;
-    const analyticsWeek = period === 'weekly' ? selectedWeek : null;
-    const analyticsMonth = period === 'monthly' ? selectedMonth : null;
-    const analyticsYear = period === 'yearly' ? selectedYear : null;
-    const { messageAnalytics, responseTimeAnalytics, dashboardStats, enhancedResponseTime, loading: analyticsLoading, refreshAnalytics } = useAnalytics(period, analyticsDate, analyticsWeek, analyticsMonth, analyticsYear);
+    // const { messageAnalytics, responseTimeAnalytics, dashboardStats, enhancedResponseTime, loading: analyticsLoading, refreshAnalytics } = useAnalytics(period);
+    
+    // Static data for testing
+    const analyticsLoading = false;
+    const refreshAnalytics = () => console.log('Analytics refresh disabled - using static data');
+    
+    const messageAnalytics = {
+        total: 1247,
+        trend: '+12%',
+        values: period === 'daily' ? [45, 52, 38, 61, 55, 48, 70, 65, 58, 72, 68, 75, 82, 78, 85, 90, 88, 95, 92, 88, 75, 65, 55, 48] :
+                period === 'weekly' ? [156, 189, 234, 198, 212, 187, 271] :
+                period === 'monthly' ? Array.from({length: 30}, (_, i) => Math.floor(Math.random() * 50) + 40) :
+                [890, 920, 1050, 1100, 1180, 1150, 1200, 1247, 1300, 1280, 1320, 1350],
+        labels: period === 'daily' ? Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`) :
+                period === 'weekly' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] :
+                period === 'monthly' ? Array.from({length: 30}, (_, i) => (i + 1).toString().padStart(2, '0')) :
+                ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    };
+    
+    const responseTimeAnalytics = {
+        average: 3.5,
+        trend: '-8%',
+        values: period === 'daily' ? [4.2, 3.8, 4.5, 3.2, 3.9, 4.1, 3.5, 3.7, 3.3, 3.8, 3.6, 3.4, 3.2, 3.5, 3.3, 3.1, 3.4, 3.2, 3.6, 3.8, 4.0, 4.2, 4.5, 4.3] :
+                period === 'weekly' ? [4.2, 3.8, 3.5, 3.2, 3.6, 3.9, 3.7] :
+                period === 'monthly' ? Array.from({length: 30}, (_, i) => Math.random() * 2 + 3) :
+                [4.5, 4.3, 4.0, 3.8, 3.7, 3.6, 3.5, 3.5, 3.4, 3.3, 3.4, 3.5],
+        labels: period === 'daily' ? Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`) :
+                period === 'weekly' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] :
+                period === 'monthly' ? Array.from({length: 30}, (_, i) => (i + 1).toString().padStart(2, '0')) :
+                ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        formatted: {
+            averageResponseTime: '3.5 min'
+        }
+    };
+    
+    const dashboardStats = {
+        engagement: {
+            totalTickets: 156,
+            resolutionRate: 78,
+            activeUsers: 12,
+            totalTicketsGrowth: 8,
+            resolutionRateGrowth: 5
+        }
+    };
+    
+    const enhancedResponseTime = {
+        formatted: {
+            overallART: '3.5 min'
+        },
+        trend: -8,
+        chartData: {
+            data: responseTimeAnalytics.values.map(v => v * 60),
+            labels: responseTimeAnalytics.labels
+        }
+    };
 
     // Memoize period change callback to prevent PeriodSelector re-renders
     const handlePeriodChange = useCallback((newPeriod) => {
@@ -351,72 +398,9 @@ export default function DashboardScreen() {
         [period, handlePeriodChange, selectedDate, handleDateChange, selectedWeek, handleWeekChange, selectedMonth, handleMonthChange, selectedYear, handleYearChange]
     );
 
-    // Socket event listeners for real-time dashboard updates
-    useEffect(() => {
-        console.log('🔌 Setting up dashboard socket listeners');
-        
-        const handleChatResolved = (data) => {
-            console.log('📊 Dashboard: Chat resolved, refreshing data', data);
-            // Add a small delay to ensure backend has processed the resolution
-            setTimeout(() => {
-                refreshQueues();
-                refreshAnalytics();
-            }, 500);
-        };
-
-        const handleCustomerListUpdate = (updateData) => {
-            console.log('📊 Dashboard: Customer list updated', updateData);
-            // Check if it's a chat resolution event
-            if (updateData.type === 'chat_resolved') {
-                console.log('📊 Dashboard: Chat resolved via customer list update');
-                setTimeout(() => {
-                    refreshQueues();
-                    refreshAnalytics();
-                }, 500);
-            }
-        };
-
-        // Only register listeners if socket is available and connected
-        if (socket && socket.connected) {
-            console.log('✅ Socket is connected, registering dashboard listeners');
-            
-            // Register socket event listeners
-            const cleanup = registerChatEvents(socket, {
-                onChatResolved: handleChatResolved,
-                onCustomerListUpdate: handleCustomerListUpdate,
-            });
-
-            return () => {
-                console.log('🔌 Cleaning up dashboard socket listeners');
-                cleanup();
-            };
-        } else {
-            console.warn('⚠️ Socket not available or not connected, dashboard real-time updates disabled');
-        }
-    }, [refreshQueues, refreshAnalytics]);
-
     // Debug logging for queues
     if (queuesError) {
         console.error('Queue loading error:', queuesError);
-    }
-
-    // Debug logging for analytics data
-    if (messageAnalytics || responseTimeAnalytics || dashboardStats || enhancedResponseTime) {
-        console.log('Dashboard Analytics Data:', {
-            messageAnalytics,
-            responseTimeAnalytics,
-            dashboardStats,
-            enhancedResponseTime,
-            displayStats
-        });
-    }
-
-    // Show helpful message when no data is available
-    if (!analyticsLoading && !messageAnalytics && !responseTimeAnalytics && !dashboardStats) {
-        console.warn('No analytics data available. This might be because:');
-        console.warn('1. No chat data exists in the database');
-        console.warn('2. Analytics migration has not been run');
-        console.warn('3. User does not have permission to view analytics');
     }
 
     // Don't show loading screen for period changes, only for initial load
@@ -453,9 +437,6 @@ export default function DashboardScreen() {
                         <div className="grid grid-cols-2 gap-4 h-full">
                             {/* Left Half: Pending Queues */}
                             <QueuesList queues={queues} />
-                            
-                            {/* Right Half: Department Rankings */}
-                            <DepartmentRankings period={period} />
                         </div>
                     </div>
 
@@ -464,74 +445,12 @@ export default function DashboardScreen() {
                         <div className="space-y-4 h-full">
                             {/* Calendar Component */}
                             <Calendar className="flex-1" />
-                            
-                            {/* Quick Actions */}
-                            <QuickActions 
-                                navigate={navigate} 
-                                hasPermission={hasPermission} 
-                            />
                         </div>
                     </div>
 
                     {/* Messages Chart with Period Selector */}
                     <ChartCard
                         className="dashboard-chart1"
-                        title={`Messages ${
-                            period === 'daily' ? `on ${new Date(selectedDate).toLocaleDateString('en-US', { 
-                                weekday: 'short', 
-                                month: 'short', 
-                                day: 'numeric' 
-                            })}` :
-                            period === 'weekly' ? (() => {
-                                const weekStart = new Date(selectedWeek);
-                                const weekEnd = new Date(weekStart);
-                                weekEnd.setDate(weekStart.getDate() + 6);
-                                
-                                const today = new Date();
-                                const currentWeekStart = new Date(today);
-                                const day = today.getDay();
-                                const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-                                currentWeekStart.setDate(diff);
-                                
-                                if (weekStart.getTime() === currentWeekStart.getTime()) {
-                                    return 'This Week';
-                                }
-                                
-                                const startMonth = weekStart.toLocaleDateString('en-US', { month: 'short' });
-                                const startDay = weekStart.getDate();
-                                const endDay = weekEnd.getDate();
-                                
-                                if (weekStart.getMonth() === weekEnd.getMonth()) {
-                                    return `${startMonth} ${startDay} - ${endDay}`;
-                                } else {
-                                    const endMonth = weekEnd.toLocaleDateString('en-US', { month: 'short' });
-                                    return `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
-                                }
-                            })() :
-                            period === 'monthly' ? (() => {
-                                const [year, month] = selectedMonth.split('-');
-                                const monthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                const today = new Date();
-                                const currentMonth = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-                                
-                                if (selectedMonth === currentMonth) {
-                                    return 'This Month';
-                                }
-                                
-                                return monthDate.toLocaleDateString('en-US', {
-                                    month: 'long',
-                                    year: 'numeric'
-                                });
-                            })() :
-                            period === 'yearly' ? (() => {
-                                const currentYear = new Date().getFullYear().toString();
-                                if (selectedYear === currentYear) {
-                                    return 'This Year';
-                                }
-                                return selectedYear;
-                            })() :
-                            `This ${period === 'monthly' ? 'Month' : 'Year'}`
-                        }`}
                         value={messageAnalytics?.total?.toLocaleString() || '0'}
                         trend={messageAnalytics?.trend || '0%'}
                         chartData={messagesChartData}
