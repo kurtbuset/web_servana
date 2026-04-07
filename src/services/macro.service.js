@@ -1,4 +1,4 @@
-import api from '../api';
+import api from "../api";
 
 /**
  * MacroService
@@ -47,11 +47,22 @@ class MacroService {
   }
 
   /**
+   * Delete a macro
+   * @param {number} id - Macro ID
+   * @param {string} roleType - Role type ("agent" or "client")
+   * @returns {Promise<Object>} Delete result
+   */
+  static async deleteMacro(id, roleType) {
+    const response = await api.delete(`/macros/${roleType}/${id}`);
+    return response.data;
+  }
+
+  /**
    * Get all departments
    * @returns {Promise<Array>} List of departments
    */
   static async getDepartments() {
-    const response = await api.get('/departments');
+    const response = await api.get("/departments");
     return response.data;
   }
 }

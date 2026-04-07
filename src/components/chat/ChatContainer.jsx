@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
-import { useTheme } from "../../context/ThemeContext";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
-import { useDepartmentPanel } from "../../context/DepartmentPanelContext";
+import { usePresence } from "../../context/PresenceContext";
 import { useChat } from "../../hooks/useChat";
 import { ChatService } from "../../services/chat.service";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
+import socket from "../../socket";
 import ChatModals from "./ChatModals";
 import ChatSidebar from "./ChatSidebar";
 import ChatMainArea from "./ChatMainArea";
@@ -13,7 +13,7 @@ import ProfilePanel from "./ProfilePanel";
 /**
  * ChatContainer - Main container for the chat interface
  * Manages state and business logic, delegates rendering to child components
- * 
+ *
  * @param {Object} props
  * @param {string} props.mode - "active" for active chats, "resolved" for resolved chats
  */
@@ -23,24 +23,25 @@ export default function ChatContainer({ mode = "active" }) {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEndChatModal, setShowEndChatModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [showTransferConfirmModal, setShowTransferConfirmModal] = useState(false);
+  const [showTransferConfirmModal, setShowTransferConfirmModal] =
+    useState(false);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [transferDepartment, setTransferDepartment] = useState(null);
   const [allDepartments, setAllDepartments] = useState([]);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  
-  const { isOpen: isDepartmentPanelOpen, toggle: toggleDepartmentPanel } = useDepartmentPanel();
+  const [departmentAvailability, setDepartmentAvailability] = useState({});
+  const [availableAgents, setAvailableAgents] = useState([]);
+  const { fetchAvailableByDepartment, allPresences } = usePresence();
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
-  const { hasPermission } = useUser();
-  const { isDark } = useTheme();
-  
-  const isResolvedMode = mode === 'resolved';
-  const canMessage = hasPermission("priv_can_message") && !isResolvedMode;
-  const canEndChat = hasPermission("priv_can_end_chat") && !isResolvedMode;
-  const canTransfer = hasPermission("priv_can_transfer") && !isResolvedMode;
-  const canUseCannedMessages = hasPermission("priv_can_use_canned_mess") && !isResolvedMode;
+  const { permissions } = useUser();
+
+  const isResolvedMode = mode === "resolved";
+  const canMessage = permissions.canMessage && !isResolvedMode;
+  const canEndChat = permissions.canEndChat && !isResolvedMode;
+  const canTransfer = permissions.canTransfer && !isResolvedMode;
+  const canUseCannedMessages = permissions.canUseCannedMess && !isResolvedMode;
 
   // Use unified hook with mode parameter
   const {
@@ -98,8 +99,10 @@ export default function ChatContainer({ mode = "active" }) {
 
   const confirmTransfer = async () => {
     setShowTransferConfirmModal(false);
-    
-    const selectedDept = allDepartments.find(dept => dept.dept_name === transferDepartment);
+
+    const selectedDept = allDepartments.find(
+      (dept) => dept.dept_name === transferDepartment,
+    );
     if (selectedDept) {
       const success = await transferChat(selectedDept.dept_id);
       if (success && isMobile) {
@@ -129,7 +132,7 @@ export default function ChatContainer({ mode = "active" }) {
   const confirmEndChat = () => {
     setShowEndChatModal(false);
     endChat();
-    
+
     if (isMobile) setView("chatList");
   };
 
@@ -161,6 +164,42 @@ export default function ChatContainer({ mode = "active" }) {
   const handleCloseProfile = () => {
     setShowProfilePanel(false);
   };
+
+  // Fetch available agents by department when transfer modal opens
+  const refreshTransferPresence = useCallback(() => {
+    fetchAvailableByDepartment((data) => {
+      if (data?.departments) {
+        const availMap = {};
+        data.departments.forEach((d) => {
+          availMap[d.dept_name] = d.availableCount;
+        });
+        setDepartmentAvailability(availMap);
+      }
+      if (data?.availableAgents) {
+        setAvailableAgents(data.availableAgents);
+      }
+    });
+  }, [fetchAvailableByDepartment]);
+
+  useEffect(() => {
+    if (showTransferModal) {
+      refreshTransferPresence();
+    }
+  }, [showTransferModal, refreshTransferPresence]);
+
+  // Real-time update when presence changes while transfer modal is open
+  useEffect(() => {
+    if (!showTransferModal) return;
+
+    const handlePresenceChange = () => {
+      refreshTransferPresence();
+    };
+
+    socket.on("presence:change", handlePresenceChange);
+    return () => {
+      socket.off("presence:change", handlePresenceChange);
+    };
+  }, [showTransferModal, refreshTransferPresence]);
 
   // Fetch all departments on component mount
   useEffect(() => {
@@ -224,14 +263,16 @@ export default function ChatContainer({ mode = "active" }) {
 
     const handleScroll = async () => {
       if (isThrottled || isLoadingMore) return;
-      
+
       if (container.scrollTop <= 50 && hasMoreMessages && selectedCustomer) {
         isThrottled = true;
         const prevHeight = container.scrollHeight;
         const prevScrollTop = container.scrollTop;
 
         try {
-          await loadMessages(selectedCustomer.id, earliestMessageTime, true);
+          // Use chat_group_id if available, otherwise use client id
+          const messageId = selectedCustomer.chat_group_id || selectedCustomer.id;
+          await loadMessages(messageId, earliestMessageTime, true);
 
           setTimeout(() => {
             if (container) {
@@ -241,7 +282,7 @@ export default function ChatContainer({ mode = "active" }) {
             }
           }, 50);
         } catch (error) {
-          console.error('Error loading more messages:', error);
+          console.error("Error loading more messages:", error);
         }
 
         setTimeout(() => {
@@ -252,7 +293,13 @@ export default function ChatContainer({ mode = "active" }) {
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [earliestMessageTime, hasMoreMessages, selectedCustomer, loadMessages, isLoadingMore]);
+  }, [
+    earliestMessageTime,
+    hasMoreMessages,
+    selectedCustomer,
+    loadMessages,
+    isLoadingMore,
+  ]);
 
   const groupedMessages = groupMessagesByDate(messages);
 
@@ -263,6 +310,9 @@ export default function ChatContainer({ mode = "active" }) {
         showTransferModal={showTransferModal}
         showTransferConfirmModal={showTransferConfirmModal}
         allDepartments={allDepartments}
+        allAgents={[]}
+        departmentAvailability={departmentAvailability}
+        availableAgents={availableAgents}
         transferDepartment={transferDepartment}
         selectedDepartment={selectedDepartment}
         onConfirmEndChat={confirmEndChat}
@@ -312,7 +362,6 @@ export default function ChatContainer({ mode = "active" }) {
             canEndChat={canEndChat}
             canTransfer={canTransfer}
             canUseCannedMessages={canUseCannedMessages}
-            isDepartmentPanelOpen={isDepartmentPanelOpen}
             scrollContainerRef={scrollContainerRef}
             textareaRef={textareaRef}
             bottomRef={bottomRef}
@@ -320,7 +369,9 @@ export default function ChatContainer({ mode = "active" }) {
             onBack={handleBackClick}
             onInputChange={handleInputChange}
             onSendMessage={handleSendMessage}
-            onToggleCannedMessages={() => setShowCannedMessages((prev) => !prev)}
+            onToggleCannedMessages={() =>
+              setShowCannedMessages((prev) => !prev)
+            }
             onSelectCannedMessage={(msg) => {
               setInputMessage(msg);
               setShowCannedMessages(false);
@@ -329,7 +380,6 @@ export default function ChatContainer({ mode = "active" }) {
             onEndChat={handleEndChat}
             onTransfer={handleTransferClick}
             onProfileClick={handleProfileClick}
-            onToggleDepartmentPanel={toggleDepartmentPanel}
             onAcceptChat={acceptQueuedChat}
           />
         </div>

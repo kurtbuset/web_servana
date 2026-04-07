@@ -59,15 +59,15 @@ export default function MacrosClientsScreen() {
   }, []);
   
   // Get user ID from UserContext
-  const { getUserId, hasPermission } = useUser();
+  const { getUserId, permissions } = useUser();
   const currentUserId = getUserId();
   const { isDark } = useTheme();
   
   // Macro permissions
-  const canViewMacros = hasPermission("priv_can_view_macros");
-  const canAddMacros = hasPermission("priv_can_add_macros");
-  const canEditMacros = hasPermission("priv_can_edit_macros");
-  const canDeleteMacros = hasPermission("priv_can_delete_macros");
+  const canViewMacros = permissions.canViewMacros;
+  const canAddMacros = permissions.canAddMacros;
+  const canEditMacros = permissions.canEditMacros;
+  const canDeleteMacros = permissions.canDeleteMacros;
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
 
   // Use the macros hook with "client" role type

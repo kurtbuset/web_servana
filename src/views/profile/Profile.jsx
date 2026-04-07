@@ -52,10 +52,10 @@ export default function Profile() {
     dateOfBirth: "",
   });
   
-  const { setUserData, hasPermission } = useUser();
+  const { setUserData, permissions, logout } = useUser();
   const { isDark } = useTheme();
   const navigate = useNavigate();
-  const canManageProfile = hasPermission("priv_can_manage_profile");
+  const canManageProfile = permissions.canManageProfile;
 
   // ---------------- FETCH PROFILE ----------------
   const fetchProfile = useCallback(async () => {
@@ -188,13 +188,19 @@ export default function Profile() {
   // ---------------- LOGOUT ----------------
   const handleLogout = async () => {
     try {
-      await api.post("/auth/logout", {}, { withCredentials: true });
-      setUserData(null);
-      navigate("/");
+      // Use UserContext logout method which handles socket disconnection
+      const result = await logout();
+      if (result.success) {
+        navigate("/");
+      } else {
+        console.error("Logout failed:", result.error);
+        // Force navigation even if logout API fails
+        setUserData(null);
+        navigate("/");
+      }
     } catch (error) {
       console.error("Logout failed:", error?.response?.data || error?.message);
-      // localStorage.removeItem("token");
-      // localStorage.removeItem("userData");
+      // Force clear user data and navigate on any error
       setUserData(null);
       navigate("/");
     }
@@ -256,6 +262,8 @@ export default function Profile() {
                         canManageProfile={canManageProfile}
                         onFileChange={handleFileChange}
                         onSaveImage={handleSaveImage}
+                        roleName={getRoleName()}
+                        departments={departments}
                       />
 
                       {/* Profile Details */}

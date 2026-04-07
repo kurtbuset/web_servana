@@ -175,8 +175,6 @@ export const SOCKET_EVENTS = {
   ERROR: 'error',
   
   // Chat
-  JOIN_CHAT: 'joinChatGroup',
-  LEAVE_CHAT: 'leaveChatGroup',
   RECEIVE_MESSAGE: 'receiveMessage',
   SEND_MESSAGE: 'sendMessage',
   MESSAGE_DELIVERED: 'messageDelivered',

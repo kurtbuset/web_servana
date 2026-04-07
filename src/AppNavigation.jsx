@@ -27,7 +27,6 @@ const MacrosAgentsScreen = lazy(() => import("./views/macros/MacrosAgentsScreen.
 const MacrosClientsScreen = lazy(() => import("./views/macros/MacrosClientsScreen.jsx"));
 const Profile = lazy(() => import("./views/profile/Profile.jsx"));
 const ManageAdmin = lazy(() => import("./views/manage-admin/ManageAdmin.jsx"));
-const AnalyticsScreen = lazy(() => import("./views/analytics/AnalyticsScreen.jsx"));
 
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "./components/ui";
@@ -37,13 +36,28 @@ import { ToastContainer } from "./components/ui";
  * PermissionRoute: Redirect to Dashboard if user doesn't have required permission
  */
 function PermissionRoute({ children, permission, fallbackPermission }) {
-  const { hasPermission, loading } = useUser();
+  const { permissions, loading } = useUser();
 
   if (loading) {
     return <LoadingSpinner variant="page" message="Checking permissions..." />;
   }
 
-  if (permission && !hasPermission(permission) && (!fallbackPermission || !hasPermission(fallbackPermission))) {
+  // Map permission strings to permissions object properties
+  const permissionMap = {
+    'priv_can_view_message': permissions.canViewMessage,
+    'priv_can_view_dept': permissions.canViewDept,
+    'priv_can_view_manage_agents': permissions.canViewManageAgents,
+    'priv_can_view_change_roles': permissions.canViewChangeRoles,
+    'priv_can_view_auto_reply': permissions.canViewAutoReply,
+    'priv_can_view_macros': permissions.canViewMacros,
+    'priv_can_create_account': permissions.canCreateAccount,
+    'priv_can_manage_role': permissions.canManageRole,
+  };
+
+  const hasPermission = permissionMap[permission];
+  const hasFallbackPermission = fallbackPermission ? permissionMap[fallbackPermission] : false;
+
+  if (permission && !hasPermission && (!fallbackPermission || !hasFallbackPermission)) {
     console.log(`🚫 PermissionRoute: Access denied for ${permission}${fallbackPermission ? ` (fallback: ${fallbackPermission})` : ''}`);
     return <Navigate to="/Dashboard" replace />;
   }
@@ -99,11 +113,19 @@ function ProtectedRoute({ children }) {
 
 /**
  * PublicRoute: Redirect authenticated users away from Login to /Dashboard
+ * Uses UserContext as primary auth check to avoid race conditions on logout
  */
 function PublicRoute({ children }) {
+  const { userData, loading: userLoading } = useUser();
   const [state, setState] = React.useState({ loading: true, authed: false });
 
   React.useEffect(() => {
+    // If UserContext already knows user is logged out, skip API check
+    if (!userLoading && !userData) {
+      setState({ loading: false, authed: false });
+      return;
+    }
+
     let isMounted = true;
 
     const checkAuth = () => {
@@ -123,7 +145,7 @@ function PublicRoute({ children }) {
 
     const handleStorage = (event) => {
       if (event.key === "logout") {
-        checkAuth(); // recheck auth on logout event
+        setState({ loading: false, authed: false });
       }
     };
 
@@ -132,7 +154,7 @@ function PublicRoute({ children }) {
       isMounted = false;
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [userData, userLoading]);
 
   if (state.loading) {
     return <LoadingSpinner variant="page" message="Loading application..." />;
@@ -295,17 +317,6 @@ function AppNavigation() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <AnalyticsScreen />
-            </ProtectedRoute>
-          }
-        />
-
-       
-        <Route path="/queues" element={<Navigate to="/queues" replace />} />
 
         <Route path="/chats" element={<Navigate to="/chats" replace />} />
         

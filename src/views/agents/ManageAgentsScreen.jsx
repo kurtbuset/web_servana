@@ -59,15 +59,15 @@ export default function ManageAgentsScreen() {
   const [originalDepartments, setOriginalDepartments] = useState([]);
   const [shakeBar, setShakeBar] = useState(0);
 
-  const { hasPermission } = useUser();
+  const { permissions } = useUser();
   const { isDark } = useTheme();
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnNavigationBlocked } = useUnsavedChanges();
-  const canAssignDepartment = hasPermission("priv_can_assign_dept");
-  const canViewAgentsInfo = hasPermission("priv_can_view_agents_info");
-  const canCreateAgentAccount = hasPermission("priv_can_create_agent_account");
-  const canEditManageAgents = hasPermission("priv_can_edit_manage_agents");
-  const canEditDeptManageAgents = hasPermission("priv_can_edit_dept_manage_agents");
-  const canViewAnalyticsManageAgents = hasPermission("priv_can_view_analytics_manage_agents");
+  const canAssignDepartment = permissions.canAssignDept;
+  const canViewAgentsInfo = permissions.canViewAgentsInfo;
+  const canCreateAgentAccount = permissions.canCreateAgentAccount;
+  const canEditManageAgents = permissions.canEditManageAgents;
+  const canEditDeptManageAgents = permissions.canEditDeptManageAgents;
+  const canViewAnalyticsManageAgents = permissions.canViewAnalyticsManageAgents;
 
   const {
     agents,

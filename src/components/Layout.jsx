@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import TopNavbar from './TopNavbar';
 import Sidebar from './Sidebar';
-import DepartmentUsersPanel from './DepartmentUsersPanel';
-import { useDepartmentPanel } from '../context/DepartmentPanelContext';
 import { useRolePreview } from '../context/RolePreviewContext';
 
 /**
@@ -13,7 +11,6 @@ import { useRolePreview } from '../context/RolePreviewContext';
 export default function Layout({ children }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
-  const { isOpen: isDepartmentPanelOpen, close: closeDepartmentPanel } = useDepartmentPanel();
   const { previewMode } = useRolePreview();
 
   const toggleSidebar = () => {
@@ -27,10 +24,6 @@ export default function Layout({ children }) {
   const closeSidebar = () => {
     console.log('Closing sidebar');
     setMobileSidebarOpen(false);
-  };
-
-  const toggleDropdown = (name) => {
-    setOpenDropdown(prev => (prev === name ? null : name));
   };
 
   return (
@@ -63,12 +56,6 @@ export default function Layout({ children }) {
           <div className="flex-1 overflow-hidden">
             {children}
           </div>
-
-          {/* Department Users Panel - Discord-style */}
-          <DepartmentUsersPanel 
-            isOpen={isDepartmentPanelOpen} 
-            onClose={closeDepartmentPanel} 
-          />
         </main>
       </div>
     </div>

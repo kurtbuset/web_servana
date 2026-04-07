@@ -148,6 +148,23 @@ export default function MessageInput({
       borderColor: 'var(--border-color)', 
       backgroundColor: 'var(--card-bg)' 
     }}>
+      {/* Chat ended banner */}
+      {chatEnded && (
+        <div className="mb-3 sm:mb-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl animate-slide-in" style={{
+          backgroundColor: isDark ? 'rgba(107, 114, 128, 0.1)' : '#f9fafb',
+          border: `2px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : '#d1d5db'}`
+        }}>
+          <p className="text-xs sm:text-sm text-center flex items-center justify-center gap-2" style={{
+            color: isDark ? '#9ca3af' : '#6b7280'
+          }}>
+            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-9A7 7 0 1117 9H3z" clipRule="evenodd" />
+            </svg>
+            <span><span className="font-semibold">Chat Ended:</span> This conversation has been closed</span>
+          </p>
+        </div>
+      )}
+
       {/* Permission denied banner */}
       {disabled && !chatEnded && disabledMessage !== "Message" && (
         <div className="mb-3 sm:mb-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl animate-slide-in" style={{

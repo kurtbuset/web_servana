@@ -1,26 +1,31 @@
-import { useEffect, useCallback } from 'react';
-import socket from '../socket/index';
-import { registerChatEvents } from '../socket/events';
-import { joinChatGroup, leavePreviousRoom, leaveRoom, sendMessage as sendMessageEmitter } from '../socket/emitters';
+import { useEffect, useRef } from "react";
+import socket, {
+  registerChatEvents,
+  joinChatGroup,
+  leaveChatGroup,
+} from "../socket";
 
 /**
- * useChatSocket hook manages Socket.IO connections and events
- * 
- * Features:
- * - Join/leave chat rooms
- * - Listen for real-time messages
- * - Listen for customer list updates
- * - Send messages via Socket.IO
- * 
+ * useChatSocket hook manages Socket.IO lifecycle for chat
+ *
+ * Handles:
+ * - Auto join/leave rooms based on selected customer
+ * - Register/cleanup event listeners
+ * - Reconnect on logout
+ * - Message status updates (delivered, read)
+ * - Chat transfer notifications
+ * - Chat resolved notifications
+ *
  * @param {Object} params - Hook parameters
  * @param {Object} params.selectedCustomer - Currently selected customer
  * @param {Function} params.getUserId - Function to get current user ID
  * @param {Function} params.onMessageReceived - Callback when message is received
  * @param {Function} params.onCustomerListUpdate - Callback for customer list updates
  * @param {Function} params.onUserJoined - Callback when user joins room
- * @param {Function} params.onUserLeft - Callback when user leaves room
+ * @param {Function} params.onMessageStatusUpdate - Callback for message status updates
+ * @param {Function} params.onChatTransferred - Callback when chat is transferred
+ * @param {Function} params.onChatResolved - Callback when chat is resolved
  * @param {boolean} params.enabled - Whether socket is enabled (default: true)
- * @returns {Object} Socket actions
  */
 export const useChatSocket = ({
   selectedCustomer,
@@ -28,105 +33,100 @@ export const useChatSocket = ({
   onMessageReceived,
   onCustomerListUpdate,
   onUserJoined,
-  onUserLeft,
+  onMessageStatusUpdate,
+  onChatTransferred,
+  onChatResolved,
   enabled = true,
 }) => {
-  /**
-   * Handle logout events to reconnect socket with fresh cookies
-   */
+  // Track the current room to properly leave it
+  const currentRoomRef = useRef(null);
+
+  // Handle logout events to reconnect socket with fresh cookies
   useEffect(() => {
     if (!enabled) return;
 
-    // Listen for logout events to reconnect socket with fresh cookies
     const handleLogout = () => {
-      console.log('Logout detected - reconnecting socket');
+      console.log("Logout detected - reconnecting socket");
       socket.disconnect();
-      // Small delay to ensure cookies are cleared
-      setTimeout(() => {
-        socket.connect();
-      }, 100);
+      setTimeout(() => socket.connect(), 100);
     };
 
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'logout') {
-        handleLogout();
-      }
-    });
-
-    return () => {
-      window.removeEventListener('storage', handleLogout);
+    const handleStorage = (event) => {
+      if (event.key === "logout") handleLogout();
     };
-  }, []);
 
-  /**
-   * Listen for chat events via Socket.IO
-   */
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [enabled]);
+
+  // Register chat event listeners
   useEffect(() => {
     if (!enabled) return;
 
     const cleanup = registerChatEvents(socket, {
       onMessageReceived: (msg) => {
         const userId = getUserId();
-        if (onMessageReceived) {
-          onMessageReceived(msg, userId);
-        }
+        if (onMessageReceived) onMessageReceived(msg, userId);
       },
       onCustomerListUpdate,
       onUserJoined,
-      onUserLeft
+      onMessageStatusUpdate,
+      onChatTransferred,
+      onChatResolved,
     });
 
     return cleanup;
-  }, [getUserId, onMessageReceived, onCustomerListUpdate, onUserJoined, onUserLeft, enabled]);
+  }, [
+    getUserId,
+    onMessageReceived,
+    onCustomerListUpdate,
+    onUserJoined,
+    onMessageStatusUpdate,
+    onChatTransferred,
+    onChatResolved,
+    enabled,
+  ]);
 
-  /**
-   * Join chat group and listen for messages when customer is selected
-   */
+  // Auto join/leave rooms when customer changes
   useEffect(() => {
-    if (!enabled || !selectedCustomer) return;
+    if (!enabled) return;
 
     const userId = getUserId();
     if (!userId) {
-      console.warn('No user ID available, cannot join chat group');
+      console.warn("No user ID available, cannot join chat group");
       return;
     }
 
-    // Track current room to prevent duplicate joins
-    const currentRoomId = selectedCustomer.chat_group_id;
+    // If there's a selected customer, join their room
+    if (selectedCustomer?.chat_group_id) {
+      const newRoomId = selectedCustomer.chat_group_id;
 
-    // Leave previous room if agent was in another room
-    leavePreviousRoom(socket);
+      // Leave previous room if different
+      if (currentRoomRef.current && currentRoomRef.current !== newRoomId) {
+        leaveChatGroup(socket, currentRoomRef.current);
+      }
 
-    // Join new chat group with user info
-    joinChatGroup(socket, {
-      groupId: currentRoomId,
-      userType: 'agent',
-      userId: userId
-    });
-
-    return () => {
-      // Leave room when component unmounts or customer changes
-      leaveRoom(socket, {
-        roomId: currentRoomId,
-        userType: 'agent',
-        userId: userId
+      // Join new room
+      joinChatGroup(socket, {
+        groupId: newRoomId,
+        userType: "agent",
+        userId: userId,
       });
+
+      currentRoomRef.current = newRoomId;
+    } else {
+      // No customer selected - leave current room if any
+      if (currentRoomRef.current) {
+        leaveChatGroup(socket, currentRoomRef.current);
+        currentRoomRef.current = null;
+      }
+    }
+
+    // Cleanup: leave room when component unmounts or customer changes
+    return () => {
+      if (currentRoomRef.current) {
+        leaveChatGroup(socket, currentRoomRef.current);
+      }
     };
   }, [selectedCustomer?.chat_group_id, getUserId, enabled]);
-
-  /**
-   * Send a message via Socket.IO
-   */
-  const sendMessage = useCallback((messageBody, chatGroupId, userId) => {
-    sendMessageEmitter(socket, {
-      chat_body: messageBody,
-      chat_group_id: chatGroupId,
-      sys_user_id: userId,
-      client_id: null,
-    });
-  }, []);
-
-  return {
-    sendMessage,
-  };
 };

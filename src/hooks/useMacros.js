@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import toast from '../utils/toast';
-import MacroService from '../services/macro.service';
+import { useState, useEffect } from "react";
+import toast from "../utils/toast";
+import MacroService from "../services/macro.service";
 
 /**
  * Custom hook for managing macros (agent or client)
@@ -25,7 +25,7 @@ const useMacros = (roleType) => {
    */
   const fetchMacros = async () => {
     if (!roleType) {
-      setError('Role type is required');
+      setError("Role type is required");
       setLoading(false);
       return;
     }
@@ -41,7 +41,7 @@ const useMacros = (roleType) => {
         text: macro.canned_message,
         active: macro.canned_is_active,
         dept_id: macro.dept_id,
-        department: macro.department?.dept_name || 'All',
+        department: macro.department?.dept_name || "All",
       }));
 
       setMacros(mappedMacros);
@@ -50,7 +50,7 @@ const useMacros = (roleType) => {
       console.error(`Failed to fetch ${roleType} macros:`, err);
       const errorMessage = `Failed to fetch ${roleType} macros.`;
       setError(errorMessage);
-      toast.error('Failed to load macros. Please refresh the page.');
+      toast.error("Failed to load macros. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -65,17 +65,17 @@ const useMacros = (roleType) => {
    */
   const createMacro = async (text, dept_id, created_by) => {
     if (!text.trim()) {
-      toast.error('Message cannot be empty');
+      toast.error("Message cannot be empty");
       return false;
     }
 
     // Check for duplicate (case-insensitive)
     const isDuplicate = macros.some(
-      (m) => m.text.toLowerCase().trim() === text.toLowerCase().trim()
+      (m) => m.text.toLowerCase().trim() === text.toLowerCase().trim(),
     );
 
     if (isDuplicate) {
-      toast.error('This macro already exists');
+      toast.error("This macro already exists");
       return false;
     }
 
@@ -87,7 +87,7 @@ const useMacros = (roleType) => {
           active: true,
           created_by,
         },
-        roleType
+        roleType,
       );
 
       const mappedMacro = {
@@ -99,11 +99,11 @@ const useMacros = (roleType) => {
       };
 
       setMacros((prev) => [...prev, mappedMacro]);
-      toast.success('Macro added successfully');
+      toast.success("Macro added successfully");
       return true;
     } catch (err) {
-      console.error('Failed to create macro:', err);
-      const errorMessage = err.response?.data?.error || 'Failed to add macro';
+      console.error("Failed to create macro:", err);
+      const errorMessage = err.response?.data?.error || "Failed to add macro";
       toast.error(errorMessage);
       return false;
     }
@@ -120,17 +120,19 @@ const useMacros = (roleType) => {
    */
   const updateMacro = async (id, text, active, dept_id, updated_by) => {
     if (!text.trim()) {
-      toast.error('Message cannot be empty');
+      toast.error("Message cannot be empty");
       return false;
     }
 
     // Check for duplicate when editing (excluding current macro)
     const isDuplicate = macros.some(
-      (m) => m.id !== id && m.text.toLowerCase().trim() === text.toLowerCase().trim()
+      (m) =>
+        m.id !== id &&
+        m.text.toLowerCase().trim() === text.toLowerCase().trim(),
     );
 
     if (isDuplicate) {
-      toast.error('This macro already exists');
+      toast.error("This macro already exists");
       return false;
     }
 
@@ -143,7 +145,7 @@ const useMacros = (roleType) => {
           dept_id,
           updated_by,
         },
-        roleType
+        roleType,
       );
 
       const mappedMacro = {
@@ -155,11 +157,12 @@ const useMacros = (roleType) => {
       };
 
       setMacros((prev) => prev.map((m) => (m.id === id ? mappedMacro : m)));
-      toast.success('Macro updated successfully');
+      toast.success("Macro updated successfully");
       return true;
     } catch (err) {
-      console.error('Failed to update macro:', err);
-      const errorMessage = err.response?.data?.error || 'Failed to update macro';
+      console.error("Failed to update macro:", err);
+      const errorMessage =
+        err.response?.data?.error || "Failed to update macro";
       toast.error(errorMessage);
       return false;
     }
@@ -185,23 +188,23 @@ const useMacros = (roleType) => {
           dept_id: macro.dept_id,
           updated_by,
         },
-        roleType
+        roleType,
       );
 
       setMacros((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, active: newActiveStatus } : m))
+        prev.map((m) => (m.id === id ? { ...m, active: newActiveStatus } : m)),
       );
 
       toast.success(
-        `Macro ${newActiveStatus ? 'activated' : 'deactivated'} successfully`,
+        `Macro ${newActiveStatus ? "activated" : "deactivated"} successfully`,
         {
-          position: 'top-right',
+          position: "top-right",
           autoClose: 2000,
-        }
+        },
       );
     } catch (err) {
-      console.error('Failed to toggle active:', err);
-      toast.error('Failed to update macro status');
+      console.error("Failed to toggle active:", err);
+      toast.error("Failed to update macro status");
     }
   };
 
@@ -225,23 +228,23 @@ const useMacros = (roleType) => {
           dept_id,
           updated_by,
         },
-        roleType
+        roleType,
       );
 
       const department = departments.find((d) => d.dept_id === dept_id);
       setMacros((prev) =>
         prev.map((m) =>
           m.id === id
-            ? { ...m, dept_id, department: department?.dept_name || 'All' }
-            : m
-        )
+            ? { ...m, dept_id, department: department?.dept_name || "All" }
+            : m,
+        ),
       );
 
-      toast.success('Department updated successfully');
+      toast.success("Department updated successfully");
       return true;
     } catch (err) {
-      console.error('Failed to update department:', err);
-      toast.error('Failed to update department');
+      console.error("Failed to update department:", err);
+      toast.error("Failed to update department");
       return false;
     }
   };
@@ -258,11 +261,12 @@ const useMacros = (roleType) => {
 
       setMacros((prev) => prev.filter((m) => m.id !== id));
 
-      toast.success('Macro deleted successfully');
+      toast.success("Macro deleted successfully");
       return true;
     } catch (err) {
-      console.error('Failed to delete macro:', err);
-      const errorMessage = err.response?.data?.error || 'Failed to delete macro';
+      console.error("Failed to delete macro:", err);
+      const errorMessage =
+        err.response?.data?.error || "Failed to delete macro";
       toast.error(errorMessage);
       return false;
     }

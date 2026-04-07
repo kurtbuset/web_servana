@@ -1,4 +1,7 @@
 // UI Components - Reusable styled components
+export { default as Badge } from './Badge';
+export { default as IconButton } from './IconButton';
+export { default as StatCard } from './StatCard';
 export { default as PanelHeader } from './PanelHeader';
 export { default as EmptyState } from './EmptyState';
 export { default as LoadingState } from './LoadingState';

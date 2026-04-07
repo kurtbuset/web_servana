@@ -25,11 +25,14 @@ export class ChatService {
    * Supports pagination with before/limit parameters
    * @param {number} clientId - Client ID
    * @param {string} before - ISO timestamp for pagination (optional)
-   * @param {number} limit - Number of messages to fetch (default: 10)
-   * @returns {Promise<Object>} Object containing messages array
+   * @param {number} limit - Number of messages to fetch (default: 30, max: 100)
+   * @returns {Promise<Object>} Object containing messages array and pagination metadata
    */
-  static async getMessages(clientId, before = null, limit = 10) {
-    const params = { limit };
+  static async getMessages(clientId, before = null, limit = 30) {
+    const MAX_LIMIT = 100;
+    const safeLimit = Math.min(limit, MAX_LIMIT);
+    
+    const params = { limit: safeLimit };
     if (before) {
       params.before = before;
     }
@@ -43,7 +46,6 @@ export class ChatService {
    * @returns {Promise<Array>} Array of canned message objects
    */
   static async getCannedMessages() {
-    console.log('spam getting cannedd messages')
     const response = await api.get('/chat/canned-messages');
     return response.data;
   }

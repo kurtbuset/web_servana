@@ -61,8 +61,6 @@ class TokenService {
         console.error('Auto-refresh failed:', error);
       }
     }, 12 * 60 * 1000); // 12 minutes
-
-    console.log('🔄 Auto token refresh started (every 12 minutes)');
   }
 
   /**
@@ -84,12 +82,6 @@ class TokenService {
     
     // Stop auto refresh
     this.stopAutoRefresh();
-    
-    // Clear any stored data
-    // localStorage.removeItem('user');
-    
-    // Emit logout event for other tabs
-    // localStorage.setItem('logout', Date.now().toString());
     
     // Redirect to login
     window.location.href = '/login';

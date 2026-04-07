@@ -35,13 +35,6 @@ export default function CustomerList({
         </span>
       );
     }
-    if (customer.status === "transferred") {
-      return (
-        <span className="text-[7px] sm:text-[8px] font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 border border-blue-200">
-          TRANSFERRED
-        </span>
-      );
-    }
     return null;
   };
 
@@ -62,14 +55,14 @@ export default function CustomerList({
   return (
     <div className="chat-list overflow-auto p-2 sm:p-3">
       {customers.map((customer) => {
-        const isEnded = endedChats.some((chat) => chat.id === customer.id);
-        const isSelected = selectedCustomer?.id === customer.id;
+        const isEnded = endedChats.some((chat) => chat.chat_group_id === customer.chat_group_id);
+        const isSelected = selectedCustomer?.chat_group_id === customer.chat_group_id;
         const isQueued = customer.chat_type === 'queued';
         const waitTime = isQueued ? getWaitTime(customer) : null;
 
         return (
           <div
-            key={customer.id}
+            key={customer.chat_group_id}
             className={`flex items-center gap-2 px-2 sm:px-2.5 py-1.5 sm:py-2 border rounded-lg transition-all duration-200 mb-1 sm:mb-1.5 group ${
               isSelected
                 ? "border-[#6237A0] shadow-md"
