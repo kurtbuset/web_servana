@@ -181,15 +181,6 @@ export const useCustomerListUpdates = (
           Object.keys(updatedDeptCustomers).forEach((dept) => {
             const beforeCount = updatedDeptCustomers[dept].length;
 
-            // Log existing chat_group_ids for debugging
-            console.log(
-              `🔍 Department ${dept} chat_group_ids:`,
-              updatedDeptCustomers[dept].map((c) => ({
-                id: c.chat_group_id,
-                type: typeof c.chat_group_id,
-              })),
-            );
-
             updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
               (existingCustomer) => {
                 // Compare as strings to handle type mismatch
@@ -238,6 +229,66 @@ export const useCustomerListUpdates = (
     [setDepartmentCustomers, setSelectedCustomer, getUserId],
   );
 
+  /**
+   * Remove chat from list when resolved by client
+   */
+  const handleChatResolvedByClient = useCallback(
+    (chatGroupId) => {
+      console.log(`🔍 handleChatResolvedByClient called:`, {
+        chatGroupId,
+      });
+
+      setDepartmentCustomers((prevDeptCustomers) => {
+        const updatedDeptCustomers = { ...prevDeptCustomers };
+
+        // Remove the chat from all departments
+        Object.keys(updatedDeptCustomers).forEach((dept) => {
+          const beforeCount = updatedDeptCustomers[dept].length;
+
+          updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+            (existingCustomer) => {
+              // Compare as strings to handle type mismatch
+              const match =
+                String(existingCustomer.chat_group_id) === String(chatGroupId);
+              if (match) {
+                console.log(
+                  `🎯 Found matching chat to remove (resolved by client):`,
+                  existingCustomer.chat_group_id,
+                );
+              }
+              return !match;
+            },
+          );
+          const afterCount = updatedDeptCustomers[dept].length;
+
+          if (beforeCount !== afterCount) {
+            console.log(
+              `🗑️ Removed chat ${chatGroupId} from department ${dept} (${beforeCount} -> ${afterCount}) - resolved by client`,
+            );
+          }
+        });
+
+        console.log(
+          `✅ Chat ${chatGroupId} removed from customer list (resolved by client)`,
+        );
+
+        return updatedDeptCustomers;
+      });
+
+      // Also clear selected customer if it was the one that got resolved
+      setSelectedCustomer((prev) => {
+        if (prev && String(prev.chat_group_id) === String(chatGroupId)) {
+          console.log(
+            `✅ Clearing selected customer ${chatGroupId} (resolved by client)`,
+          );
+          return null;
+        }
+        return prev;
+      });
+    },
+    [setDepartmentCustomers, setSelectedCustomer],
+  );
+
 
   /**
    * Main handler for all customer list update types
@@ -272,6 +323,10 @@ export const useCustomerListUpdates = (
           );
           break;
 
+        case "chat_resolved_by_client":
+          handleChatResolvedByClient(updateData.data.chat_group_id);
+          break;
+
         default:
           console.warn(`Unknown customer list update type: ${updateData.type}`);
       }
@@ -281,6 +336,7 @@ export const useCustomerListUpdates = (
       handleNewQueuedChat,
       handleChatAccepted,
       handleRemoveChatGroup,
+      handleChatResolvedByClient,
     ],
   );
 
@@ -290,5 +346,6 @@ export const useCustomerListUpdates = (
     handleNewQueuedChat,
     handleChatAccepted,
     handleRemoveChatGroup,
+    handleChatResolvedByClient,
   };
 };
