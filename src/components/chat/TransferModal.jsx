@@ -7,7 +7,6 @@ import { Search, X } from "lucide-react";
 export default function TransferModal({
   isOpen,
   departments,
-  agents,
   selectedDepartment,
   currentDepartment,
   onDepartmentChange,
@@ -46,7 +45,7 @@ export default function TransferModal({
 
   const handleClose = () => {
     onCancel();
-    onDepartmentChange(null);
+    onDepartmentChange(null, null);
     setSearchQuery("");
     setActiveTab("department");
   };
@@ -124,7 +123,7 @@ export default function TransferModal({
                   return (
                     <button
                       key={dept}
-                      onClick={() => onDepartmentChange(dept)}
+                      onClick={() => onDepartmentChange(dept, 'department')}
                       className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between ${
                         selectedDepartment === dept
                           ? "bg-[#6237A0] text-white"
@@ -160,7 +159,10 @@ export default function TransferModal({
                   return (
                     <button
                       key={agent.userId}
-                      onClick={() => onDepartmentChange(agent.userId)}
+                      onClick={() => {
+                        const agentName = `${agent.firstName || ''} ${agent.lastName || ''}`.trim();
+                        onDepartmentChange(agent.userId, 'agent', agentName || agent.email);
+                      }}
                       className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
                         selectedDepartment === agent.userId
                           ? "bg-[#6237A0] text-white"

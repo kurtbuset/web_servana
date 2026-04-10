@@ -665,6 +665,64 @@ export const useChat = ({ mode = "active" } = {}) => {
   );
 
   /**
+   * Transfer chat directly to a specific agent
+   * @param {number} agentId - Target agent's sys_user_id
+   */
+  const transferChatToAgent = useCallback(
+    async (agentId) => {
+      if (!selectedCustomer) return false;
+
+      try {
+        const response = await ChatService.transferChatGroupToAgent(
+          selectedCustomer.chat_group_id,
+          agentId,
+        );
+
+        if (response.success) {
+          setDepartmentCustomers((prevDeptCustomers) => {
+            const updatedDeptCustomers = { ...prevDeptCustomers };
+
+            Object.keys(updatedDeptCustomers).forEach((dept) => {
+              updatedDeptCustomers[dept] = updatedDeptCustomers[dept].filter(
+                (customer) =>
+                  customer.chat_group_id !== selectedCustomer.chat_group_id,
+              );
+
+              if (updatedDeptCustomers[dept].length === 0) {
+                delete updatedDeptCustomers[dept];
+              }
+            });
+
+            return updatedDeptCustomers;
+          });
+
+          setDepartments((prevDepartments) => {
+            const activeDepartments = Object.keys(departmentCustomers).filter(
+              (dept) =>
+                departmentCustomers[dept] &&
+                departmentCustomers[dept].length > 0,
+            );
+            return ["All", ...activeDepartments];
+          });
+
+          setSelectedCustomer(null);
+          setMessages([]);
+          setChatEnded(false);
+
+          toast.success("Chat transferred to agent successfully");
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.error("Error transferring chat to agent:", err);
+        toast.error("Failed to transfer chat to agent");
+        return false;
+      }
+    },
+    [selectedCustomer, departmentCustomers],
+  );
+
+  /**
    * Accept/Take a queued chat (assign to current agent)
    * @param {number} chatGroupId - Chat group ID
    */
@@ -731,15 +789,6 @@ export const useChat = ({ mode = "active" } = {}) => {
     },
     [fetchChatGroups, selectedCustomer],
   );
-
-  /**
-   * Clear selected customer
-   */
-  const clearSelection = useCallback(() => {
-    setSelectedCustomer(null);
-    setMessages([]);
-    setChatEnded(false);
-  }, []);
 
   /**
    * Auto-scroll to bottom when messages change
@@ -825,7 +874,7 @@ export const useChat = ({ mode = "active" } = {}) => {
     acceptQueuedChat,
     endChat,
     transferChat,
-    clearSelection,
+    transferChatToAgent,
 
     // Refs
     bottomRef,

@@ -21,6 +21,7 @@ export default function ChatModals({
   onCancelTransferConfirm,
   departmentAvailability = {},
   availableAgents = [],
+  transferLabel,
 }) {
   return (
     <>
@@ -53,7 +54,7 @@ export default function ChatModals({
       <ConfirmDialog
         isOpen={showTransferConfirmModal}
         title="Confirm Transfer"
-        message={`Are you sure you want to transfer this customer to ${transferDepartment}?`}
+        message={`Are you sure you want to transfer this customer to ${transferLabel || transferDepartment}?`}
         onConfirm={onConfirmTransferConfirm}
         onCancel={onCancelTransferConfirm}
       />

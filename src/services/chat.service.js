@@ -72,6 +72,17 @@ export class ChatService {
   }
 
   /**
+   * Transfer chat group directly to a specific agent
+   * @param {number} chatGroupId - Chat group ID to transfer
+   * @param {number} agentId - Target agent's sys_user_id
+   * @returns {Promise<Object>} Transfer success response
+   */
+  static async transferChatGroupToAgent(chatGroupId, agentId) {
+    const response = await api.post(`/chat/${chatGroupId}/transfer-to-agent`, { agentId });
+    return response.data;
+  }
+
+  /**
    * Get all departments
    * @returns {Promise<Array>} Array of department objects with id and name
    */

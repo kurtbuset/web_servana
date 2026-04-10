@@ -27,6 +27,8 @@ export default function ChatContainer({ mode = "active" }) {
     useState(false);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [transferDepartment, setTransferDepartment] = useState(null);
+  const [transferType, setTransferType] = useState('department');
+  const [transferLabel, setTransferLabel] = useState(null);
   const [allDepartments, setAllDepartments] = useState([]);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [departmentAvailability, setDepartmentAvailability] = useState({});
@@ -72,6 +74,7 @@ export default function ChatContainer({ mode = "active" }) {
     acceptQueuedChat,
     endChat,
     transferChat,
+    transferChatToAgent,
     bottomRef,
     textareaRef,
   } = useChat({ mode });
@@ -100,13 +103,16 @@ export default function ChatContainer({ mode = "active" }) {
   const confirmTransfer = async () => {
     setShowTransferConfirmModal(false);
 
-    const selectedDept = allDepartments.find(
-      (dept) => dept.dept_name === transferDepartment,
-    );
-    if (selectedDept) {
-      const success = await transferChat(selectedDept.dept_id);
-      if (success && isMobile) {
-        setView("chatList");
+    if (transferType === 'agent') {
+      const success = await transferChatToAgent(transferDepartment);
+      if (success && isMobile) setView("chatList");
+    } else {
+      const selectedDept = allDepartments.find(
+        (dept) => dept.dept_name === transferDepartment,
+      );
+      if (selectedDept) {
+        const success = await transferChat(selectedDept.dept_id);
+        if (success && isMobile) setView("chatList");
       }
     }
   };
@@ -114,6 +120,8 @@ export default function ChatContainer({ mode = "active" }) {
   const cancelTransfer = () => {
     setShowTransferModal(false);
     setTransferDepartment(null);
+    setTransferType('department');
+    setTransferLabel(null);
   };
 
   const cancelTransferConfirm = () => {
@@ -317,11 +325,16 @@ export default function ChatContainer({ mode = "active" }) {
         selectedDepartment={selectedDepartment}
         onConfirmEndChat={confirmEndChat}
         onCancelEndChat={cancelEndChat}
-        onDepartmentChange={setTransferDepartment}
+        onDepartmentChange={(value, type, label) => {
+          setTransferDepartment(value);
+          setTransferType(type || 'department');
+          setTransferLabel(label || value);
+        }}
         onConfirmTransfer={handleDepartmentSelect}
         onCancelTransfer={cancelTransfer}
         onConfirmTransferConfirm={confirmTransfer}
         onCancelTransferConfirm={cancelTransferConfirm}
+        transferLabel={transferLabel}
       />
 
       <div className="flex flex-1 overflow-hidden">
