@@ -18,6 +18,7 @@ import { useTableRowHover } from '../../../hooks/useTableRowHover';
  * @param {Function} onDelete        - Handler for deleting a macro
  * @param {string}   searchQuery     - Current search query
  * @param {boolean}  isDark          - Dark mode flag
+ * @param {string}   macroType       - Type of macros ('agent' or 'client')
  */
 export default function MacroTable({
   macros,
@@ -31,7 +32,8 @@ export default function MacroTable({
   onTransfer,
   onDelete,
   searchQuery,
-  isDark
+  isDark,
+  macroType = 'agent'
 }) {
   const rowHover = useTableRowHover(isDark);
 
@@ -60,7 +62,10 @@ export default function MacroTable({
             <tr>
               <td colSpan={4} className="text-center py-12">
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {searchQuery ? "No macros found matching your search" : "No client macros available"}
+                  {searchQuery 
+                    ? "No macros found matching your search" 
+                    : `No ${macroType} macros available`
+                  }
                 </p>
               </td>
             </tr>

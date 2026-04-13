@@ -345,11 +345,16 @@ export const useChat = ({ mode = "active" } = {}) => {
 
     try {
       const data = await ChatService.getCannedMessages();
+      
       if (Array.isArray(data)) {
-        setCannedMessages(data.map((msg) => msg.canned_message));
+        // Backend now returns array of strings directly
+        setCannedMessages(data);
+      } else {
+        setCannedMessages([]);
       }
     } catch (err) {
-      console.error("Failed to load canned messages:", err);
+      console.error("❌ Failed to load canned messages:", err);
+      setCannedMessages([]);
       // Don't show error toast for canned messages - not critical
     }
   }, [permissions.canUseCannedMess, isResolvedMode]);

@@ -150,12 +150,10 @@ export const UserProvider = ({ children }) => {
       canViewDept: source.priv_can_view_dept === true,
       canAddDept: source.priv_can_add_dept === true,
       canEditDept: source.priv_can_edit_dept === true,
-      canManageDept: source.priv_can_manage_dept === true,
       canAssignDept: source.priv_can_assign_dept === true,
       
       // Roles
       canManageRole: source.priv_can_manage_role === true,
-      canAssignRole: source.priv_can_assign_role === true,
       canViewChangeRoles: source.priv_can_view_change_roles === true,
       canEditChangeRoles: source.priv_can_edit_change_roles === true,
       
@@ -167,7 +165,6 @@ export const UserProvider = ({ children }) => {
       canAddAutoReply: source.priv_can_add_auto_reply === true,
       canEditAutoReply: source.priv_can_edit_auto_reply === true,
       canDeleteAutoReply: source.priv_can_delete_auto_reply === true,
-      canManageAutoReply: source.priv_can_manage_auto_reply === true,
       
       // Macros
       canViewMacros: source.priv_can_view_macros === true,

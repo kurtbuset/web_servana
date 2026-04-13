@@ -445,6 +445,7 @@ export default function MacrosClientsScreen() {
                         }}
                         searchQuery={searchQuery}
                         isDark={isDark}
+                        macroType="client"
                       />
 
                       {/* Pagination Controls */}

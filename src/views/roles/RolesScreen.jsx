@@ -21,7 +21,6 @@ import { useTheme } from "../../context/ThemeContext";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import { useRolePreview } from "../../context/RolePreviewContext";
 import { useRoles } from "../../hooks/useRoles";
-import RoleService from "../../services/role.service";
 import toast from "../../utils/toast";
 import "../../App.css";
 import "../../styles/GridLayout.css";

@@ -55,18 +55,15 @@ export const RolePreviewProvider = ({ children }) => {
         "Can View Departments": "priv_can_view_dept",
         "Can Add Departments": "priv_can_add_dept",
         "Can Edit Departments": "priv_can_edit_dept",
-        "Can Edit Department": "priv_can_manage_dept", // Legacy
         "Can Assign Department": "priv_can_assign_dept",
         "Can Edit Roles": "priv_can_manage_role",
         "Can View Change Roles": "priv_can_view_change_roles",
         "Can Edit Change Roles": "priv_can_edit_change_roles",
-        "Can Assign Roles": "priv_can_assign_role", // Legacy
         "Can Add Admin Accounts": "priv_can_create_account",
         "Can View Auto-Replies": "priv_can_view_auto_reply",
         "Can Add Auto-Replies": "priv_can_add_auto_reply",
         "Can Edit Auto-Replies": "priv_can_edit_auto_reply",
         "Can Delete Auto-Replies": "priv_can_delete_auto_reply",
-        "Can Manage Auto-Replies": "priv_can_manage_auto_reply", // Legacy
         "Can View Macros": "priv_can_view_macros",
         "Can Add Macros": "priv_can_add_macros",
         "Can Edit Macros": "priv_can_edit_macros",

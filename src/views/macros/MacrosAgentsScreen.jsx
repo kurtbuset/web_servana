@@ -401,6 +401,7 @@ export default function MacrosAgentsScreen() {
                         }}
                         searchQuery={searchQuery}
                         isDark={isDark}
+                        macroType="agent"
                       />
 
                       {/* Pagination Controls */}

@@ -107,8 +107,13 @@ export default function MessageInput({
               </svg>
               Quick Replies
             </div>
-            <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-              {cannedMessages.map((msg, index) => (
+            {cannedMessages.length === 0 ? (
+              <div className="text-xs sm:text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>
+                No quick replies available
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                {cannedMessages.map((msg, index) => (
                 <button
                   key={index}
                   onClick={() => onSelectCannedMessage(msg)}
@@ -137,6 +142,7 @@ export default function MessageInput({
                 </button>
               ))}
             </div>
+            )}
           </div>
         )}
       </div>
