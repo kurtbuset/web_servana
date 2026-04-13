@@ -52,7 +52,7 @@ export default function Profile() {
     dateOfBirth: "",
   });
   
-  const { setUserData, permissions, logout } = useUser();
+  const { setUserData, permissions, logout, getRoleName } = useUser();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const canManageProfile = permissions.canManageProfile;

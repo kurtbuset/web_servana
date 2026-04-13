@@ -1,4 +1,4 @@
-import api from '../api';
+import api, { setAccessToken, clearAccessToken } from '../api';
 
 /**
  * AuthService handles all authentication-related API calls
@@ -18,17 +18,35 @@ export class AuthService {
    */
   static async login(email, password) {
     const response = await api.post('/auth/login', { email, password });
+    const { access_token, refresh_token, session_id, user } = response.data;
+
+    // Store tokens
+    setAccessToken(access_token);
+    sessionStorage.setItem('refresh_token', refresh_token);
+    if (session_id) {
+      sessionStorage.setItem('session_id', session_id);
+    }
+
     return response.data;
   }
 
   /**
    * Logout current user
-   * Clears authentication cookies
+   * Clears authentication tokens
    * @returns {Promise<Object>} Logout result
    */
   static async logout() {
-    const response = await api.post('/auth/logout');
-    return response.data;
+    const sessionId = sessionStorage.getItem('session_id');
+    
+    try {
+      const response = await api.post('/auth/logout', { session_id: sessionId });
+      return response.data;
+    } finally {
+      // Clear tokens regardless of API response
+      clearAccessToken();
+      sessionStorage.removeItem('refresh_token');
+      sessionStorage.removeItem('session_id');
+    }
   }
 
   /**

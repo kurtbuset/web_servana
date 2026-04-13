@@ -1,4 +1,4 @@
-import api from '../api';
+import api, { getAccessToken, setAccessToken } from '../api';
 
 /**
  * TokenService
@@ -23,9 +23,29 @@ class TokenService {
     this.isRefreshing = true;
 
     try {
-      const response = await api.post('/auth/refresh', {}, { withCredentials: true });
+      const refreshToken = sessionStorage.getItem('refresh_token');
+      const sessionId = sessionStorage.getItem('session_id');
+
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await api.post('/auth/refresh', 
+        { session_id: sessionId },
+        {
+          headers: {
+            'Authorization': `Bearer ${refreshToken}`
+          }
+        }
+      );
       
       if (response.data) {
+        const { access_token, refresh_token } = response.data;
+        
+        // Update tokens
+        setAccessToken(access_token);
+        sessionStorage.setItem('refresh_token', refresh_token);
+        
         console.log('✅ Token refreshed successfully');
         return response.data;
       }
@@ -83,6 +103,10 @@ class TokenService {
     // Stop auto refresh
     this.stopAutoRefresh();
     
+    // Clear tokens
+    sessionStorage.removeItem('refresh_token');
+    sessionStorage.removeItem('session_id');
+    
     // Redirect to login
     window.location.href = '/login';
   }
@@ -94,8 +118,14 @@ class TokenService {
   handleSocketTokenRefresh(data) {
     console.log('🔄 Token refreshed via socket');
     
-    // The new token is already set in cookies by the server
-    // We just need to acknowledge it
+    if (data.access_token) {
+      setAccessToken(data.access_token);
+    }
+    
+    if (data.refresh_token) {
+      sessionStorage.setItem('refresh_token', data.refresh_token);
+    }
+    
     if (data.expires_at) {
       console.log(`Token expires at: ${new Date(data.expires_at * 1000).toLocaleString()}`);
     }
@@ -121,13 +151,13 @@ class TokenService {
   handleNewToken(data) {
     console.log('🔄 New token received from socket');
     
-    // For web clients, token is in HTTP-only cookie
-    // For mobile clients, they should store this token
     if (data.access_token) {
-      console.log('New access token available');
-      
-      // Mobile clients would store this in secure storage
-      // Web clients don't need to do anything (cookie is already set)
+      setAccessToken(data.access_token);
+      console.log('New access token stored');
+    }
+    
+    if (data.refresh_token) {
+      sessionStorage.setItem('refresh_token', data.refresh_token);
     }
     
     if (data.expires_at) {

@@ -1,21 +1,10 @@
 /**
  * Socket Configuration
  */
-
-const getAccessTokenFromCookie = () => {
-  const cookies = document.cookie.split(";");
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split("=");
-    if (name === "access_token") {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+import { getAccessToken } from '../api';
 
 export const socketConfig = {
   autoConnect: false,
-  withCredentials: true,
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
@@ -23,12 +12,18 @@ export const socketConfig = {
   randomizationFactor: 0.5,
   timeout: 20000,
   auth: (cb) => {
-    const token = getAccessTokenFromCookie();
+    const token = getAccessToken();
     cb({
       token: token || undefined,
       timestamp: Date.now(),
     });
   },
+  extraHeaders: {
+    get Authorization() {
+      const token = getAccessToken();
+      return token ? `Bearer ${token}` : undefined;
+    }
+  }
 };
 
 export const getSocketUrl = () => {
