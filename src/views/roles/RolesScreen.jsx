@@ -150,7 +150,7 @@ export default function RolesScreen() {
   const canManageRoles = permissions.canManageRole;
 
   const filteredRoles = roles.filter((role) =>
-    role.name.toLowerCase().includes(searchQuery.toLowerCase())
+    role.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const triggerShake = useCallback(() => {
