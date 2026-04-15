@@ -131,6 +131,9 @@ export const UserProvider = ({ children }) => {
       // Clear all user data and force fresh fetch on next login
       setUserData(null);
 
+      // Notify other tabs to log out
+      new BroadcastChannel('auth_logout').postMessage({ type: 'LOGOUT' });
+
       return { success: true };
     } catch (err) {
       console.error("Failed to logout:", err);

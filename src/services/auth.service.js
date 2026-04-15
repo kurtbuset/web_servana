@@ -18,14 +18,10 @@ export class AuthService {
    */
   static async login(email, password) {
     const response = await api.post('/auth/login', { email, password });
-    const { access_token, refresh_token, session_id, user } = response.data;
+    const { access_token } = response.data;
 
-    // Store tokens
+    // Store access token in memory; refresh_token and session_id are in httpOnly cookies set by backend
     setAccessToken(access_token);
-    sessionStorage.setItem('refresh_token', refresh_token);
-    if (session_id) {
-      sessionStorage.setItem('session_id', session_id);
-    }
 
     return response.data;
   }
@@ -36,16 +32,12 @@ export class AuthService {
    * @returns {Promise<Object>} Logout result
    */
   static async logout() {
-    const sessionId = sessionStorage.getItem('session_id');
-    
     try {
-      const response = await api.post('/auth/logout', { session_id: sessionId });
+      // Backend reads session_id from httpOnly cookie and clears both cookies
+      const response = await api.post('/auth/logout');
       return response.data;
     } finally {
-      // Clear tokens regardless of API response
       clearAccessToken();
-      sessionStorage.removeItem('refresh_token');
-      sessionStorage.removeItem('session_id');
     }
   }
 

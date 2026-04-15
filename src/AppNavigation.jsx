@@ -87,16 +87,16 @@ function ProtectedRoute({ children }) {
 
     checkAuth();
 
-    const handleStorage = (event) => {
-      if (event.key === "logout") {
+    const channel = new BroadcastChannel('auth_logout');
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'LOGOUT') {
         setState({ loading: false, authed: false });
       }
     };
 
-    window.addEventListener("storage", handleStorage);
     return () => {
       isMounted = false;
-      window.removeEventListener("storage", handleStorage);
+      channel.close();
     };
   }, []);
 
@@ -143,16 +143,16 @@ function PublicRoute({ children }) {
 
     checkAuth();
 
-    const handleStorage = (event) => {
-      if (event.key === "logout") {
+    const channel = new BroadcastChannel('auth_logout');
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'LOGOUT') {
         setState({ loading: false, authed: false });
       }
     };
 
-    window.addEventListener("storage", handleStorage);
     return () => {
       isMounted = false;
-      window.removeEventListener("storage", handleStorage);
+      channel.close();
     };
   }, [userData, userLoading]);
 
