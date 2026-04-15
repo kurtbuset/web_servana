@@ -58,6 +58,7 @@ export default function CustomerList({
         const isEnded = endedChats.some((chat) => chat.chat_group_id === customer.chat_group_id);
         const isSelected = selectedCustomer?.chat_group_id === customer.chat_group_id;
         const isQueued = customer.chat_type === 'queued';
+        const hasUnread = customer.has_unread === true;
         const waitTime = isQueued ? getWaitTime(customer) : null;
 
         return (
@@ -70,6 +71,8 @@ export default function CustomerList({
                 ? "opacity-70"
                 : isQueued
                 ? "hover:border-yellow-500 hover:shadow-md"
+                : hasUnread
+                ? "border-blue-400 hover:border-blue-500 hover:shadow-md"
                 : "hover:border-[#6237A0] hover:shadow-md"
             }`}
             style={
@@ -85,6 +88,11 @@ export default function CustomerList({
                     backgroundColor: isDark ? 'rgba(234, 179, 8, 0.1)' : 'rgba(254, 252, 232, 1)',
                     borderColor: isDark ? 'rgba(234, 179, 8, 0.3)' : 'rgba(250, 204, 21, 0.3)'
                   }
+                : hasUnread
+                ? {
+                    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 246, 255, 1)',
+                    borderColor: isDark ? 'rgba(59, 130, 246, 0.4)' : 'rgba(96, 165, 250, 0.5)'
+                  }
                 : isEnded 
                 ? {
                     backgroundColor: isDark ? 'rgba(58, 58, 58, 0.5)' : 'rgba(249, 250, 251, 1)',
@@ -96,12 +104,12 @@ export default function CustomerList({
                   }
             }
             onMouseEnter={(e) => {
-              if (!isSelected && !isEnded && !isQueued) {
+              if (!isSelected && !isEnded && !isQueued && !hasUnread) {
                 e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(245, 243, 255, 0.3)';
               }
             }}
             onMouseLeave={(e) => {
-              if (!isSelected && !isEnded && !isQueued) {
+              if (!isSelected && !isEnded && !isQueued && !hasUnread) {
                 e.currentTarget.style.backgroundColor = 'var(--card-bg)';
               }
             }}
@@ -116,6 +124,10 @@ export default function CustomerList({
                 alt="profile"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-white shadow-sm"
               />
+              {/* Unread indicator badge */}
+              {hasUnread && (
+                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm"></div>
+              )}
             </div>
 
             <div 
@@ -128,11 +140,18 @@ export default function CustomerList({
                   {customer.department}
                 </span>
                 {getStatusBadge(customer)}
+                {hasUnread && (
+                  <span className="text-[7px] sm:text-[8px] font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full whitespace-nowrap border border-blue-200">
+                    UNREAD
+                  </span>
+                )}
               </div>
 
               {/* Customer Name */}
               <p
-                className={`text-[11px] sm:text-xs font-semibold truncate mb-0.5 transition-colors ${
+                className={`text-[11px] sm:text-xs truncate mb-0.5 transition-colors ${
+                  hasUnread ? "font-bold" : "font-semibold"
+                } ${
                   isSelected && !isDark
                     ? "text-[#6237A0]"
                     : ""

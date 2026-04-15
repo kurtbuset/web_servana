@@ -68,7 +68,6 @@ export const registerChatEvents = (socket, callbacks = {}) => {
   } = callbacks;
 
   const handleReceiveMessage = (msg) => {
-    console.log("received message");
     if (onMessageReceived) onMessageReceived(msg);
   };
 

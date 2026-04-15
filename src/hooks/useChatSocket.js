@@ -45,18 +45,16 @@ export const useChatSocket = ({
   useEffect(() => {
     if (!enabled) return;
 
-    const handleLogout = () => {
-      console.log("Logout detected - reconnecting socket");
-      socket.disconnect();
-      setTimeout(() => socket.connect(), 100);
+    const channel = new BroadcastChannel('auth_logout');
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'LOGOUT') {
+        console.log("Logout detected - reconnecting socket");
+        socket.disconnect();
+        setTimeout(() => socket.connect(), 100);
+      }
     };
 
-    const handleStorage = (event) => {
-      if (event.key === "logout") handleLogout();
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => channel.close();
   }, [enabled]);
 
   // Register chat event listeners
