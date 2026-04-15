@@ -4,6 +4,7 @@ import { AuthService } from "../services/auth.service";
 import { ProfileService } from "../services/profile.service";
 import tokenService from "../services/token.service";
 import socket from "../socket";
+import { setupPushNotifications, unsubscribePush } from "../services/push.service";
 
 const UserContext = createContext();
 
@@ -77,6 +78,11 @@ export const UserProvider = ({ children }) => {
       socket.on("disconnect", handleDisconnect);
       socket.connect();
 
+      // Register push notifications after socket connects
+      setupPushNotifications().catch((err) =>
+        console.error("❌ Push setup failed:", err)
+      );
+
       return () => {
         socket.off("disconnect", handleDisconnect);
         if (socket.connected) {
@@ -118,8 +124,9 @@ export const UserProvider = ({ children }) => {
   // Logout user
   const logout = async () => {
     try {
-      const logoutData = await AuthService.logout();
-      console.log(JSON.stringify(logoutData, null, 2))
+      await unsubscribePush().catch(() => {});
+
+      await AuthService.logout();
 
       // Clear all user data and force fresh fetch on next login
       setUserData(null);

@@ -6,6 +6,7 @@ import toast from "../utils/toast";
 import { useChatSocket } from "./useChatSocket";
 import { useTyping } from "./useTyping";
 import { useCustomerListUpdates } from "./useCustomerListUpdates";
+import { useTitleNotification } from "./useTitleNotification";
 import socket, { sendMessage as socketSendMessage } from "../socket";
 
 /**
@@ -68,6 +69,9 @@ export const useChat = ({ mode = "active" } = {}) => {
     setSelectedCustomer,
     getUserId,
   );
+
+  // Initialize title notification
+  const { showNotification } = useTitleNotification();
 
   /**
    * Fetch chat groups from API with debouncing
@@ -201,6 +205,12 @@ export const useChat = ({ mode = "active" } = {}) => {
         (msg.sys_user_id && msg.sys_user_id === currentUserId) ||
         (msg.sender_type === "agent" && msg.sender_id === currentUserId);
 
+      // Show browser title notification for client messages when tab is not focused
+      if (!isCurrentUser && msg.sender_type === "client" && document.hidden) {
+        const senderName = msg.sender_name || "Customer";
+        showNotification(`New message from ${senderName}`);
+      }
+
       // Determine message status for display
       let messageStatus = "sent";
       if (isCurrentUser) {
@@ -228,7 +238,7 @@ export const useChat = ({ mode = "active" } = {}) => {
         },
       ];
     });
-  }, []);
+  }, [showNotification]);
 
   /**
    * Handle message status updates from socket (including auto-updates)
@@ -249,7 +259,6 @@ export const useChat = ({ mode = "active" } = {}) => {
 
   // Handle chat transferred event
   const handleChatTransferred = useCallback((transferData) => {
-    console.log('transferData: ', transferData)
     // Create transfer message
     const transferMessage = {
       chat_group_id: transferData.chat_group_id,
@@ -517,11 +526,29 @@ export const useChat = ({ mode = "active" } = {}) => {
       setEarliestMessageTime(null);
       setHasMoreMessages(true);
 
+      // Clear unread indicator when opening the chat
+      if (customer.has_unread) {
+        setDepartmentCustomers((prevDeptCustomers) => {
+          const updatedDeptCustomers = { ...prevDeptCustomers };
+          Object.keys(updatedDeptCustomers).forEach((dept) => {
+            updatedDeptCustomers[dept] = updatedDeptCustomers[dept].map(
+              (existingCustomer) => {
+                if (existingCustomer.chat_group_id === customer.chat_group_id) {
+                  return { ...existingCustomer, has_unread: false };
+                }
+                return existingCustomer;
+              }
+            );
+          });
+          return updatedDeptCustomers;
+        });
+      }
+
       // Use chat_group_id if available (for department-specific chats), otherwise use client id
       const messageId = customer.chat_group_id || customer.id;
       await loadMessages(messageId);
     },
-    [endedChats, loadMessages, isResolvedMode],
+    [endedChats, loadMessages, isResolvedMode, setDepartmentCustomers],
   );
 
   /**

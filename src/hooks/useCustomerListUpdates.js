@@ -51,6 +51,7 @@ export const useCustomerListUpdates = (
         updatedDeptCustomers[departmentName].unshift({
           ...customer,
           chat_type,
+          has_unread: customer.has_unread || false, // Preserve unread indicator
         });
 
         return updatedDeptCustomers;

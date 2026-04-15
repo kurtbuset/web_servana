@@ -10,6 +10,11 @@ export const ENV = {
   IS_PROD: import.meta.env.PROD || false,
 };
 
+// Push Notifications
+export const PUSH_CONFIG = {
+  VAPID_PUBLIC_KEY: import.meta.env.VITE_VAPID_PUBLIC_KEY || '',
+};
+
 // Application Info
 export const APP_INFO = {
   NAME: 'Servana',
