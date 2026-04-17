@@ -4,7 +4,6 @@ import { usePresence } from "../../context/PresenceContext";
 import { useChat } from "../../hooks/useChat";
 import { ChatService } from "../../services/chat.service";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
-import socket from "../../socket";
 import ChatModals from "./ChatModals";
 import ChatSidebar from "./ChatSidebar";
 import ChatMainArea from "./ChatMainArea";
@@ -195,19 +194,13 @@ export default function ChatContainer({ mode = "active" }) {
     }
   }, [showTransferModal, refreshTransferPresence]);
 
-  // Real-time update when presence changes while transfer modal is open
+  // Real-time update when presence changes (derived from context)
   useEffect(() => {
     if (!showTransferModal) return;
-
-    const handlePresenceChange = () => {
-      refreshTransferPresence();
-    };
-
-    socket.on("presence:change", handlePresenceChange);
-    return () => {
-      socket.off("presence:change", handlePresenceChange);
-    };
-  }, [showTransferModal, refreshTransferPresence]);
+    
+    // Re-fetch when allPresences changes to get updated availability counts
+    refreshTransferPresence();
+  }, [showTransferModal, allPresences, refreshTransferPresence]);
 
   // Fetch all departments on component mount
   useEffect(() => {
