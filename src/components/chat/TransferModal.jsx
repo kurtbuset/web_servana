@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 
 /**
  * TransferModal - Modal for selecting department or agent to transfer to
+ * Receives real-time updates via props when agent presence changes
  */
 export default function TransferModal({
   isOpen,
@@ -17,6 +18,13 @@ export default function TransferModal({
 }) {
   const [activeTab, setActiveTab] = useState("department");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Reset search when modal opens/closes or tab changes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -132,13 +140,14 @@ export default function TransferModal({
                     >
                       <span>{dept}</span>
                       <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all duration-300 ${
                           selectedDepartment === dept
                             ? "bg-white/20 text-white"
                             : count > 0
                               ? "bg-green-100 text-green-700"
                               : "bg-gray-200 text-gray-500"
                         }`}
+                        key={`${dept}-${count}`}
                       >
                         {count} available
                       </span>
