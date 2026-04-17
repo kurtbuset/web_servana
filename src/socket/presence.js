@@ -35,7 +35,6 @@ export const registerPresenceEvents = (socket, callbacks = {}) => {
     onPresenceChange,
     onPresenceAll,
     onAvailableByDepartment,
-    onHeartbeatAck,
   } = callbacks;
 
   const handlePresenceChange = (data) => {
@@ -50,21 +49,15 @@ export const registerPresenceEvents = (socket, callbacks = {}) => {
     if (onAvailableByDepartment) onAvailableByDepartment(data);
   };
 
-  const handleHeartbeatAck = (data) => {
-    if (onHeartbeatAck) onHeartbeatAck(data);
-  };
-
   // Register listeners
   socket.on("presence:change", handlePresenceChange);
   socket.on("presence:all", handlePresenceAll);
   socket.on("presence:availableByDepartment", handleAvailableByDepartment);
-  socket.on("presence:heartbeat:ack", handleHeartbeatAck);
 
   // Return cleanup function
   return () => {
     socket.off("presence:change", handlePresenceChange);
     socket.off("presence:all", handlePresenceAll);
     socket.off("presence:availableByDepartment", handleAvailableByDepartment);
-    socket.off("presence:heartbeat:ack", handleHeartbeatAck);
   };
 };

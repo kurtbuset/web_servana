@@ -122,7 +122,6 @@ The application uses Socket.IO for real-time features:
 Role-based access control with granular permissions:
 - `priv_can_view_message` - View and access chats
 - `priv_can_message` - Send messages to customers
-- `priv_can_manage_dept` - Manage departments
 - `priv_can_create_account` - Create agent accounts
 - `priv_can_manage_role` - Manage roles and permissions
 - And more...

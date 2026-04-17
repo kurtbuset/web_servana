@@ -12,17 +12,47 @@ import { useUser } from "./UserContext";
 const PresenceContext = createContext();
 
 const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // 2 minutes
+const HEARTBEAT_TIMEOUT = 30 * 1000; // 30 seconds
 
 export const PresenceProvider = ({ children }) => {
   const { userData } = useUser();
   const [myPresence, setMyPresenceState] = useState("accepting_chats");
   const [allPresences, setAllPresences] = useState({});
   const heartbeatRef = useRef(null);
+  const heartbeatTimeoutRef = useRef(null);
+  const missedHeartbeatsRef = useRef(0);
 
   // Set own presence via socket
   const setMyPresence = useCallback((status) => {
     emitPresenceUpdate(socket, status);
     setMyPresenceState(status);
+  }, []);
+
+  // Handle heartbeat acknowledgment
+  const handleHeartbeatAck = useCallback(() => {
+    missedHeartbeatsRef.current = 0;
+    if (heartbeatTimeoutRef.current) {
+      clearTimeout(heartbeatTimeoutRef.current);
+      heartbeatTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Send heartbeat with timeout detection
+  const sendHeartbeat = useCallback(() => {
+    if (!socket.connected) return;
+
+    emitPresenceHeartbeat(socket);
+    
+    // Set timeout to detect if server doesn't respond
+    heartbeatTimeoutRef.current = setTimeout(() => {
+      missedHeartbeatsRef.current += 1;
+      
+      // If 3 consecutive heartbeats fail, assume we're offline
+      if (missedHeartbeatsRef.current >= 3) {
+        console.warn('Heartbeat timeout - assuming offline');
+        setMyPresenceState('offline');
+      }
+    }, HEARTBEAT_TIMEOUT);
   }, []);
 
   // Request fresh available-by-department data (for Transfer Modal)
@@ -76,11 +106,15 @@ export const PresenceProvider = ({ children }) => {
 
     // Start heartbeat
     heartbeatRef.current = setInterval(() => {
-      emitPresenceHeartbeat(socket);
+      sendHeartbeat();
     }, HEARTBEAT_INTERVAL);
+
+    // Listen for heartbeat acknowledgment
+    socket.on("presence:heartbeat:ack", handleHeartbeatAck);
 
     // Re-request presences on reconnect
     const handleReconnect = () => {
+      missedHeartbeatsRef.current = 0;
       requestAllPresences(socket);
     };
     socket.on("connect", handleReconnect);
@@ -88,12 +122,17 @@ export const PresenceProvider = ({ children }) => {
     return () => {
       cleanup();
       socket.off("connect", handleReconnect);
+      socket.off("presence:heartbeat:ack", handleHeartbeatAck);
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
       }
+      if (heartbeatTimeoutRef.current) {
+        clearTimeout(heartbeatTimeoutRef.current);
+        heartbeatTimeoutRef.current = null;
+      }
     };
-  }, [userData?.sys_user_id, socket.connected]);
+  }, [userData?.sys_user_id, socket.connected, sendHeartbeat, handleHeartbeatAck]);
 
   return (
     <PresenceContext.Provider

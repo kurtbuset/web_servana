@@ -94,7 +94,6 @@ export async function setupPushNotifications() {
   if (!registration) return;
 
   const subscription = await subscribeToPush(registration);
-  console.log(JSON.stringify(subscription, null, 2))
   if (!subscription) return;
 
   await savePushSubscription(subscription);
