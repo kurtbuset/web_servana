@@ -198,6 +198,11 @@ export default function ChatContainer({ mode = "active" }) {
   useEffect(() => {
     if (!showTransferModal) return;
     
+    console.log('ChatContainer: allPresences changed, refreshing transfer data', {
+      presenceCount: Object.keys(allPresences).length,
+      allPresences
+    });
+    
     // Re-fetch when allPresences changes to get updated availability counts
     refreshTransferPresence();
   }, [showTransferModal, allPresences, refreshTransferPresence]);
