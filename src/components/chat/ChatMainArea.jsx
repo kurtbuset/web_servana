@@ -50,7 +50,7 @@ export default function ChatMainArea({
     <div
       className={`${
         view === "conversation" ? "block" : "hidden md:flex"
-      } flex-1 flex flex-col md:rounded-xl shadow-sm border-0 md:border overflow-hidden`}
+      } flex-1 flex flex-col justify-between md:rounded-xl shadow-sm border-0 md:border overflow-hidden`}
       style={{
         backgroundColor: "var(--card-bg)",
         borderColor: "var(--border-color)",
@@ -83,7 +83,6 @@ export default function ChatMainArea({
             chatEnded={chatEnded}
             scrollContainerRef={scrollContainerRef}
             bottomRef={bottomRef}
-            isMobile={isMobile}
             isTyping={isTyping}
             typingUser={typingUser}
             typingUserImage={typingUserImage}

@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { MoreVertical, ArrowLeft, CheckCircle, Clock } from "react-feather";
+import { MoreVertical, ArrowLeft, Clock } from "react-feather";
 import { useTheme } from "../../context/ThemeContext";
 
 /**
@@ -10,8 +9,6 @@ export default function ChatHeader({
   customer,
   isMobile,
   onBack,
-  showAcceptButton,
-  onAccept,
   showMenu,
   chatEnded,
   menuOpen,
@@ -22,33 +19,40 @@ export default function ChatHeader({
   canEndChat = true,
   canTransfer = true,
   onProfileClick,
-  onToggleDepartmentPanel, // New prop
-  isDepartmentPanelOpen, // New prop
 }) {
   const { isDark } = useTheme();
 
   return (
-    <div className="sticky top-0 z-10 border-b-2 shadow-sm" style={{ 
-      backgroundColor: 'var(--card-bg)', 
-      borderColor: 'var(--border-color)' 
-    }}>
+    <div
+      className="sticky top-0 z-10 border-b-2 shadow-sm"
+      style={{
+        backgroundColor: "var(--card-bg)",
+        borderColor: "var(--border-color)",
+      }}
+    >
       <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 md:p-5">
         {/* Back Button for Mobile */}
         {isMobile && (
           <button
             onClick={onBack}
             className="flex-shrink-0 p-2 -ml-2 rounded-lg transition-all"
-            style={{ 
-              color: 'var(--text-secondary)',
-              backgroundColor: isDark ? 'rgba(98, 55, 160, 0.1)' : 'transparent'
+            style={{
+              color: "var(--text-secondary)",
+              backgroundColor: isDark
+                ? "rgba(98, 55, 160, 0.1)"
+                : "transparent",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#6237A0';
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.2)' : 'rgba(243, 232, 255, 1)';
+              e.currentTarget.style.color = "#6237A0";
+              e.currentTarget.style.backgroundColor = isDark
+                ? "rgba(98, 55, 160, 0.2)"
+                : "rgba(243, 232, 255, 1)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.1)' : 'transparent';
+              e.currentTarget.style.color = "var(--text-secondary)";
+              e.currentTarget.style.backgroundColor = isDark
+                ? "rgba(98, 55, 160, 0.1)"
+                : "transparent";
             }}
           >
             <ArrowLeft size={20} />
@@ -68,31 +72,52 @@ export default function ChatHeader({
             />
             {/* Hover indicator */}
             <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center">
-              <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
           </button>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base md:text-lg font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+              <h3
+                className="text-sm sm:text-base md:text-lg font-semibold truncate"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {customer.name}
               </h3>
               {chatEnded && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-9A7 7 0 1117 9H3z" clipRule="evenodd" />
-                  </svg>
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-sm"
+                  style={{
+                    backgroundColor: isDark
+                      ? "rgba(107, 114, 128, 0.15)"
+                      : "#f3f4f6",
+                    border: `1px solid ${isDark ? "rgba(107, 114, 128, 0.3)" : "#d1d5db"}`,
+                    color: isDark ? "#9CA3AF" : "#6B7280",
+                  }}
+                >
                   Ended
                 </span>
               )}
             </div>
-            {(!customer.isAccepted && !customer.sys_user_id) && !chatEnded && (
+            {!customer.isAccepted && !customer.sys_user_id && !chatEnded && (
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Clock size={12} className="text-orange-500 flex-shrink-0" />
                 <span className="text-[10px] sm:text-xs text-orange-600 font-medium truncate">
-                  {customer.status === "transferred" ? "Transferred - Waiting" : "In Queue"}
+                  {customer.status === "transferred"
+                    ? "Transferred - Waiting"
+                    : "In Queue"}
                 </span>
               </div>
             )}
@@ -101,22 +126,27 @@ export default function ChatHeader({
 
         {/* Actions */}
         <div className="relative flex items-center gap-2 flex-shrink-0">
-
           {/* Three-dot menu */}
           {showMenu && !chatEnded && (canEndChat || canTransfer) && (
             <button
               className="p-2 rounded-lg transition-all"
-              style={{ 
-                color: 'var(--text-secondary)',
-                backgroundColor: isDark ? 'rgba(98, 55, 160, 0.1)' : 'transparent'
+              style={{
+                color: "var(--text-secondary)",
+                backgroundColor: isDark
+                  ? "rgba(98, 55, 160, 0.1)"
+                  : "transparent",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#6237A0';
-                e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.2)' : 'rgba(243, 232, 255, 1)';
+                e.currentTarget.style.color = "#6237A0";
+                e.currentTarget.style.backgroundColor = isDark
+                  ? "rgba(98, 55, 160, 0.2)"
+                  : "rgba(243, 232, 255, 1)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-secondary)';
-                e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.1)' : 'transparent';
+                e.currentTarget.style.color = "var(--text-secondary)";
+                e.currentTarget.style.backgroundColor = isDark
+                  ? "rgba(98, 55, 160, 0.1)"
+                  : "transparent";
               }}
               onClick={onMenuToggle}
             >
@@ -128,36 +158,48 @@ export default function ChatHeader({
           {menuOpen && (
             <>
               {/* Backdrop for mobile */}
-              <div 
-                className="fixed inset-0 z-30 md:hidden" 
+              <div
+                className="fixed inset-0 z-30 md:hidden"
                 onClick={onMenuToggle}
               />
-              
+
               <div
                 ref={dropdownRef}
                 className="absolute right-0 top-full mt-2 w-48 sm:w-52 border-2 rounded-xl shadow-xl z-40 overflow-hidden animate-slide-in"
-                style={{ 
-                  backgroundColor: 'var(--card-bg)', 
-                  borderColor: 'var(--border-color)' 
+                style={{
+                  backgroundColor: "var(--card-bg)",
+                  borderColor: "var(--border-color)",
                 }}
               >
                 {canEndChat && (
                   <button
                     className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors group"
-                    style={{ 
-                      color: isDark ? '#fca5a5' : '#dc2626',
-                      backgroundColor: 'transparent'
+                    style={{
+                      color: isDark ? "#fca5a5" : "#dc2626",
+                      backgroundColor: "transparent",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(220, 38, 38, 0.1)' : '#fef2f2';
+                      e.currentTarget.style.backgroundColor = isDark
+                        ? "rgba(220, 38, 38, 0.1)"
+                        : "#fef2f2";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.backgroundColor = "transparent";
                     }}
                     onClick={onEndChat}
                   >
-                    <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-4 h-4 group-hover:scale-110 transition-transform"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                     <span className="font-medium">End Chat</span>
                   </button>
@@ -168,26 +210,41 @@ export default function ChatHeader({
                 {canTransfer && (
                   <button
                     className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors group"
-                    style={{ 
-                      color: 'var(--text-primary)',
-                      backgroundColor: 'transparent'
+                    style={{
+                      color: "var(--text-primary)",
+                      backgroundColor: "transparent",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(98, 55, 160, 0.1)' : 'rgba(243, 232, 255, 1)';
+                      e.currentTarget.style.backgroundColor = isDark
+                        ? "rgba(98, 55, 160, 0.1)"
+                        : "rgba(243, 232, 255, 1)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.backgroundColor = "transparent";
                     }}
                     onClick={onTransfer}
                   >
-                    <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    <svg
+                      className="w-4 h-4 group-hover:scale-110 transition-transform"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                      />
                     </svg>
                     <span className="font-medium">Transfer to ...</span>
                   </button>
                 )}
                 {!canEndChat && !canTransfer && (
-                  <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
+                  <div
+                    className="px-4 py-3 text-sm text-center"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
                     No actions available
                   </div>
                 )}
