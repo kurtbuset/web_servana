@@ -2,9 +2,9 @@
  * ChatMessages - Displays chat messages with date dividers
  * Enhanced with responsive design and modern styling
  */
-import TypingIndicator from './TypingIndicator';
-import MessageStatus from './MessageStatus';
-import { useTheme } from '../../context/ThemeContext';
+import TypingIndicator from "./TypingIndicator";
+import MessageStatus from "./MessageStatus";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function ChatMessages({
   groupedMessages,
@@ -12,7 +12,6 @@ export default function ChatMessages({
   chatEnded,
   scrollContainerRef,
   bottomRef,
-  isMobile,
   isTyping = false,
   typingUser = null,
   typingUserImage = null,
@@ -20,7 +19,7 @@ export default function ChatMessages({
   isLoadingMore = false,
 }) {
   const { isDark } = useTheme();
-  
+
   // // Find the latest agent message (current agent message sent by "user")
   const findLatestAgentMessageIndex = () => {
     for (let i = groupedMessages.length - 1; i >= 0; i--) {
@@ -31,37 +30,36 @@ export default function ChatMessages({
     }
     return -1;
   };
-  
-  
+
   const latestAgentMessageIndex = findLatestAgentMessageIndex();
   const getSenderLabel = (message) => {
-    if (message.sender_type === 'client') {
-      return 'Client';
-    } else if (message.sender_type === 'previous_agent') {
-      return message.sender_name || 'Previous Agent';
-    } else if (message.sender_type === 'current_agent') {
-      return 'You';
+    if (message.sender_type === "client") {
+      return "Client";
+    } else if (message.sender_type === "previous_agent") {
+      return message.sender_name || "Previous Agent";
+    } else if (message.sender_type === "current_agent") {
+      return "You";
     }
-    return 'System';
+    return "System";
   };
 
   const getMessageStyle = (message) => {
     if (message.sender === "user") {
-      // Current agent messages (right side)
+      // current agent messages (right side)
       return "bg-gradient-to-r from-[#6237A0] to-[#7A4ED9] text-white shadow-md";
     } else {
-      // Client and previous agent messages (left side)
-      if (message.sender_type === 'client') {
-        return isDark 
-          ? "text-gray-200 shadow-sm" 
+      // client and previous agent messages (left side)
+      if (message.sender_type === "client") {
+        return isDark
+          ? "text-gray-200 shadow-sm"
           : "bg-white text-gray-800 border border-gray-200 shadow-sm";
-      } else if (message.sender_type === 'previous_agent') {
-        return isDark 
-          ? "text-gray-200 shadow-sm" 
+      } else if (message.sender_type === "previous_agent") {
+        return isDark
+          ? "text-gray-200 shadow-sm"
           : "bg-blue-50 text-gray-800 border border-blue-200 shadow-sm";
       } else {
-        return isDark 
-          ? "text-gray-200 shadow-sm" 
+        return isDark
+          ? "text-gray-200 shadow-sm"
           : "bg-gray-50 text-gray-800 border border-gray-200 shadow-sm";
       }
     }
@@ -71,20 +69,20 @@ export default function ChatMessages({
     if (message.sender === "user") {
       return {};
     } else {
-      if (message.sender_type === 'client') {
-        return { 
-          backgroundColor: isDark ? '#3a3a3a' : '#ffffff',
-          border: `1px solid ${isDark ? '#4a4a4a' : '#e5e7eb'}`
+      if (message.sender_type === "client") {
+        return {
+          backgroundColor: isDark ? "#3a3a3a" : "#ffffff",
+          border: `1px solid ${isDark ? "#4a4a4a" : "#e5e7eb"}`,
         };
-      } else if (message.sender_type === 'previous_agent') {
-        return { 
-          backgroundColor: isDark ? '#2d3748' : '#eff6ff',
-          border: `1px solid ${isDark ? '#4a5568' : '#bfdbfe'}`
+      } else if (message.sender_type === "previous_agent") {
+        return {
+          backgroundColor: isDark ? "#2d3748" : "#eff6ff",
+          border: `1px solid ${isDark ? "#4a5568" : "#bfdbfe"}`,
         };
       } else {
-        return { 
-          backgroundColor: isDark ? '#3a3a3a' : '#f9fafb',
-          border: `1px solid ${isDark ? '#4a4a4a' : '#e5e7eb'}`
+        return {
+          backgroundColor: isDark ? "#3a3a3a" : "#f9fafb",
+          border: `1px solid ${isDark ? "#4a4a4a" : "#e5e7eb"}`,
         };
       }
     }
@@ -93,25 +91,32 @@ export default function ChatMessages({
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-scroll overflow-x-hidden px-2.5 sm:px-3 md:px-4 pb-2 custom-scrollbar"
+      className="flex-1 overflow-y-scroll overflow-x-hidden sm:px-3 md:px-4 custom-scrollbar px-3"
       style={{
-        maxHeight: isMobile ? "calc(100vh - 200px)" : "calc(100vh - 300px)",
         height: "100%",
-        background: isDark 
-          ? 'linear-gradient(to bottom, rgba(42, 42, 42, 0.5), transparent)' 
-          : 'linear-gradient(to bottom, rgba(249, 250, 251, 0.5), transparent)'
+        background: isDark
+          ? "linear-gradient(to bottom, rgba(42, 42, 42, 0.5), transparent)"
+          : "linear-gradient(to bottom, rgba(249, 250, 251, 0.5), transparent)",
       }}
     >
-      <div className="flex flex-col justify-end min-h-full gap-2 sm:gap-2.5 pt-3">
+      <div className="flex flex-col justify-end min-h-full gap-2 sm:gap-2.5">
         {/* Loading indicator for pagination */}
         {isLoadingMore && (
           <div className="flex justify-center py-3">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-full" style={{
-              backgroundColor: 'var(--card-bg)',
-              border: `1px solid var(--border-color)`
-            }}>
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-full"
+              style={{
+                backgroundColor: "var(--card-bg)",
+                border: `1px solid var(--border-color)`,
+              }}
+            >
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#6237A0] border-t-transparent"></div>
-              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Loading messages...</span>
+              <span
+                className="text-xs"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Loading messages...
+              </span>
             </div>
           </div>
         )}
@@ -119,11 +124,16 @@ export default function ChatMessages({
         {/* Load more indicator */}
         {hasMoreMessages && !isLoadingMore && groupedMessages.length > 0 && (
           <div className="flex justify-center py-2">
-            <div className="text-xs px-3 py-1 rounded-full cursor-pointer hover:bg-opacity-80 transition-colors" style={{
-              backgroundColor: isDark ? 'rgba(98, 55, 160, 0.1)' : 'rgba(98, 55, 160, 0.05)',
-              border: `1px solid ${isDark ? 'rgba(98, 55, 160, 0.3)' : 'rgba(98, 55, 160, 0.2)'}`,
-              color: '#6237A0'
-            }}>
+            <div
+              className="text-xs px-3 py-1 rounded-full cursor-pointer hover:bg-opacity-80 transition-colors"
+              style={{
+                backgroundColor: isDark
+                  ? "rgba(98, 55, 160, 0.1)"
+                  : "rgba(98, 55, 160, 0.05)",
+                border: `1px solid ${isDark ? "rgba(98, 55, 160, 0.3)" : "rgba(98, 55, 160, 0.2)"}`,
+                color: "#6237A0",
+              }}
+            >
               Scroll up to load more messages
             </div>
           </div>
@@ -132,11 +142,16 @@ export default function ChatMessages({
         {/* No more messages indicator */}
         {!hasMoreMessages && groupedMessages.length > 0 && (
           <div className="flex justify-center py-2">
-            <div className="text-xs px-3 py-1 rounded-full" style={{
-              backgroundColor: isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)',
-              border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(107, 114, 128, 0.2)'}`,
-              color: isDark ? '#9CA3AF' : '#6B7280'
-            }}>
+            <div
+              className="text-xs px-3 py-1 rounded-full"
+              style={{
+                backgroundColor: isDark
+                  ? "rgba(107, 114, 128, 0.1)"
+                  : "rgba(107, 114, 128, 0.05)",
+                border: `1px solid ${isDark ? "rgba(107, 114, 128, 0.3)" : "rgba(107, 114, 128, 0.2)"}`,
+                color: isDark ? "#9CA3AF" : "#6B7280",
+              }}
+            >
               No more messages
             </div>
           </div>
@@ -148,24 +163,33 @@ export default function ChatMessages({
               <div
                 key={`date-${item.content}-${index}`}
                 className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-1.5 sm:my-2"
-                style={{ color: 'var(--text-secondary)' }}
+                style={{ color: "var(--text-secondary)" }}
               >
-                <div className="flex-grow h-px" style={{ 
-                  background: isDark 
-                    ? 'linear-gradient(to right, transparent, rgba(74, 74, 74, 0.5), transparent)' 
-                    : 'linear-gradient(to right, transparent, #d1d5db, transparent)' 
-                }} />
-                <span className="px-2 py-0.5 rounded-full shadow-sm font-medium text-[8px] sm:text-[9px]" style={{
-                  backgroundColor: 'var(--card-bg)',
-                  border: `1px solid var(--border-color)`
-                }}>
+                <div
+                  className="flex-grow h-px"
+                  style={{
+                    background: isDark
+                      ? "linear-gradient(to right, transparent, rgba(74, 74, 74, 0.5), transparent)"
+                      : "linear-gradient(to right, transparent, #d1d5db, transparent)",
+                  }}
+                />
+                <span
+                  className="px-2 py-0.5 rounded-full shadow-sm font-medium text-[8px] sm:text-[9px]"
+                  style={{
+                    backgroundColor: "var(--card-bg)",
+                    border: `1px solid var(--border-color)`,
+                  }}
+                >
                   {item.content}
                 </span>
-                <div className="flex-grow h-px" style={{ 
-                  background: isDark 
-                    ? 'linear-gradient(to right, transparent, rgba(74, 74, 74, 0.5), transparent)' 
-                    : 'linear-gradient(to right, transparent, #d1d5db, transparent)' 
-                }} />
+                <div
+                  className="flex-grow h-px"
+                  style={{
+                    background: isDark
+                      ? "linear-gradient(to right, transparent, rgba(74, 74, 74, 0.5), transparent)"
+                      : "linear-gradient(to right, transparent, #d1d5db, transparent)",
+                  }}
+                />
               </div>
             );
           } else if (item.message_type === "transfer") {
@@ -175,26 +199,47 @@ export default function ChatMessages({
                 key={`transfer-${item.message_id || item.id || index}`}
                 className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-2 sm:my-3"
               >
-                <div className="flex-grow h-px" style={{ 
-                  background: isDark 
-                    ? 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent)' 
-                    : 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent)' 
-                }} />
-                <span className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]" style={{
-                  backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : 'rgba(243, 232, 255, 1)',
-                  border: `1px solid ${isDark ? 'rgba(124, 58, 237, 0.3)' : 'rgba(124, 58, 237, 0.2)'}`,
-                  color: isDark ? '#c4b5fd' : '#6237A0'
-                }}>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <div
+                  className="flex-grow h-px"
+                  style={{
+                    background: isDark
+                      ? "linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent)"
+                      : "linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent)",
+                  }}
+                />
+                <span
+                  className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]"
+                  style={{
+                    backgroundColor: isDark
+                      ? "rgba(124, 58, 237, 0.15)"
+                      : "rgba(243, 232, 255, 1)",
+                    border: `1px solid ${isDark ? "rgba(124, 58, 237, 0.3)" : "rgba(124, 58, 237, 0.2)"}`,
+                    color: isDark ? "#c4b5fd" : "#6237A0",
+                  }}
+                >
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
                   </svg>
                   {item.content}
                 </span>
-                <div className="flex-grow h-px" style={{ 
-                  background: isDark 
-                    ? 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent)' 
-                    : 'linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent)' 
-                }} />
+                <div
+                  className="flex-grow h-px"
+                  style={{
+                    background: isDark
+                      ? "linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent)"
+                      : "linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent)",
+                  }}
+                />
               </div>
             );
           } else if (item.message_type === "resolved") {
@@ -204,26 +249,45 @@ export default function ChatMessages({
                 key={`resolved-${item.message_id || item.id || index}`}
                 className="text-[9px] sm:text-[10px] text-center flex items-center gap-2 my-2 sm:my-3"
               >
-                <div className="flex-grow h-px" style={{ 
-                  background: isDark 
-                    ? 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.5), transparent)' 
-                    : 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.3), transparent)' 
-                }} />
-                <span className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]" style={{
-                  backgroundColor: isDark ? 'rgba(107, 114, 128, 0.15)' : '#f3f4f6',
-                  border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : '#d1d5db'}`,
-                  color: isDark ? '#9CA3AF' : '#6B7280'
-                }}>
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <div
+                  className="flex-grow h-px"
+                  style={{
+                    background: isDark
+                      ? "linear-gradient(to right, transparent, rgba(107, 114, 128, 0.5), transparent)"
+                      : "linear-gradient(to right, transparent, rgba(107, 114, 128, 0.3), transparent)",
+                  }}
+                />
+                <span
+                  className="px-2.5 sm:px-3 py-1 rounded-full shadow-sm font-medium flex items-center gap-1.5 text-[9px] sm:text-[10px]"
+                  style={{
+                    backgroundColor: isDark
+                      ? "rgba(107, 114, 128, 0.15)"
+                      : "#f3f4f6",
+                    border: `1px solid ${isDark ? "rgba(107, 114, 128, 0.3)" : "#d1d5db"}`,
+                    color: isDark ? "#9CA3AF" : "#6B7280",
+                  }}
+                >
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   {item.content}
                 </span>
-                <div className="flex-grow h-px" style={{ 
-                  background: isDark 
-                    ? 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.5), transparent)' 
-                    : 'linear-gradient(to right, transparent, rgba(107, 114, 128, 0.3), transparent)' 
-                }} />
+                <div
+                  className="flex-grow h-px"
+                  style={{
+                    background: isDark
+                      ? "linear-gradient(to right, transparent, rgba(107, 114, 128, 0.5), transparent)"
+                      : "linear-gradient(to right, transparent, rgba(107, 114, 128, 0.3), transparent)",
+                  }}
+                />
               </div>
             );
           } else {
@@ -246,11 +310,15 @@ export default function ChatMessages({
                   />
                 )}
                 <div className="flex flex-col max-w-[75%] sm:max-w-[70%] md:max-w-[60%]">
-                  {item.sender !== "user" && item.sender_type === 'previous_agent' && (
-                    <div className="text-[9px] sm:text-[10px] mb-0.5 ml-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {getSenderLabel(item)}
-                    </div>
-                  )}
+                  {item.sender !== "user" &&
+                    item.sender_type === "previous_agent" && (
+                      <div
+                        className="text-[9px] sm:text-[10px] mb-0.5 ml-1.5 font-medium"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        {getSenderLabel(item)}
+                      </div>
+                    )}
                   <div
                     className={`${getMessageStyle(item)} px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl ${
                       item.sender === "user" ? "rounded-br-md" : "rounded-bl-md"
@@ -262,21 +330,24 @@ export default function ChatMessages({
                       className={`text-[8px] sm:text-[9px] text-right mt-0.5 ${
                         item.sender === "user"
                           ? "text-purple-200"
-                          : isDark ? "text-gray-400" : "text-gray-400"
+                          : isDark
+                            ? "text-gray-400"
+                            : "text-gray-400"
                       }`}
                     >
                       {item.displayTime}
                     </div>
                   </div>
                   {/* Status indicator below message bubble - only for latest agent message */}
-                  {item.sender === "user" && index === latestAgentMessageIndex && (
-                    <div className="flex justify-end mt-0.5">
-                      <MessageStatus 
-                        status={item.status || "sent"} 
-                        className="mr-1"
-                      />
-                    </div>
-                  )}
+                  {item.sender === "user" &&
+                    index === latestAgentMessageIndex && (
+                      <div className="flex justify-end mt-0.5">
+                        <MessageStatus
+                          status={item.status || "sent"}
+                          className="mr-1"
+                        />
+                      </div>
+                    )}
                 </div>
               </div>
             );
@@ -284,22 +355,21 @@ export default function ChatMessages({
         })}
 
         {isTyping && typingUser && (
-          <TypingIndicator 
-            userName={typingUser} 
-            userImage={typingUserImage}
-          />
+          <TypingIndicator userName={typingUser} userImage={typingUserImage} />
         )}
 
         {chatEnded && (
           <div className="flex justify-center my-3">
-            <div className="px-4 py-2 rounded-full shadow-sm font-medium flex items-center gap-2 text-xs" style={{
-              backgroundColor: isDark ? 'rgba(107, 114, 128, 0.15)' : '#f3f4f6',
-              border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : '#d1d5db'}`,
-              color: isDark ? '#9CA3AF' : '#6B7280'
-            }}>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-9A7 7 0 1117 9H3z" clipRule="evenodd" />
-              </svg>
+            <div
+              className="px-4 py-2 rounded-full shadow-sm font-medium flex items-center gap-2 text-xs"
+              style={{
+                backgroundColor: isDark
+                  ? "rgba(107, 114, 128, 0.15)"
+                  : "#f3f4f6",
+                border: `1px solid ${isDark ? "rgba(107, 114, 128, 0.3)" : "#d1d5db"}`,
+                color: isDark ? "#9CA3AF" : "#6B7280",
+              }}
+            >
               Chat has ended
             </div>
           </div>
