@@ -4,7 +4,7 @@
  */
 import TypingIndicator from "./TypingIndicator";
 import MessageStatus from "./MessageStatus";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 export default function ChatMessages({
   groupedMessages,
@@ -379,3 +379,4 @@ export default function ChatMessages({
     </div>
   );
 }
+

@@ -1,5 +1,5 @@
 import { Send, Menu } from "react-feather";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * MessageInput - Input area for sending messages with canned messages support
@@ -239,3 +239,4 @@ export default function MessageInput({
     </div>
   );
 }
+

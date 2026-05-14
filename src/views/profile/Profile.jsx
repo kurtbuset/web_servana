@@ -4,8 +4,8 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { FiLogOut } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
-import { useUser } from "../../../src/context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
 import toast from "../../utils/toast";
 import { getProfilePictureUrl } from "../../utils/imageUtils";
 import "../../styles/GridLayout.css";
@@ -338,3 +338,4 @@ export default function Profile() {
     </Layout>
   );
 }
+

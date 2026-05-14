@@ -1,5 +1,5 @@
 import { MoreVertical, ArrowLeft, Clock } from "react-feather";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * ChatHeader - Header for chat conversation with customer info and actions
@@ -256,3 +256,4 @@ export default function ChatHeader({
     </div>
   );
 }
+

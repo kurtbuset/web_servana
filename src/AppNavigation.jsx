@@ -6,8 +6,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import api from "../src/api";
-import { useUser } from "./context/UserContext";
-import { useTheme } from "./context/ThemeContext";
+import { useUser } from "./hooks/useUser";
+import { useTheme } from "./hooks/useTheme";
 import LoadingSpinner from "./components/LoadingSpinner";
 import RolePreviewBanner from "./components/RolePreviewBanner";
 
@@ -15,22 +15,37 @@ import RolePreviewBanner from "./components/RolePreviewBanner";
 import LoginScreen from "./views/login/LoginScreen.jsx";
 
 // Lazy load all other screens
-const DashboardScreen = lazy(() => import("./views/dashboard/DashboardScreen.jsx"));
+const DashboardScreen = lazy(
+  () => import("./views/dashboard/DashboardScreen.jsx"),
+);
 const ChatsScreen = lazy(() => import("./views/chats/ChatsScreen.jsx"));
-const ResolvedChatsScreen = lazy(() => import("./views/resolved/ResolvedChatsScreen.jsx"));
-const DepartmentScreen = lazy(() => import("./views/departments/DepartmentScreen.jsx"));
-const ManageAgentsScreen = lazy(() => import("./views/agents/ManageAgentsScreen.jsx"));
+const ResolvedChatsScreen = lazy(
+  () => import("./views/resolved/ResolvedChatsScreen.jsx"),
+);
+const DepartmentScreen = lazy(
+  () => import("./views/departments/DepartmentScreen.jsx"),
+);
+const ManageAgentsScreen = lazy(
+  () => import("./views/agents/ManageAgentsScreen.jsx"),
+);
 const RolesScreen = lazy(() => import("./views/roles/RolesScreen.jsx"));
-const ChangeRolesScreen = lazy(() => import("./views/change-roles/ChangeRolesScreen.jsx"));
-const AutoRepliesScreen = lazy(() => import("./views/auto-replies/AutoRepliesScreen.jsx"));
-const MacrosAgentsScreen = lazy(() => import("./views/macros/MacrosAgentsScreen.jsx"));
-const MacrosClientsScreen = lazy(() => import("./views/macros/MacrosClientsScreen.jsx"));
+const ChangeRolesScreen = lazy(
+  () => import("./views/change-roles/ChangeRolesScreen.jsx"),
+);
+const AutoRepliesScreen = lazy(
+  () => import("./views/auto-replies/AutoRepliesScreen.jsx"),
+);
+const MacrosAgentsScreen = lazy(
+  () => import("./views/macros/MacrosAgentsScreen.jsx"),
+);
+const MacrosClientsScreen = lazy(
+  () => import("./views/macros/MacrosClientsScreen.jsx"),
+);
 const Profile = lazy(() => import("./views/profile/Profile.jsx"));
 const ManageAdmin = lazy(() => import("./views/manage-admin/ManageAdmin.jsx"));
 
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "./components/ui";
-
 
 /**
  * PermissionRoute: Redirect to Dashboard if user doesn't have required permission
@@ -44,21 +59,29 @@ function PermissionRoute({ children, permission, fallbackPermission }) {
 
   // Map permission strings to permissions object properties
   const permissionMap = {
-    'priv_can_view_message': permissions.canViewMessage,
-    'priv_can_view_dept': permissions.canViewDept,
-    'priv_can_view_manage_agents': permissions.canViewManageAgents,
-    'priv_can_view_change_roles': permissions.canViewChangeRoles,
-    'priv_can_view_auto_reply': permissions.canViewAutoReply,
-    'priv_can_view_macros': permissions.canViewMacros,
-    'priv_can_create_account': permissions.canCreateAccount,
-    'priv_can_manage_role': permissions.canManageRole,
+    priv_can_view_message: permissions.canViewMessage,
+    priv_can_view_dept: permissions.canViewDept,
+    priv_can_view_manage_agents: permissions.canViewManageAgents,
+    priv_can_view_change_roles: permissions.canViewChangeRoles,
+    priv_can_view_auto_reply: permissions.canViewAutoReply,
+    priv_can_view_macros: permissions.canViewMacros,
+    priv_can_create_account: permissions.canCreateAccount,
+    priv_can_manage_role: permissions.canManageRole,
   };
 
   const hasPermission = permissionMap[permission];
-  const hasFallbackPermission = fallbackPermission ? permissionMap[fallbackPermission] : false;
+  const hasFallbackPermission = fallbackPermission
+    ? permissionMap[fallbackPermission]
+    : false;
 
-  if (permission && !hasPermission && (!fallbackPermission || !hasFallbackPermission)) {
-    console.log(`🚫 PermissionRoute: Access denied for ${permission}${fallbackPermission ? ` (fallback: ${fallbackPermission})` : ''}`);
+  if (
+    permission &&
+    !hasPermission &&
+    (!fallbackPermission || !hasFallbackPermission)
+  ) {
+    console.log(
+      `🚫 PermissionRoute: Access denied for ${permission}${fallbackPermission ? ` (fallback: ${fallbackPermission})` : ""}`,
+    );
     return <Navigate to="/Dashboard" replace />;
   }
 
@@ -87,9 +110,9 @@ function ProtectedRoute({ children }) {
 
     checkAuth();
 
-    const channel = new BroadcastChannel('auth_logout');
+    const channel = new BroadcastChannel("auth_logout");
     channel.onmessage = (event) => {
-      if (event.data?.type === 'LOGOUT') {
+      if (event.data?.type === "LOGOUT") {
         setState({ loading: false, authed: false });
       }
     };
@@ -143,9 +166,9 @@ function PublicRoute({ children }) {
 
     checkAuth();
 
-    const channel = new BroadcastChannel('auth_logout');
+    const channel = new BroadcastChannel("auth_logout");
     channel.onmessage = (event) => {
-      if (event.data?.type === 'LOGOUT') {
+      if (event.data?.type === "LOGOUT") {
         setState({ loading: false, authed: false });
       }
     };
@@ -167,162 +190,161 @@ function PublicRoute({ children }) {
   return children;
 }
 
-
-
 function AppNavigation() {
   const { isDark } = useTheme();
 
   return (
     <Router>
       <RolePreviewBanner />
-      <Suspense fallback={<LoadingSpinner variant="page" message="Loading..." />}>
+      <Suspense
+        fallback={<LoadingSpinner variant="page" message="Loading..." />}
+      >
         <ToastContainer isDark={isDark} />
         <Routes>
-        {/* Public: Login, redirect if authed */}
-        <Route
-          path="/"
-          element={
-            <PublicRoute>
-              <LoginScreen />
-            </PublicRoute>
-          }
-        />
+          {/* Public: Login, redirect if authed */}
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <LoginScreen />
+              </PublicRoute>
+            }
+          />
 
+          {/* Protected */}
+          <Route
+            path="/Dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Chats"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_message">
+                  <ChatsScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ResolvedChats"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_message">
+                  <ResolvedChatsScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/department"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_dept">
+                  <DepartmentScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manage-agents"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_manage_agents">
+                  <ManageAgentsScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-role"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_change_roles">
+                  <ChangeRolesScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/auto-replies"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_auto_reply">
+                  <AutoRepliesScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agents"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_macros">
+                  <MacrosAgentsScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Protected */}
-        <Route
-          path="/Dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardScreen />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/Chats"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
-                <ChatsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ResolvedChats"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_message">
-                <ResolvedChatsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/department"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_dept">
-                <DepartmentScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/manage-agents"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_manage_agents">
-                <ManageAgentsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/change-role"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_change_roles">
-                <ChangeRolesScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/auto-replies"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_auto_reply">
-                <AutoRepliesScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/agents"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_macros">
-                <MacrosAgentsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-       
-        <Route
-          path="/macros-agents"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_macros">
-                <MacrosAgentsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/macros-clients"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_view_macros">
-                <MacrosClientsScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/manage-admin"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_create_account">
-                <ManageAdmin />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/roles"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="priv_can_manage_role">
-                <RolesScreen />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/macros-agents"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_macros">
+                  <MacrosAgentsScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/macros-clients"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_view_macros">
+                  <MacrosClientsScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manage-admin"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_create_account">
+                  <ManageAdmin />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/roles"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="priv_can_manage_role">
+                  <RolesScreen />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/chats" element={<Navigate to="/chats" replace />} />
-        
-        {/* Fallback route - redirect unknown routes to Dashboard */}
-        <Route path="*" element={<Navigate to="/Dashboard" replace />} />
-      </Routes>
+          <Route path="/chats" element={<Navigate to="/chats" replace />} />
+
+          {/* Fallback route - redirect unknown routes to Dashboard */}
+          <Route path="*" element={<Navigate to="/Dashboard" replace />} />
+        </Routes>
       </Suspense>
     </Router>
   );

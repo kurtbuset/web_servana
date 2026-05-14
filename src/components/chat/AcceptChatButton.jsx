@@ -1,5 +1,5 @@
 import { CheckCircle } from "react-feather";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * AcceptChatButton - Compact, user-friendly button to accept queued chats
@@ -79,3 +79,4 @@ export default function AcceptChatButton({ onAccept, customer }) {
     </div>
   );
 }
+

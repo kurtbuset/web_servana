@@ -14,8 +14,8 @@ import {
 } from "../../components/ui";
 import { usePagination } from "../../hooks/usePagination";
 import { useDepartments } from "../../hooks/useDepartments";
-import { useUser } from "../../context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
 import DepartmentsTable from "./components/DepartmentsTable";
 import DepartmentModal from "./components/DepartmentModal";
 import { HelpCircle } from "react-feather";

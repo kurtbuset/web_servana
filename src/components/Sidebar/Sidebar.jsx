@@ -10,14 +10,14 @@ import {
   Headphones,
   Cpu,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
 } from "react-feather";
 import { HiOfficeBuilding } from "react-icons/hi";
 import { Link, useLocation } from "react-router-dom";
-import { useUser } from "../../../src/context/UserContext";
-import { useRolePreview } from "../../../src/context/RolePreviewContext";
-import { useTheme } from "../../../src/context/ThemeContext";
-import { useUnsavedChanges } from "../../../src/context/UnsavedChangesContext";
+import { useUser } from "../../hooks/useUser";
+import { useRolePreview } from "../../hooks/useRolePreview";
+import { useTheme } from "../../hooks/useTheme";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react";
 import { ROUTES } from "../../constants/routes";
 import ScrollContainer from "../ScrollContainer";
@@ -26,235 +26,266 @@ const navSections = [
   {
     title: "Overview",
     items: [
-      { 
-        to: ROUTES.DASHBOARD, 
-        icon: Activity, 
-        label: "Dashboard"
-      }
-    ]
+      {
+        to: ROUTES.DASHBOARD,
+        icon: Activity,
+        label: "Dashboard",
+      },
+    ],
   },
   {
     title: "Communication",
     items: [
-      { 
-        to: ROUTES.CHATS, 
-        icon: MessageSquare, 
-        label: "Chats", 
-        permission: "priv_can_view_message", 
-        showBadge: true, 
-        badgeKey: "activeChats"
+      {
+        to: ROUTES.CHATS,
+        icon: MessageSquare,
+        label: "Chats",
+        permission: "priv_can_view_message",
+        showBadge: true,
+        badgeKey: "activeChats",
       },
-      { 
-        to: ROUTES.RESOLVED_CHATS, 
-        icon: MessageSquare, 
-        label: "Resolved Chats", 
-        permission: "priv_can_view_message", 
-        showBadge: false
-      }
-    ]
+      {
+        to: ROUTES.RESOLVED_CHATS,
+        icon: MessageSquare,
+        label: "Resolved Chats",
+        permission: "priv_can_view_message",
+        showBadge: false,
+      },
+    ],
   },
   {
     title: "Management",
     items: [
-      { 
-        to: ROUTES.DEPARTMENTS, 
-        icon: HiOfficeBuilding, 
-        label: "Departments", 
-        permission: "priv_can_view_dept"
+      {
+        to: ROUTES.DEPARTMENTS,
+        icon: HiOfficeBuilding,
+        label: "Departments",
+        permission: "priv_can_view_dept",
       },
-      { 
-        to: ROUTES.AUTO_REPLIES, 
-        icon: Cpu, 
-        label: "Auto-Replies", 
-        permission: "priv_can_view_auto_reply"
-      }
-    ]
+      {
+        to: ROUTES.AUTO_REPLIES,
+        icon: Cpu,
+        label: "Auto-Replies",
+        permission: "priv_can_view_auto_reply",
+      },
+    ],
   },
   {
     title: "User Management",
     items: [
-      { 
-        to: ROUTES.MANAGE_AGENTS, 
-        icon: Headphones, 
-        label: "Manage Agents", 
-        permission: "priv_can_view_manage_agents"
+      {
+        to: ROUTES.MANAGE_AGENTS,
+        icon: Headphones,
+        label: "Manage Agents",
+        permission: "priv_can_view_manage_agents",
       },
-      { 
-        to: ROUTES.CHANGE_ROLE, 
-        icon: UserCheck, 
-        label: "Change Roles", 
-        permission: "priv_can_view_change_roles"
-      }
-    ]
+      {
+        to: ROUTES.CHANGE_ROLE,
+        icon: UserCheck,
+        label: "Change Roles",
+        permission: "priv_can_view_change_roles",
+      },
+    ],
   },
   {
     title: "Automation Tools",
     items: [
-      { 
-        to: ROUTES.MACROS_AGENTS, 
-        icon: MessageCircle, 
-        label: "Agent Macros", 
-        permission: "priv_can_view_macros"
+      {
+        to: ROUTES.MACROS_AGENTS,
+        icon: MessageCircle,
+        label: "Agent Macros",
+        permission: "priv_can_view_macros",
       },
-      { 
-        to: ROUTES.MACROS_CLIENTS, 
-        icon: FileText, 
-        label: "Client Macros", 
-        permission: "priv_can_view_macros"
-      }
-    ]
+      {
+        to: ROUTES.MACROS_CLIENTS,
+        icon: FileText,
+        label: "Client Macros",
+        permission: "priv_can_view_macros",
+      },
+    ],
   },
   {
     title: "Administration",
     items: [
-      { 
-        to: ROUTES.MANAGE_ADMIN, 
-        icon: Shield, 
-        label: "Admin Users", 
-        permission: "priv_can_create_account"
+      {
+        to: ROUTES.MANAGE_ADMIN,
+        icon: Shield,
+        label: "Admin Users",
+        permission: "priv_can_create_account",
       },
-      { 
-        to: ROUTES.ROLES, 
-        icon: Key, 
-        label: "Roles & Permissions", 
-        permission: "priv_can_manage_role"
-      }
-    ]
-  }
+      {
+        to: ROUTES.ROLES,
+        icon: Key,
+        label: "Roles & Permissions",
+        permission: "priv_can_manage_role",
+      },
+    ],
+  },
 ];
 
+const NavItem = memo(
+  ({
+    to,
+    Icon,
+    label,
+    isActive,
+    badgeCount,
+    isCollapsed,
+    isDark,
+    onBlockedClick,
+  }) => {
+    const [shouldBlock, setShouldBlock] = useState(false);
 
+    const handleClick = useCallback(
+      (e) => {
+        // Check if navigation should be blocked
+        if (onBlockedClick) {
+          const isBlocked = onBlockedClick();
+          if (isBlocked) {
+            e.preventDefault();
+            e.stopPropagation();
+            setShouldBlock(true);
+            // Reset block state after animation
+            setTimeout(() => setShouldBlock(false), 500);
+            return false;
+          }
+        }
 
-const NavItem = memo(({ to, Icon, label, isActive, badgeCount, isCollapsed, isDark, onBlockedClick }) => {
-  const [shouldBlock, setShouldBlock] = useState(false);
+        // Store current scroll position before navigation
+        const sidebar = e.currentTarget.closest(".sidebar-scroll-container");
+        if (sidebar) {
+          const scrollTop = sidebar.scrollTop;
+          // Store in sessionStorage to persist across renders
+          sessionStorage.setItem("sidebarScrollPosition", scrollTop.toString());
+        }
 
-  const handleClick = useCallback((e) => {
-    // Check if navigation should be blocked
-    if (onBlockedClick) {
-      const isBlocked = onBlockedClick();
-      if (isBlocked) {
-        e.preventDefault();
-        e.stopPropagation();
-        setShouldBlock(true);
-        // Reset block state after animation
-        setTimeout(() => setShouldBlock(false), 500);
-        return false;
-      }
-    }
-    
-    // Store current scroll position before navigation
-    const sidebar = e.currentTarget.closest('.sidebar-scroll-container');
-    if (sidebar) {
-      const scrollTop = sidebar.scrollTop;
-      // Store in sessionStorage to persist across renders
-      sessionStorage.setItem('sidebarScrollPosition', scrollTop.toString());
-    }
-    
-    // Prevent focus
-    e.currentTarget.blur();
-  }, [onBlockedClick]);
+        // Prevent focus
+        e.currentTarget.blur();
+      },
+      [onBlockedClick],
+    );
 
-  const handleMouseEnter = useCallback((e) => {
-    if (!isActive) {
-      e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
-    }
-  }, [isActive, isDark]);
+    const handleMouseEnter = useCallback(
+      (e) => {
+        if (!isActive) {
+          e.currentTarget.style.backgroundColor = isDark
+            ? "rgba(139, 92, 246, 0.1)"
+            : "rgba(98, 55, 160, 0.05)";
+        }
+      },
+      [isActive, isDark],
+    );
 
-  const handleMouseLeave = useCallback((e) => {
-    if (!isActive) {
-      e.currentTarget.style.backgroundColor = 'transparent';
-    }
-  }, [isActive]);
+    const handleMouseLeave = useCallback(
+      (e) => {
+        if (!isActive) {
+          e.currentTarget.style.backgroundColor = "transparent";
+        }
+      },
+      [isActive],
+    );
 
-  const NavContent = (
-    <>
-      <div 
-        className={`p-0.5 rounded ${isActive ? 'bg-white/20' : ''}`}
-        style={!isActive ? { backgroundColor: 'var(--bg-tertiary)' } : {}}
-      >
-        <Icon 
-          size={13} 
-          strokeWidth={isActive ? 2 : 1.5} 
-          className={isActive ? 'text-white' : ''}
-          style={!isActive ? { color: 'var(--text-secondary)' } : {}}
-        />
-      </div>
-      {!isCollapsed && (
-        <div className="flex-1 min-w-0 transition-opacity duration-200">
-          <div className="font-medium text-xs">{label}</div>
-        </div>
-      )}
-      {!isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
-        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 ${
-          isActive 
-            ? "bg-white text-[#6237A0]" 
-            : "bg-[#6237A0] text-white"
-        } shadow-sm`}>
-          {badgeCount > 99 ? '99+' : badgeCount}
-        </span>
-      )}
-      {isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-          {badgeCount > 9 ? '9+' : badgeCount}
-        </span>
-      )}
-    </>
-  );
-
-  return (
-    <div className="relative group">
-      {isActive && (
+    const NavContent = (
+      <>
         <div
-          className="absolute inset-0 rounded-md bg-gradient-to-r from-[#6237A0] to-[#7C4DFF] z-0"
-        />
-      )}
-      <Link
-        to={to}
-        onClick={handleClick}
-        tabIndex={-1}
-        className={`relative flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md z-10 transition-all duration-200 ${
-          isActive 
-            ? "text-white shadow-lg" 
-            : ""
-        }`}
-        style={!isActive ? { color: 'var(--text-primary)', cursor: shouldBlock ? 'not-allowed' : 'pointer' } : { cursor: shouldBlock ? 'not-allowed' : 'pointer' }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        title={isCollapsed ? label : ''}
-      >
-        {NavContent}
-      </Link>
-    </div>
-  );
-}, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
-  return (
-    prevProps.to === nextProps.to &&
-    prevProps.isActive === nextProps.isActive &&
-    prevProps.badgeCount === nextProps.badgeCount &&
-    prevProps.isCollapsed === nextProps.isCollapsed &&
-    prevProps.isDark === nextProps.isDark &&
-    prevProps.label === nextProps.label
-  );
-});
+          className={`p-0.5 rounded ${isActive ? "bg-white/20" : ""}`}
+          style={!isActive ? { backgroundColor: "var(--bg-tertiary)" } : {}}
+        >
+          <Icon
+            size={13}
+            strokeWidth={isActive ? 2 : 1.5}
+            className={isActive ? "text-white" : ""}
+            style={!isActive ? { color: "var(--text-secondary)" } : {}}
+          />
+        </div>
+        {!isCollapsed && (
+          <div className="flex-1 min-w-0 transition-opacity duration-200">
+            <div className="font-medium text-xs">{label}</div>
+          </div>
+        )}
+        {!isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
+          <span
+            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 ${
+              isActive ? "bg-white text-[#6237A0]" : "bg-[#6237A0] text-white"
+            } shadow-sm`}
+          >
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </span>
+        )}
+        {isCollapsed && badgeCount !== undefined && badgeCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+            {badgeCount > 9 ? "9+" : badgeCount}
+          </span>
+        )}
+      </>
+    );
 
-NavItem.displayName = 'NavItem';
+    return (
+      <div className="relative group">
+        {isActive && (
+          <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[#6237A0] to-[#7C4DFF] z-0" />
+        )}
+        <Link
+          to={to}
+          onClick={handleClick}
+          tabIndex={-1}
+          className={`relative flex items-center ${isCollapsed ? "justify-center" : "gap-2"} px-3 py-1.5 rounded-md z-10 transition-all duration-200 ${
+            isActive ? "text-white shadow-lg" : ""
+          }`}
+          style={
+            !isActive
+              ? {
+                  color: "var(--text-primary)",
+                  cursor: shouldBlock ? "not-allowed" : "pointer",
+                }
+              : { cursor: shouldBlock ? "not-allowed" : "pointer" }
+          }
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          title={isCollapsed ? label : ""}
+        >
+          {NavContent}
+        </Link>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    return (
+      prevProps.to === nextProps.to &&
+      prevProps.isActive === nextProps.isActive &&
+      prevProps.badgeCount === nextProps.badgeCount &&
+      prevProps.isCollapsed === nextProps.isCollapsed &&
+      prevProps.isDark === nextProps.isDark &&
+      prevProps.label === nextProps.label
+    );
+  },
+);
+
+NavItem.displayName = "NavItem";
 
 const SectionHeader = memo(({ title, isCollapsed }) => {
-  if (isCollapsed) return <div className="h-px mx-2 my-1.5" style={{ backgroundColor: 'var(--border-color)' }} />;
-  
+  if (isCollapsed)
+    return (
+      <div
+        className="h-px mx-2 my-1.5"
+        style={{ backgroundColor: "var(--border-color)" }}
+      />
+    );
+
   return (
     <div className="px-3 py-1 mb-0.5">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+      <h3
+        className="text-[11px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text-secondary)" }}
+      >
         {title}
       </h3>
     </div>
   );
 });
 
-SectionHeader.displayName = 'SectionHeader';
-
-
+SectionHeader.displayName = "SectionHeader";
 
 const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   const location = useLocation();
@@ -264,24 +295,25 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   const { blockNavigation, hasUnsavedChanges } = useUnsavedChanges();
   const [counts, setCounts] = useState({
     pendingChats: 0,
-    activeChats: 0
+    activeChats: 0,
   });
-  
+
   // Force re-render when preview mode changes
   const [, forceUpdate] = useState({});
-  
+
   useEffect(() => {
     const handlePreviewChange = () => {
       // console.log('🔄 Sidebar: Preview mode changed, forcing re-render');
       forceUpdate({});
     };
-    
-    window.addEventListener('rolePreviewChanged', handlePreviewChange);
-    return () => window.removeEventListener('rolePreviewChanged', handlePreviewChange);
+
+    window.addEventListener("rolePreviewChanged", handlePreviewChange);
+    return () =>
+      window.removeEventListener("rolePreviewChanged", handlePreviewChange);
   }, []);
-  
+
   // Persist collapse state in localStorage (desktop only)
-  const [isCollapsed, setIsCollapsed] = useState()
+  const [isCollapsed, setIsCollapsed] = useState();
 
   // Ref to track sidebar scroll position
   const sidebarScrollRef = useRef(null);
@@ -290,18 +322,18 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   // Restore scroll position on mount and after navigation
   useEffect(() => {
     const restoreScrollPosition = () => {
-      const savedPosition = sessionStorage.getItem('sidebarScrollPosition');
+      const savedPosition = sessionStorage.getItem("sidebarScrollPosition");
       if (sidebarScrollRef.current && savedPosition) {
         const position = parseInt(savedPosition, 10);
         // Use multiple methods to ensure scroll position is restored
         sidebarScrollRef.current.scrollTop = position;
-        
+
         requestAnimationFrame(() => {
           if (sidebarScrollRef.current) {
             sidebarScrollRef.current.scrollTop = position;
           }
         });
-        
+
         // Fallback with slight delay
         setTimeout(() => {
           if (sidebarScrollRef.current) {
@@ -320,11 +352,14 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
     if (!sidebar) return;
 
     const handleScroll = () => {
-      sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop.toString());
+      sessionStorage.setItem(
+        "sidebarScrollPosition",
+        sidebar.scrollTop.toString(),
+      );
     };
 
-    sidebar.addEventListener('scroll', handleScroll, { passive: true });
-    return () => sidebar.removeEventListener('scroll', handleScroll);
+    sidebar.addEventListener("scroll", handleScroll, { passive: true });
+    return () => sidebar.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Save collapse state to localStorage whenever it changes
@@ -335,21 +370,29 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   // }, [isCollapsed, isMobile]);
 
   const toggleCollapse = useCallback(() => {
-    setIsCollapsed(prev => !prev);
+    setIsCollapsed((prev) => !prev);
   }, []);
 
-  const handleCollapseMouseEnter = useCallback((e) => {
-    e.currentTarget.style.backgroundColor = isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(98, 55, 160, 0.05)';
-  }, [isDark]);
+  const handleCollapseMouseEnter = useCallback(
+    (e) => {
+      e.currentTarget.style.backgroundColor = isDark
+        ? "rgba(139, 92, 246, 0.1)"
+        : "rgba(98, 55, 160, 0.05)";
+    },
+    [isDark],
+  );
 
   const handleCollapseMouseLeave = useCallback((e) => {
-    e.currentTarget.style.backgroundColor = 'transparent';
+    e.currentTarget.style.backgroundColor = "transparent";
   }, []);
 
-  const isActivePath = useCallback((to, extraPaths = []) =>
-    location.pathname.toLowerCase() === to.toLowerCase() ||
-    extraPaths.map((p) => p.toLowerCase()).includes(location.pathname.toLowerCase()),
-    [location.pathname]
+  const isActivePath = useCallback(
+    (to, extraPaths = []) =>
+      location.pathname.toLowerCase() === to.toLowerCase() ||
+      extraPaths
+        .map((p) => p.toLowerCase())
+        .includes(location.pathname.toLowerCase()),
+    [location.pathname],
   );
 
   // Close sidebar on navigation (mobile only)
@@ -359,7 +402,7 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
       const timeoutId = setTimeout(() => {
         onClose();
       }, 150);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [location.pathname]);
@@ -370,10 +413,10 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
 
     const handleClickOutside = (event) => {
       // Don't close if clicking the toggle button
-      if (event.target.closest('[data-sidebar-toggle]')) {
+      if (event.target.closest("[data-sidebar-toggle]")) {
         return;
       }
-      
+
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         onClose?.();
       }
@@ -381,59 +424,61 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
 
     // Add small delay to prevent immediate close on open
     const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isMobile, isOpen, onClose]);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
     if (isMobile && isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [isMobile, isOpen]);
 
-  
   const visibleNavSections = useMemo(() => {
     // Permission mapping for direct object access
     const permissionMap = {
-      'priv_can_view_message': permissions.canViewMessage,
-      'priv_can_view_dept': permissions.canViewDept,
-      'priv_can_view_auto_reply': permissions.canViewAutoReply,
-      'priv_can_view_manage_agents': permissions.canViewManageAgents,
-      'priv_can_view_change_roles': permissions.canViewChangeRoles,
-      'priv_can_view_macros': permissions.canViewMacros,
-      'priv_can_create_account': permissions.canCreateAccount,
-      'priv_can_manage_role': permissions.canManageRole,
+      priv_can_view_message: permissions.canViewMessage,
+      priv_can_view_dept: permissions.canViewDept,
+      priv_can_view_auto_reply: permissions.canViewAutoReply,
+      priv_can_view_manage_agents: permissions.canViewManageAgents,
+      priv_can_view_change_roles: permissions.canViewChangeRoles,
+      priv_can_view_macros: permissions.canViewMacros,
+      priv_can_create_account: permissions.canCreateAccount,
+      priv_can_manage_role: permissions.canManageRole,
     };
-    
-    return navSections.map(section => ({
-      ...section,
-      items: section.items.filter(item => {
-        // If no permission specified, item is always visible (like Dashboard)
-        if (!item.permission) {
-          return true;
-        }
-        
-        // Check permission using direct object access
-        const hasAccess = permissionMap[item.permission] || 
-                         (item.fallbackPermission && permissionMap[item.fallbackPermission]);
-        
-        return hasAccess;
-      })
-    })).filter(section => section.items.length > 0); // Only show sections with visible items
+
+    return navSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          // If no permission specified, item is always visible (like Dashboard)
+          if (!item.permission) {
+            return true;
+          }
+
+          // Check permission using direct object access
+          const hasAccess =
+            permissionMap[item.permission] ||
+            (item.fallbackPermission && permissionMap[item.fallbackPermission]);
+
+          return hasAccess;
+        }),
+      }))
+      .filter((section) => section.items.length > 0); // Only show sections with visible items
   }, [permissions, previewMode, previewPermissions]);
 
   return (
@@ -446,7 +491,7 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
             e.stopPropagation();
             onClose?.();
           }}
-          style={{ top: '4rem' }}
+          style={{ top: "4rem" }}
         />
       )}
 
@@ -454,40 +499,44 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
       <aside
         ref={sidebarRef}
         className={`
-          ${isMobile 
-            ? `fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] transform transition-transform duration-300 ease-in-out ${
-                isOpen ? 'translate-x-0' : '-translate-x-full'
-              }`
-            : "hidden md:flex"
+          ${
+            isMobile
+              ? `fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] transform transition-transform duration-300 ease-in-out ${
+                  isOpen ? "translate-x-0" : "-translate-x-full"
+                }`
+              : "hidden md:flex"
           } 
-          ${isCollapsed && !isMobile ? 'w-20' : 'w-72 xs:w-64 sm:w-56'} 
+          ${isCollapsed && !isMobile ? "w-20" : "w-72 xs:w-64 sm:w-56"} 
           flex-col shadow-lg transition-all duration-300 ease-in-out
         `}
-        style={{ 
-          backgroundColor: 'var(--card-bg)', 
-          color: 'var(--text-primary)',
+        style={{
+          backgroundColor: "var(--card-bg)",
+          color: "var(--text-primary)",
           borderRight: `1px solid var(--border-color)`,
-          scrollBehavior: 'auto',
-          maxWidth: isMobile ? '85vw' : undefined,
+          scrollBehavior: "auto",
+          maxWidth: isMobile ? "85vw" : undefined,
           opacity: hasUnsavedChanges ? 0.5 : 1,
-          pointerEvents: hasUnsavedChanges ? 'none' : 'auto'
+          pointerEvents: hasUnsavedChanges ? "none" : "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <ScrollContainer 
+        <ScrollContainer
           ref={sidebarScrollRef}
-          className="sidebar-scroll-container flex-1 p-3" 
-          style={{ 
-            scrollBehavior: 'auto', 
-            overflowAnchor: 'none',
-            WebkitOverflowScrolling: 'touch'
+          className="sidebar-scroll-container flex-1 p-3"
+          style={{
+            scrollBehavior: "auto",
+            overflowAnchor: "none",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           <nav className="space-y-3">
             {/* Navigation Sections */}
             {visibleNavSections.map((section) => (
               <div key={section.title}>
-                <SectionHeader title={section.title} isCollapsed={isCollapsed} />
+                <SectionHeader
+                  title={section.title}
+                  isCollapsed={isCollapsed}
+                />
                 <div className="space-y-0.5">
                   {section.items.map((item) => (
                     <NavItem
@@ -496,7 +545,9 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
                       Icon={item.icon}
                       label={item.label}
                       isActive={isActivePath(item.to)}
-                      badgeCount={item.showBadge ? counts[item.badgeKey] : undefined}
+                      badgeCount={
+                        item.showBadge ? counts[item.badgeKey] : undefined
+                      }
                       isCollapsed={isCollapsed}
                       isDark={isDark}
                       onBlockedClick={blockNavigation}
@@ -510,17 +561,26 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
 
         {/* Collapse Toggle Button at Bottom - Desktop Only */}
         {!isMobile && (
-          <div className="p-2 transition-all duration-300" style={{ borderTop: `1px solid var(--border-color)` }}>
+          <div
+            className="p-2 transition-all duration-300"
+            style={{ borderTop: `1px solid var(--border-color)` }}
+          >
             <button
               onClick={toggleCollapse}
-              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-3 py-1.5 rounded-md transition-all duration-300`}
-              style={{ 
-                color: 'var(--text-secondary)',
-                pointerEvents: hasUnsavedChanges ? 'none' : 'auto'
+              className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2"} px-3 py-1.5 rounded-md transition-all duration-300`}
+              style={{
+                color: "var(--text-secondary)",
+                pointerEvents: hasUnsavedChanges ? "none" : "auto",
               }}
               onMouseEnter={handleCollapseMouseEnter}
               onMouseLeave={handleCollapseMouseLeave}
-              title={hasUnsavedChanges ? "Save or reset changes first" : (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+              title={
+                hasUnsavedChanges
+                  ? "Save or reset changes first"
+                  : isCollapsed
+                    ? "Expand sidebar"
+                    : "Collapse sidebar"
+              }
               disabled={hasUnsavedChanges}
             >
               <div className="transition-transform duration-300">
@@ -531,7 +591,9 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
                 )}
               </div>
               {!isCollapsed && (
-                <span className="text-xs font-medium transition-opacity duration-200">Collapse</span>
+                <span className="text-xs font-medium transition-opacity duration-200">
+                  Collapse
+                </span>
               )}
             </button>
           </div>
@@ -541,6 +603,6 @@ const Sidebar = memo(({ isMobile, isOpen, onClose }) => {
   );
 });
 
-Sidebar.displayName = 'Sidebar';
+Sidebar.displayName = "Sidebar";
 
 export default Sidebar;

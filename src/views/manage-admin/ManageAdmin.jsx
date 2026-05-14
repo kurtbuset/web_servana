@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../../api";
 import Layout from "../../components/Layout";
 import ScreenContainer from "../../components/ScreenContainer";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 import { 
   Tooltip,
   Pagination,
@@ -407,3 +407,4 @@ export default function ManageAdmin() {
     </Layout>
   );
 }
+

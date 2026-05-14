@@ -1,5 +1,5 @@
 import { Filter, ChevronDown } from "react-feather";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * DepartmentFilter - Dropdown for filtering by department
@@ -103,3 +103,4 @@ export default function DepartmentFilter({
     </div>
   );
 }
+
