@@ -1,4 +1,4 @@
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * TypingIndicator - Animated typing indicator component with profile picture
@@ -61,3 +61,4 @@ export default function TypingIndicator({ userName = "Someone", userImage = null
     </div>
   );
 }
+

@@ -16,10 +16,10 @@ import {
   DetailHeader,
   Tooltip
 } from "../../components/ui";
-import { useUser } from "../../../src/context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
-import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
-import { useRolePreview } from "../../context/RolePreviewContext";
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { useRolePreview } from "../../hooks/useRolePreview";
 import { useRoles } from "../../hooks/useRoles";
 import toast from "../../utils/toast";
 import "../../App.css";
@@ -597,3 +597,4 @@ export default function RolesScreen() {
     </Layout>
   );
 }
+

@@ -5,7 +5,7 @@
 import { useEffect, useCallback } from "react";
 import socket, { joinChatGroup } from "../socket";
 import { useSocketConnection } from "./useSocketConnection";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../hooks/useUser";
 
 export const useReconnectRecovery = ({
   currentChatGroupId,

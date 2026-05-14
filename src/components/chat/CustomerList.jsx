@@ -1,4 +1,4 @@
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * CustomerList - Displays list of customers/chats
@@ -218,3 +218,4 @@ export default function CustomerList({
     </div>
   );
 }
+

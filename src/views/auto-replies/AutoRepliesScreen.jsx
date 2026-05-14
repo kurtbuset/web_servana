@@ -14,9 +14,9 @@ import {
 } from '../../components/ui';
 import usePagination from '../../hooks/usePagination';
 import { useAutoReplies } from '../../hooks/useAutoReplies';
-import { useUser } from '../../context/UserContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useUnsavedChanges } from '../../context/UnsavedChangesContext';
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import toast from '../../utils/toast';
 import DepartmentSidebar from './components/DepartmentSidebar';
 import MobileDepartmentFilter from './components/MobileDepartmentFilter';

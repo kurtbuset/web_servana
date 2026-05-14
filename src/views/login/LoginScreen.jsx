@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useUser } from "../../context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
 import { AnimatedBackground } from "../../components/ui";
 import LoginHeader from "./components/LoginHeader";
 import LoginForm from "./components/LoginForm";

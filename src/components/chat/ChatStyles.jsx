@@ -1,4 +1,4 @@
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  * ChatStyles - Scoped styles for the chat interface
@@ -38,3 +38,4 @@ export default function ChatStyles() {
     `}</style>
   );
 }
+

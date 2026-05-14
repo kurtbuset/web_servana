@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import TopNavbar from './TopNavbar';
-import Sidebar from './Sidebar';
-import { useRolePreview } from '../context/RolePreviewContext';
+import React, { useState } from "react";
+import TopNavbar from "./TopNavbar";
+import Sidebar from "./Sidebar";
+import { useRolePreview } from "../hooks/useRolePreview";
 
 /**
  * Layout - Main layout wrapper for all authenticated pages
@@ -14,24 +14,24 @@ export default function Layout({ children }) {
   const { previewMode } = useRolePreview();
 
   const toggleSidebar = () => {
-    console.log('Toggle sidebar clicked, current state:', mobileSidebarOpen);
-    setMobileSidebarOpen(prev => {
-      console.log('Setting sidebar to:', !prev);
+    console.log("Toggle sidebar clicked, current state:", mobileSidebarOpen);
+    setMobileSidebarOpen((prev) => {
+      console.log("Setting sidebar to:", !prev);
       return !prev;
     });
   };
 
   const closeSidebar = () => {
-    console.log('Closing sidebar');
+    console.log("Closing sidebar");
     setMobileSidebarOpen(false);
   };
 
   return (
-    <div 
-      className="flex flex-col h-screen overflow-hidden" 
-      style={{ 
-        backgroundColor: 'var(--bg-secondary)',
-        paddingTop: previewMode ? '44px' : '0' // Add padding when banner is visible
+    <div
+      className="flex flex-col h-screen overflow-hidden"
+      style={{
+        backgroundColor: "var(--bg-secondary)",
+        paddingTop: previewMode ? "44px" : "0", // Add padding when banner is visible
       }}
     >
       <TopNavbar toggleSidebar={toggleSidebar} />
@@ -45,17 +45,15 @@ export default function Layout({ children }) {
         />
 
         {/* Desktop Sidebar */}
-        <Sidebar
-          isMobile={false}
-          isOpen={false}
-        />
+        <Sidebar isMobile={false} isOpen={false} />
 
         {/* Main Content Area - Flex container for content + department panel */}
-        <main className="flex flex-1 overflow-hidden" style={{ backgroundColor: 'transparent' }}>
+        <main
+          className="flex flex-1 overflow-hidden"
+          style={{ backgroundColor: "transparent" }}
+        >
           {/* Page Content */}
-          <div className="flex-1 overflow-hidden">
-            {children}
-          </div>
+          <div className="flex-1 overflow-hidden">{children}</div>
         </main>
       </div>
     </div>

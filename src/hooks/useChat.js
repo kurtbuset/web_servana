@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ChatService } from "../services/chat.service";
 import QueueService from "../services/queue.service";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../hooks/useUser";
 import toast from "../utils/toast";
 import { useChatSocket } from "./useChatSocket";
 import { useTyping } from "./useTyping";

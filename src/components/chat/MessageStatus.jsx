@@ -3,7 +3,7 @@
  * Maximum performance optimization with pre-computed styles
  */
 import React from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from "../../hooks/useTheme";
 
 // Pre-computed style objects to avoid inline style creation
 const LIGHT_STYLES = {

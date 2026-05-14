@@ -1,6 +1,6 @@
 import Layout from "../../components/Layout";
 import { AnimatedBackground } from "../../components/ui";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 import ChatStyles from "../../components/chat/ChatStyles";
 import ChatContainer from "../../components/chat/ChatContainer";
 import "../../App.css";

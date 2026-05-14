@@ -13,8 +13,8 @@ import {
   PaginationPrevious,
 } from "../../components/ui";
 import { useUserRoles } from "../../hooks/useRoles";
-import { useUser } from "../../context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
 import { usePagination } from "../../hooks/usePagination";
 import toast from "../../utils/toast";
 import UserRolesTable from "./components/UserRolesTable";

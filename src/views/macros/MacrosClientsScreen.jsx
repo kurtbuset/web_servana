@@ -18,9 +18,9 @@ import usePagination from '../../hooks/usePagination';
 import DepartmentSidebar from './components/DepartmentSidebar';
 import MacroTable from './components/MacroTable';
 import useMacros from '../../hooks/useMacros';
-import { useUser } from '../../context/UserContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useUnsavedChanges } from '../../context/UnsavedChangesContext';
+import { useUser } from "../../hooks/useUser";
+import { useTheme } from "../../hooks/useTheme";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { HelpCircle } from 'react-feather';
 import '../../App.css';
 import '../../styles/GridLayout.css';
@@ -703,3 +703,4 @@ export default function MacrosClientsScreen() {
     </Layout>
   );
 }
+

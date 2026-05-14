@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useUser } from "../../context/UserContext";
-import { usePresence } from "../../context/PresenceContext";
+import { useUser } from "../../hooks/useUser";
+import { usePresence } from "../../hooks/usePresence";
 import { useChat } from "../../hooks/useChat";
 import { ChatService } from "../../services/chat.service";
 import { groupMessagesByDate } from "../../utils/dateFormatters";
@@ -404,3 +404,4 @@ export default function ChatContainer({ mode = "active" }) {
     </>
   );
 }
+

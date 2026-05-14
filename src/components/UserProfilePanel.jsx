@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../context/ThemeContext";
-import { useUser } from "../context/UserContext";
-import { usePresence } from "../context/PresenceContext";
+import { useTheme } from "../hooks/useTheme";
+import { useUser } from "../hooks/useUser";
+import { usePresence } from "../hooks/usePresence";
 import { LogOut } from "react-feather";
 import { getAvatarUrl } from "../utils/imageUtils";
 import ScrollContainer from "./ScrollContainer";
@@ -71,15 +71,17 @@ export default function UserProfilePanel({ userData, isOpen, onClose }) {
     <>
       {/* Blur Overlay */}
       <div
-        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[60] transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[60] transition-opacity duration-300 ${
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
         onClick={onClose}
       />
 
       {/* Slide-in Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-[80] transform transition-transform duration-300 ease-out flex flex-col ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
         style={{
           backgroundColor: "var(--card-bg)",
           color: "var(--text-primary)",
